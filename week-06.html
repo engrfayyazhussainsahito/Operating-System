@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 6: Synchronization II · Operating Systems for Dummies</title>
+<meta name="description" content="The classic synchronization problems (bounded buffer, readers-writers, dining philosophers), monitors and condition variables as a higher-level tool, and a ten-item review checklist for the midterm.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="2"><article class="week" data-week="6"><header class="week-head" data-num="06"><p class="kicker">Week 6 · Phase 2: Concurrency and Deadlocks</p><h1>Synchronization II</h1><p class="abstract">The classic synchronization problems (bounded buffer, readers-writers, dining philosophers), monitors and condition variables as a higher-level tool, and a ten-item review checklist for the midterm.</p><ul class="chips"><li><b>30</b> min read</li><li><b>2</b> demos</li><li><b>4</b> figures</li><li><b>14</b> code blocks</li><li><b>7</b> exercises</li></ul><p class="lab-line"><b>Lab.</b> Measure writer starvation under reader-preferring and writer-preferring read-write locks, and compile and run every classic solution from this chapter.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Solve the bounded buffer problem with two counting semaphores and a mutex, and explain why the order of the waits matters</li><li>Define a monitor and distinguish Mesa (signal and continue) from Hoare (signal and wait) semantics</li><li>Implement a monitor with a mutex and condition variables, and build a counting semaphore from them</li><li>Compare the readers-preference and writers-preference solutions and identify who can starve in each</li><li>Show how the naive dining philosophers solution deadlocks and fix it by resource ordering or by limiting the number of diners</li><li>Use the ten-item checklist to find gaps in your preparation for the midterm covering Weeks 1 to 7</li></ul></section><div class="prose"><p><a href="week-05.html">Week 5</a> gave you the primitives: atomic instructions, spinlocks, mutexes, semaphores and condition variables. A primitive is like a hammer; knowing how it works does not tell you what to build. This week we study the three problems that have served for sixty years as the standard test of any synchronization tool. Each one isolates a different difficulty. The <strong>bounded buffer</strong> is about cooperation: one thread must wait for another to produce something. <strong>Readers-writers</strong> is about asymmetric sharing: some accesses may overlap and some may not. <strong>Dining philosophers</strong> is about holding several resources at once, and it leads directly to <a href="week-07.html">Week 7</a>, where deadlock gets its own chapter and Assignment 2 (threads and synchronization) falls due.</p>
+<p>In the middle of the chapter we climb one level of abstraction. Semaphores are powerful but unforgiving: one swapped line and the program deadlocks. A <strong>monitor</strong> packages the shared data, the lock and the waiting rules into one unit that the compiler or library helps you use correctly. Every listing here is a complete C program that compiles with <code>gcc -Wall -pthread</code>, and the output shown is what they printed on a two-core test machine.</p>
+<p>The chapter ends with a midterm review. The midterm covers Weeks 1 to 7 and takes place in <a href="week-08.html">Week 8</a>, so the last section is a checklist you can work through now, while the material is fresh.</p>
+<h2 id="the-bounded-buffer-problem">The bounded buffer problem</h2>
+<h3 id="the-setting">The setting</h3>
+<p>A <strong>producer</strong> creates items and a <strong>consumer</strong> uses them. They communicate through a buffer of fixed capacity N, a <strong>bounded buffer</strong>, shared by all of them. This is not a toy: a Unix pipe is a bounded buffer (the kernel's pipe buffer is typically 64 KiB), a print spooler is one, and so is the queue between a network card driver and the protocol stack. The rules are:</p>
+<ul>
+<li>A producer must wait when the buffer is <strong>full</strong> (no free slot).</li>
+<li>A consumer must wait when the buffer is <strong>empty</strong> (nothing to take).</li>
+<li>Only one thread may modify the buffer's indices at a time.</li>
+</ul>
+<div class="admonition intuition">
+<p class="admonition-title">The sushi conveyor</p>
+<p>A chef places plates on a conveyor belt with room for N plates. If the belt is full, the chef stands idle. A customer takes plates; if the belt is empty, the customer waits. Nobody should put two plates on the same spot, and nobody should grab a plate that is not there. Two things are being counted: free spots and plates. The chef waits on free spots; the customer waits on plates.</p>
+</div>
+<h3 id="the-semaphore-solution">The semaphore solution</h3>
+<p>The classic solution uses three semaphores, each with one clear job (recall the initial-value table in <a href="week-05.html#semaphores">Week 5</a>):</p>
+<table>
+<thead>
+<tr>
+<th>Semaphore</th>
+<th>Initial value</th>
+<th>Meaning</th>
+<th>Who waits on it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>empty_slots</code></td>
+<td>N</td>
+<td>number of free slots</td>
+<td>producers</td>
+</tr>
+<tr>
+<td><code>full_slots</code></td>
+<td>0</td>
+<td>number of filled slots</td>
+<td>consumers</td>
+</tr>
+<tr>
+<td><code>mutex</code></td>
+<td>1</td>
+<td>exclusive access to <code>in</code>, <code>out</code> and the array</td>
+<td>both</td>
+</tr>
+</tbody>
+</table>
+<p>A producer does <code>wait(empty_slots)</code>, then locks the buffer and inserts, then <code>signal(full_slots)</code>. A consumer does the mirror image. Each side waits on the resource it needs and signals the resource it creates.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">  producer                        buffer, N = 4                       consumer
+                          out                   in
+                           v                     v
+  wait(empty_slots)      +------+------+------+------+      wait(full_slots)
+  wait(mutex)            |  B   |  C   |  D   |      |      wait(mutex)
+  buf[in] = item   ----&gt; +------+------+------+------+ ---&gt; item = buf[out]
+  in = (in + 1) % N        slot0  slot1  slot2  slot3        out = (out + 1) % N
+  signal(mutex)                                              signal(mutex)
+  signal(full_slots)                                         signal(empty_slots)
+
+  here: empty_slots = 1, full_slots = 3, and always empty + full + (in progress) = N
+</pre></div><figcaption><b>Figure 6.1..</b> A bounded buffer as a ring. The producer sleeps on <code>empty_slots</code>, the consumer on <code>full_slots</code>; a mutex protects the indices.</figcaption></figure>
+<p>The program below runs two producers and two consumers. Each producer inserts the numbers 1 to 10,000, so the total produced is 2 × 10,000 × 10,001 / 2 = 100,010,000, and every item must be consumed exactly once. The code also records the largest occupancy it ever saw, which must never exceed N.</p>
+<pre><code class="language-c">/* bb_sem.c: bounded buffer with two counting semaphores and a mutex. */
+#include &lt;pthread.h&gt;
+#include &lt;semaphore.h&gt;
+#include &lt;stdio.h&gt;
+
+#define N      4          /* buffer capacity */
+#define ITEMS  10000      /* items made by each producer */
+#define NPROD  2
+#define NCONS  2
+
+static int buf[N];
+static int in = 0, out = 0;           /* next slot to fill / to empty */
+static int count = 0, max_count = 0;  /* occupancy, only for checking */
+static sem_t empty_slots, full_slots;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static long psum[NPROD], csum[NCONS];
+
+static void *producer(void *arg) {
+    long id = (long)arg;
+    for (int i = 1; i &lt;= ITEMS; i++) {
+        sem_wait(&amp;empty_slots);               /* wait for a free slot */
+        pthread_mutex_lock(&amp;mutex);
+        buf[in] = i;
+        in = (in + 1) % N;
+        if (++count &gt; max_count) max_count = count;
+        pthread_mutex_unlock(&amp;mutex);
+        sem_post(&amp;full_slots);                /* announce a filled slot */
+        psum[id] += i;
+    }
+    return NULL;
+}
+
+static void *consumer(void *arg) {
+    long id = (long)arg;
+    for (int i = 0; i &lt; ITEMS; i++) {         /* NPROD == NCONS, so equal shares */
+        sem_wait(&amp;full_slots);                /* wait for a filled slot */
+        pthread_mutex_lock(&amp;mutex);
+        int item = buf[out];
+        out = (out + 1) % N;
+        count--;
+        pthread_mutex_unlock(&amp;mutex);
+        sem_post(&amp;empty_slots);               /* announce a free slot */
+        csum[id] += item;
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t p[NPROD], c[NCONS];
+    sem_init(&amp;empty_slots, 0, N);             /* N free slots */
+    sem_init(&amp;full_slots, 0, 0);              /* 0 filled slots */
+    for (long i = 0; i &lt; NPROD; i++) pthread_create(&amp;p[i], NULL, producer, (void *)i);
+    for (long i = 0; i &lt; NCONS; i++) pthread_create(&amp;c[i], NULL, consumer, (void *)i);
+    for (int i = 0; i &lt; NPROD; i++) pthread_join(p[i], NULL);
+    for (int i = 0; i &lt; NCONS; i++) pthread_join(c[i], NULL);
+    long ps = 0, cs = 0;
+    for (int i = 0; i &lt; NPROD; i++) ps += psum[i];
+    for (int i = 0; i &lt; NCONS; i++) cs += csum[i];
+    printf(&quot;produced sum = %ld, consumed sum = %ld, max occupancy = %d (capacity %d)\n&quot;,
+           ps, cs, max_count, N);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">produced sum = 100010000, consumed sum = 100010000, max occupancy = 4 (capacity 4)
+</code></pre>
+<p>If an item were lost or duplicated, the two sums would differ; if the buffer overflowed, the maximum would exceed 4. The sums are updated outside the critical section on purpose: each thread has its own slot in <code>psum</code> and <code>csum</code>, so nothing is shared.</p>
+<div class="admonition warning">
+<p class="admonition-title">The order of the two waits is not negotiable</p>
+<p>Suppose the producer writes <code>wait(mutex)</code> first and <code>wait(empty_slots)</code> second. When the buffer is full, the producer takes the mutex and then sleeps on <code>empty_slots</code> <strong>while holding the mutex</strong>. The consumer needs the mutex to remove an item, so it blocks too, and no one can ever signal <code>empty_slots</code>. Both threads sleep forever: deadlock. The rule is: wait for the <em>counting</em> semaphore first, take the <em>mutex</em> second, and release them in the opposite order. Never sleep while holding a lock that your wake-up depends on.</p>
+</div>
+<p>Notice the elegant property that makes the solution work: the semaphore values <em>are</em> the predicates. A consumer does not test "is the buffer empty?" in an <code>if</code>; it blocks on a counter that is zero exactly when the buffer is empty. The semaphore remembers wake-ups, so no signal can be lost. The next demo lets you watch both counters move.</p>
+<p>Open the demo and set a small capacity such as 3. First let the producer run several steps in a row and watch <code>empty_slots</code> fall to zero, at which point the next producer step blocks instead of writing. Then step the consumer once and see the blocked producer wake up. Finally swap in a slow consumer and notice that the buffer sits full and the producer spends most of its time asleep.</p>
+<div class="demo" data-demo="bounded-buffer"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Run a producer and a consumer on a semaphore-guarded buffer</span></div><div class="demo-body"></div></div>
+<h2 id="monitors-and-condition-variables">Monitors and condition variables</h2>
+<h3 id="the-idea">The idea</h3>
+<p>With semaphores, the programmer must remember which one guards what, and in which order to take them. A <strong>monitor</strong>, proposed by Per Brinch Hansen and C. A. R. Hoare in the early 1970s, moves that discipline into the structure of the program.</p>
+<div class="admonition definition">
+<p class="admonition-title">Monitor</p>
+<p>A <strong>monitor</strong> is a module that bundles (1) shared data, (2) the procedures that operate on it, and (3) a lock, with the rule that <strong>at most one thread is active inside the monitor at any time</strong>. The lock is acquired automatically on entry to any procedure and released on exit. A monitor also provides <strong>condition variables</strong>, each with <code>wait</code> and <code>signal</code> operations, so a thread can sleep inside the monitor until some predicate about the data becomes true.</p>
+</div>
+<p>A language with built-in monitors (Java's <code>synchronized</code> methods with <code>wait</code>, <code>notify</code> and <code>notifyAll</code>, C#'s <code>lock</code> and <code>Monitor.Wait</code>) makes the lock implicit. In C you build the same structure by hand: a <code>struct</code> holding the data, one mutex, and one condition variable per kind of waiting, with every access going through functions that lock on entry and unlock on exit.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   threads wanting to enter
+   +----+ +----+ +----+         +--------------------------------------+
+   | T5 | | T6 | | T7 |  -----&gt; |  MONITOR   (only one thread inside)  |
+   +----+ +----+ +----+  entry  |   data:  buf[], in, out, count       |
+          entry queue            |   procs: put(), get()                |
+                                 +------------------+-------------------+
+                                                    |
+        wait(): release the lock, sleep             |  signal(): wake one sleeper;
+                                                    |  it re-enters via the entry queue
+   condition not_full :  [ P2 ][ P3 ]    &lt;----------+
+   condition not_empty:  [ C1 ]          &lt;----------+
+</pre></div><figcaption><b>Figure 6.2..</b> A monitor has one entry queue and one queue per condition variable. A thread that waits gives up the monitor so others can enter.</figcaption></figure>
+<h3 id="hoare-versus-mesa-semantics">Hoare versus Mesa semantics</h3>
+<p>What happens at the moment thread A calls <code>signal</code> and thread B, who was waiting, becomes ready? Two answers exist, and the difference matters in every program you write.</p>
+<ul>
+<li><strong>Hoare semantics (signal and wait).</strong> The signaller hands the monitor directly to the woken thread and sleeps itself. When B runs, the condition it waited for is <em>guaranteed</em> true, because nobody else got in between. B may use <code>if</code>. It is elegant and easy to prove correct, but costs extra context switches.</li>
+<li><strong>Mesa semantics (signal and continue).</strong> The signaller keeps the monitor and keeps running. The woken thread is only moved to the ready queue; it must later re-acquire the lock, and by then another thread may have changed the data. <code>signal</code> is a <strong>hint</strong>, not a guarantee, so the waiter must re-check its predicate in a <code>while</code> loop.</li>
+</ul>
+<p>Mesa semantics, named after the Xerox Mesa system described by Lampson and Redell in 1980, is what POSIX threads, Java and C# implement. That is exactly the "while-loop rule" from <a href="week-05.html#condition-variables-and-the-while-loop-rule">Week 5</a>: it is not a stylistic preference but a consequence of Mesa semantics.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Hoare</th>
+<th>Mesa (pthreads, Java, C#)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>After <code>signal</code></td>
+<td>Signaller sleeps, waiter runs at once</td>
+<td>Signaller continues; waiter becomes ready</td>
+</tr>
+<tr>
+<td>Condition true on wake-up?</td>
+<td>Guaranteed</td>
+<td>Not guaranteed</td>
+</tr>
+<tr>
+<td>Waiter code</td>
+<td><code>if (!cond) wait</code></td>
+<td><code>while (!cond) wait</code></td>
+</tr>
+<tr>
+<td>Cost</td>
+<td>More context switches</td>
+<td>Cheaper; allows <code>broadcast</code> and spurious wake-ups</td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-bounded-buffer-as-a-monitor">The bounded buffer as a monitor</h3>
+<p>Compare this version with the semaphore one. The data and its lock live in one <code>struct</code>; the two predicates, "not full" and "not empty", become two condition variables; there is no counting semaphore at all.</p>
+<pre><code class="language-c">/* bb_mon.c: the same bounded buffer written as a monitor (mutex + condition variables). */
+#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+
+#define N      4
+#define ITEMS  10000
+#define NPROD  2
+#define NCONS  2
+
+struct monitor {
+    pthread_mutex_t lock;        /* the monitor lock: one thread inside at a time */
+    pthread_cond_t  not_full;    /* producers wait here  */
+    pthread_cond_t  not_empty;   /* consumers wait here  */
+    int buf[N];
+    int in, out, count;
+};
+
+static struct monitor m = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER,
+                            PTHREAD_COND_INITIALIZER, {0}, 0, 0, 0 };
+static long psum[NPROD], csum[NCONS];
+
+static void put(struct monitor *mon, int item) {
+    pthread_mutex_lock(&amp;mon-&gt;lock);
+    while (mon-&gt;count == N)                         /* Mesa rule: while, never if */
+        pthread_cond_wait(&amp;mon-&gt;not_full, &amp;mon-&gt;lock);
+    mon-&gt;buf[mon-&gt;in] = item;
+    mon-&gt;in = (mon-&gt;in + 1) % N;
+    mon-&gt;count++;
+    pthread_cond_signal(&amp;mon-&gt;not_empty);
+    pthread_mutex_unlock(&amp;mon-&gt;lock);
+}
+
+static int get(struct monitor *mon) {
+    pthread_mutex_lock(&amp;mon-&gt;lock);
+    while (mon-&gt;count == 0)
+        pthread_cond_wait(&amp;mon-&gt;not_empty, &amp;mon-&gt;lock);
+    int item = mon-&gt;buf[mon-&gt;out];
+    mon-&gt;out = (mon-&gt;out + 1) % N;
+    mon-&gt;count--;
+    pthread_cond_signal(&amp;mon-&gt;not_full);
+    pthread_mutex_unlock(&amp;mon-&gt;lock);
+    return item;
+}
+
+static void *producer(void *arg) {
+    long id = (long)arg;
+    for (int i = 1; i &lt;= ITEMS; i++) { put(&amp;m, i); psum[id] += i; }
+    return NULL;
+}
+static void *consumer(void *arg) {
+    long id = (long)arg;
+    for (int i = 0; i &lt; ITEMS; i++) csum[id] += get(&amp;m);
+    return NULL;
+}
+
+int main(void) {
+    pthread_t p[NPROD], c[NCONS];
+    for (long i = 0; i &lt; NPROD; i++) pthread_create(&amp;p[i], NULL, producer, (void *)i);
+    for (long i = 0; i &lt; NCONS; i++) pthread_create(&amp;c[i], NULL, consumer, (void *)i);
+    for (int i = 0; i &lt; NPROD; i++) pthread_join(p[i], NULL);
+    for (int i = 0; i &lt; NCONS; i++) pthread_join(c[i], NULL);
+    long ps = 0, cs = 0;
+    for (int i = 0; i &lt; NPROD; i++) ps += psum[i];
+    for (int i = 0; i &lt; NCONS; i++) cs += csum[i];
+    printf(&quot;produced sum = %ld, consumed sum = %ld, items left = %d\n&quot;, ps, cs, m.count);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">produced sum = 100010000, consumed sum = 100010000, items left = 0
+</code></pre>
+<p>Each procedure has the same shape: lock, <code>while (predicate is false) wait</code>, do the work, signal whoever the work may have unblocked, unlock. A producer signals <code>not_empty</code> because it just made the buffer non-empty; a consumer signals <code>not_full</code>. With one condition variable per predicate a plain <code>signal</code> is enough, since every waiter on <code>not_empty</code> is waiting for the same thing.</p>
+<h3 id="monitors-and-semaphores-are-equally-powerful">Monitors and semaphores are equally powerful</h3>
+<p>Each can build the other. The previous chapter showed a semaphore as an integer plus a queue. The next listing builds a counting semaphore from nothing but a mutex and a condition variable, which is a good test of whether you have understood both. The predicate is "value is greater than zero", and the semaphore is used here as a lock by four threads.</p>
+<pre><code class="language-c">/* mysem.c: a counting semaphore built from one mutex and one condition variable. */
+#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+
+typedef struct {
+    pthread_mutex_t lock;
+    pthread_cond_t  nonzero;
+    int value;
+} mysem;
+
+static void mysem_init(mysem *s, int v) {
+    pthread_mutex_init(&amp;s-&gt;lock, NULL);
+    pthread_cond_init(&amp;s-&gt;nonzero, NULL);
+    s-&gt;value = v;
+}
+static void mysem_wait(mysem *s) {
+    pthread_mutex_lock(&amp;s-&gt;lock);
+    while (s-&gt;value == 0)                      /* the predicate: &quot;value &gt; 0&quot; */
+        pthread_cond_wait(&amp;s-&gt;nonzero, &amp;s-&gt;lock);
+    s-&gt;value--;
+    pthread_mutex_unlock(&amp;s-&gt;lock);
+}
+static void mysem_post(mysem *s) {
+    pthread_mutex_lock(&amp;s-&gt;lock);
+    s-&gt;value++;
+    pthread_cond_signal(&amp;s-&gt;nonzero);
+    pthread_mutex_unlock(&amp;s-&gt;lock);
+}
+
+static mysem gate;
+static long counter = 0;
+
+static void *worker(void *arg) {
+    (void)arg;
+    for (int i = 0; i &lt; 100000; i++) {
+        mysem_wait(&amp;gate);                     /* binary semaphore used as a lock */
+        counter++;
+        mysem_post(&amp;gate);
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t[4];
+    mysem_init(&amp;gate, 1);
+    for (int i = 0; i &lt; 4; i++) pthread_create(&amp;t[i], NULL, worker, NULL);
+    for (int i = 0; i &lt; 4; i++) pthread_join(t[i], NULL);
+    printf(&quot;counter = %ld (expected 400000)\n&quot;, counter);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">counter = 400000 (expected 400000)
+</code></pre>
+<p>The converse also works (the textbook construction of a monitor from semaphores is longer and subtle, because <code>wait</code> must release the monitor lock and block as one atomic step). In practice you rarely build either from the other, but the exercise explains why your library offers both: the semaphore remembers signals, while the condition variable lets you wait for <em>any</em> predicate you can write in C.</p>
+<div class="admonition tip">
+<p class="admonition-title">A monitor-writing recipe</p>
+<ol>
+<li>List the shared variables and give them one mutex. 2. For each reason a thread might have to wait, write the predicate in terms of those variables and give it a condition variable. 3. Every procedure starts with <code>lock</code>, loops on its predicate, and ends with <code>unlock</code>. 4. After changing the data, ask "which predicates could this have made true?" and signal those conditions. When two kinds of waiters share one condition variable, use <code>broadcast</code>.</li>
+</ol>
+</div>
+<h2 id="readers-writers">Readers-writers</h2>
+<h3 id="the-problem">The problem</h3>
+<p>A database, a cache or an in-memory table is read far more often than it is written. Any number of <strong>readers</strong> may look at the data simultaneously, since reading changes nothing, but a <strong>writer</strong> needs <strong>exclusive</strong> access: no other writer and no reader. Plain mutual exclusion would be correct but needlessly slow, because it would also forbid concurrent readers. The requirement is:</p>
+<ul>
+<li>Many readers may be inside at once.</li>
+<li>A writer excludes everyone else.</li>
+</ul>
+<h3 id="first-solution-readers-preference">First solution: readers preference</h3>
+<p>The first solution of Courtois, Heymans and Parnas (1971) uses one semaphore <code>rw_mutex</code> for "the data is taken" and a counter <code>read_count</code> of active readers, protected by a second semaphore. The <strong>first</strong> reader in locks writers out on behalf of the whole group; the <strong>last</strong> reader out lets them back in.</p>
+<pre><code class="language-c">/* rw.c: readers-writers with semaphores (readers preference). */
+#define _POSIX_C_SOURCE 200809L
+#include &lt;pthread.h&gt;
+#include &lt;sched.h&gt;
+#include &lt;semaphore.h&gt;
+#include &lt;stdio.h&gt;
+
+#define NREADERS 3
+#define NWRITERS 2
+#define READS    20000
+#define WRITES   1000
+
+static sem_t rw_mutex;              /* held by a writer, or by the group of readers */
+static sem_t mutex;                 /* protects read_count */
+static int read_count = 0;
+
+static int a = 0, b = 0;            /* invariant: a == b whenever nobody is writing */
+static long torn = 0, reads_done = 0;
+static pthread_mutex_t stats = PTHREAD_MUTEX_INITIALIZER;
+
+static void *reader(void *arg) {
+    (void)arg;
+    long bad = 0;
+    for (int i = 0; i &lt; READS; i++) {
+        sem_wait(&amp;mutex);
+        if (++read_count == 1) sem_wait(&amp;rw_mutex);   /* first reader locks writers out */
+        sem_post(&amp;mutex);
+
+        int x = a;
+        sched_yield();                                /* widen the window on purpose */
+        int y = b;
+        if (x != y) bad++;
+
+        sem_wait(&amp;mutex);
+        if (--read_count == 0) sem_post(&amp;rw_mutex);   /* last reader lets writers in */
+        sem_post(&amp;mutex);
+    }
+    pthread_mutex_lock(&amp;stats);
+    torn += bad;
+    reads_done += READS;
+    pthread_mutex_unlock(&amp;stats);
+    return NULL;
+}
+
+static void *writer(void *arg) {
+    (void)arg;
+    for (int i = 0; i &lt; WRITES; i++) {
+        sem_wait(&amp;rw_mutex);                          /* exclusive access */
+        int v = a + 1;
+        a = v;
+        sched_yield();
+        b = v;
+        sem_post(&amp;rw_mutex);
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t r[NREADERS], w[NWRITERS];
+    sem_init(&amp;rw_mutex, 0, 1);
+    sem_init(&amp;mutex, 0, 1);
+    for (int i = 0; i &lt; NREADERS; i++) pthread_create(&amp;r[i], NULL, reader, NULL);
+    for (int i = 0; i &lt; NWRITERS; i++) pthread_create(&amp;w[i], NULL, writer, NULL);
+    for (int i = 0; i &lt; NREADERS; i++) pthread_join(r[i], NULL);
+    for (int i = 0; i &lt; NWRITERS; i++) pthread_join(w[i], NULL);
+    printf(&quot;reads = %ld, torn reads = %ld, final a = %d, b = %d (expected %d)\n&quot;,
+           reads_done, torn, a, b, NWRITERS * WRITES);
+    return 0;
+}
+</code></pre>
+<p>The invariant <code>a == b</code> makes the correctness check visible. A writer sets <code>a</code>, yields the CPU on purpose, and then sets <code>b</code>. A reader that saw <code>a</code> and <code>b</code> in the middle of a write would notice a mismatch, a <strong>torn read</strong>. The <code>sched_yield()</code> calls widen the window to make such a bug likely if the locking were wrong.</p>
+<pre><code class="language-text">reads = 60000, torn reads = 0, final a = 2000, b = 2000 (expected 2000)
+</code></pre>
+<figure class="figure"><div class="scroll"><pre class="diagram">  slot      1     2     3     4     5     6     7     8
+  R1      [===== read =====]
+  R2            [===== read =====]
+  R3                        [===== read =====]
+  W1                  wait....................[= write ==]
+  inside    1     2     2     2     1     1     0     0
+                      ^ W1 arrives     ^ R3 arrives, joins   ^ group empty: W1 enters
+</pre></div><figcaption><b>Figure 6.3..</b> Readers preference: W1 arrives in slot 3 and R3 in slot 4; R3 joins the readers already inside, so W1 enters only when the reader group is empty.</figcaption></figure>
+<h3 id="who-starves">Who starves?</h3>
+<p>In this solution a steady stream of overlapping readers can keep <code>read_count</code> above zero forever, so the writer never gets in: <strong>writer starvation</strong>. The <strong>second</strong> readers-writers problem demands the opposite, writers have priority: once a writer is waiting, no new reader may enter. That solution starves readers when writers keep coming. A <strong>fair</strong> (third) variant queues arrivals in order and lets whole groups of consecutive readers through together. The lesson is that there is no free lunch: you choose whom to favour.</p>
+<p>POSIX packages the problem as <code>pthread_rwlock_t</code> with <code>pthread_rwlock_rdlock</code>, <code>pthread_rwlock_wrlock</code> and <code>pthread_rwlock_unlock</code>. The default policy in glibc prefers readers, and you can request writer preference with <code>pthread_rwlockattr_setkind_np</code>. The lab at the end of this chapter measures the difference. One more caution: a read-write lock pays off only when reads dominate and the critical section is long enough to amortize its bookkeeping; for tiny sections a plain mutex is often faster, because the rwlock's own counter becomes a contended cache line.</p>
+<h2 id="dining-philosophers">Dining philosophers</h2>
+<h3 id="the-problem_1">The problem</h3>
+<p>Five philosophers sit around a table. Between each pair of neighbours lies one fork, so there are five forks. A philosopher alternates between thinking and eating, and eating needs <strong>both</strong> the left and right fork. Philosopher <em>i</em> uses fork <em>i</em> on the left and fork <em>(i + 1) mod 5</em> on the right. Forks are picked up one at a time. Dijkstra posed a version of this in 1965 as an examination question about tape drives; Hoare later gave it the form with philosophers and (originally) forks and spaghetti.</p>
+<div class="admonition history">
+<p class="admonition-title">Why a story about spaghetti?</p>
+<p>The problem is a deliberately minimal model of a process that needs two resources at once, such as a transfer between two bank accounts (two locks) or a program that needs a tape drive and a printer. The philosophers are processes and the forks are resources. If you can solve this problem with no deadlock, no starvation and good concurrency, you have a recipe for the general case.</p>
+</div>
+<h3 id="the-obvious-solution-deadlocks">The obvious solution deadlocks</h3>
+<p>Each philosopher takes the left fork and then the right one. If all five take their left fork at the same moment, every fork is held and every philosopher waits for a fork held by his neighbour. Nobody can proceed and nobody will give up a fork.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   P0 holds F0, wants F1 ---&gt; F1 is held by P1
+   P1 holds F1, wants F2 ---&gt; F2 is held by P2
+   P2 holds F2, wants F3 ---&gt; F3 is held by P3
+   P3 holds F3, wants F4 ---&gt; F4 is held by P4
+   P4 holds F4, wants F0 ---&gt; F0 is held by P0     &lt;-- the cycle closes
+
+   seating:   P0 [F1] P1 [F2] P2 [F3] P3 [F4] P4 [F0] (back to P0)
+</pre></div><figcaption><b>Figure 6.4..</b> Circular wait among five philosophers: each holds one fork and waits for the next, so none can ever finish.</figcaption></figure>
+<p>The probability of hitting this at any single meal is small, which is exactly why the bug survives testing. Deadlock needs a precise alignment, as with the races of <a href="week-05.html">Week 5</a>, but unlike a race it does not corrupt data: it freezes the program.</p>
+<h3 id="two-fixes-that-work">Two fixes that work</h3>
+<ul>
+<li><strong>Resource ordering.</strong> Number the forks and always pick up the lower-numbered one first. Philosophers 0 to 3 behave as before; philosopher 4 needs forks 4 and 0 and takes fork 0 first. The cycle in Figure 6.4 can no longer form, because P4 would be waiting on F0 <em>without</em> holding F4. This is the standard cure for circular wait and you will meet it again in <a href="week-07.html#deadlock-prevention">Week 7</a>.</li>
+<li><strong>Limit the diners.</strong> Allow at most four philosophers to try to eat at once, using a counting semaphore <code>room</code> initialized to N - 1 = 4. With four diners and five forks, at least one philosopher can always get both forks (the diner next to the empty seat finds a free fork on that side), so progress is guaranteed.</li>
+</ul>
+<p>A third family of solutions, the <strong>asymmetric</strong> one, has odd-numbered philosophers pick up the left fork first and even-numbered ones the right fork first, which also breaks the cycle. Chandy and Misra (1984) gave a fully distributed solution where forks are "clean" or "dirty" and are passed by request, with no central arbiter and no starvation.</p>
+<h3 id="a-program-that-shows-all-three-behaviours">A program that shows all three behaviours</h3>
+<p>The next program starts five philosopher threads and takes the strategy from the command line. To make the deadlock reproducible, each philosopher pauses for 2 ms after picking up the first fork, and the second fork is requested with a 1.5 second timeout so that a stuck philosopher reports itself instead of hanging your terminal. Each philosopher eats 50 times.</p>
+<pre><code class="language-c">/* phil.c: five dining philosophers with three strategies: naive, ordered, limited. */
+#define _DEFAULT_SOURCE
+#include &lt;pthread.h&gt;
+#include &lt;semaphore.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+#define N      5
+#define MEALS  50
+
+static pthread_mutex_t fork_[N];
+static sem_t room;                 /* &quot;limited&quot; strategy: at most N-1 may try to eat */
+static int strategy;               /* 0 naive, 1 ordered, 2 limited */
+static int meals[N], stuck[N];
+
+static int lock_with_timeout(pthread_mutex_t *m, long ms) {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &amp;t);
+    t.tv_sec  += ms / 1000;
+    t.tv_nsec += (ms % 1000) * 1000000L;
+    if (t.tv_nsec &gt;= 1000000000L) { t.tv_sec++; t.tv_nsec -= 1000000000L; }
+    return pthread_mutex_timedlock(m, &amp;t);       /* 0 on success, ETIMEDOUT otherwise */
+}
+
+static void *philosopher(void *arg) {
+    int i = (int)(long)arg;
+    int left = i, right = (i + 1) % N;
+    int first = left, second = right;
+    if (strategy == 1 &amp;&amp; right &lt; left) { first = right; second = left; }  /* lower number first */
+
+    for (int k = 0; k &lt; MEALS; k++) {
+        if (strategy == 2) sem_wait(&amp;room);
+        pthread_mutex_lock(&amp;fork_[first]);
+        usleep(2000);                            /* think a little: gives the others time to grab too */
+        if (lock_with_timeout(&amp;fork_[second], 1500) != 0) {
+            stuck[i] = 1;      /* 1.5 s holding one fork and still no second one: deadlock */
+            return NULL;       /* give up but keep the fork, exactly as a deadlocked thread would */
+        }
+        meals[i]++;                              /* eat */
+        usleep(100);
+        pthread_mutex_unlock(&amp;fork_[second]);
+        pthread_mutex_unlock(&amp;fork_[first]);
+        if (strategy == 2) sem_post(&amp;room);
+    }
+    return NULL;
+}
+
+int main(int argc, char **argv) {
+    const char *name = argc &gt; 1 ? argv[1] : &quot;naive&quot;;
+    if      (!strcmp(name, &quot;naive&quot;))   strategy = 0;
+    else if (!strcmp(name, &quot;ordered&quot;)) strategy = 1;
+    else if (!strcmp(name, &quot;limited&quot;)) strategy = 2;
+    else { fprintf(stderr, &quot;usage: %s naive|ordered|limited\n&quot;, argv[0]); return 2; }
+
+    for (int i = 0; i &lt; N; i++) pthread_mutex_init(&amp;fork_[i], NULL);
+    sem_init(&amp;room, 0, N - 1);
+    pthread_t t[N];
+    for (long i = 0; i &lt; N; i++) pthread_create(&amp;t[i], NULL, philosopher, (void *)i);
+    for (int i = 0; i &lt; N; i++) pthread_join(t[i], NULL);
+
+    int nstuck = 0;
+    printf(&quot;%-8s meals:&quot;, name);
+    for (int i = 0; i &lt; N; i++) { printf(&quot; %d&quot;, meals[i]); nstuck += stuck[i]; }
+    printf(&quot;  deadlocked philosophers: %d\n&quot;, nstuck);
+    return 0;
+}
+</code></pre>
+<p>Build it with <code>gcc -Wall -pthread phil.c -o phil</code> and run each strategy:</p>
+<pre><code class="language-text">$ ./phil naive
+naive    meals: 0 0 0 0 0  deadlocked philosophers: 5
+$ ./phil ordered
+ordered  meals: 50 50 50 50 50  deadlocked philosophers: 0
+$ ./phil limited
+limited  meals: 50 50 50 50 50  deadlocked philosophers: 0
+</code></pre>
+<p>The naive run takes the full 1.5 s timeout and nobody eats once; the other two finish in about 0.6 s. Now try it interactively. In the demo, start with the deadlock-prone strategy and step until every philosopher holds exactly one fork, which is the state of Figure 6.4. Then switch to the ordered strategy and to the limited strategy and compare how many philosophers can eat at the same time (the maximum is two, since each diner uses two of the five forks).</p>
+<div class="demo" data-demo="dining-philosophers"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Seat five philosophers and try to deadlock them</span></div><div class="demo-body"></div></div>
+<h2 id="midterm-review-a-ten-item-checklist">Midterm review: a ten-item checklist</h2>
+<p>The midterm covers Weeks 1 to 7 and happens in <a href="week-08.html">Week 8</a>. The checklist below has one item per topic cluster. For each, the test is "can I do this on a blank sheet without looking?" Anything you cannot do goes on a list for the week-8 review session.</p>
+<ol>
+<li><strong>Dual mode and system calls (Week 1).</strong> Draw the path of a <code>read()</code> call from user code through the trap to the kernel and back. State why privileged instructions exist and what a timer interrupt is for. Contrast monolithic, layered and microkernel structure.</li>
+<li><strong>Processes (Week 2).</strong> Draw the five-state diagram with the event that causes each transition. List what a PCB contains. Explain exactly what a context switch saves and restores, and what <code>fork</code>, <code>exec</code> and <code>wait</code> each do.</li>
+<li><strong>Threads and IPC (Week 3).</strong> State what threads share and what they keep private. Compare many-to-one, one-to-one and many-to-many mapping. Compare pipes, shared memory and message passing.</li>
+<li><strong>Scheduling traces (Week 4).</strong> Given arrivals and bursts, draw the Gantt chart and compute waiting, turnaround and response times for FCFS, SJF, SRTF, round robin and a multilevel feedback queue. Do the exponential-average prediction by hand.</li>
+<li><strong>Scheduling models (Week 4).</strong> Compute CFS shares from nice-value weights (weight divided by total weight), and apply the rate-monotonic bound n(2^(1/n) - 1) and the EDF test U ≤ 1.</li>
+<li><strong>Races and critical sections (Week 5).</strong> Trace a lost update through load, add and store. State mutual exclusion, progress and bounded waiting and decide which one a given protocol violates.</li>
+<li><strong>Locks and semaphores (Week 5).</strong> Explain atomic test-and-set and compare-and-swap, when to spin and when to block, and priority inversion with its cure. Trace a counting semaphore with negative values.</li>
+<li><strong>Condition variables and monitors (Weeks 5 and 6).</strong> Explain the while-loop rule. Distinguish Mesa and Hoare semantics. Write a small monitor with <code>lock</code>, <code>wait</code> and <code>signal</code>.</li>
+<li><strong>Classic problems (Week 6).</strong> Write the bounded buffer with three semaphores and say what breaks if the waits are swapped. Compare readers preference with writers preference. Give two fixes for dining philosophers.</li>
+<li><strong>Deadlock (Week 7).</strong> List the four necessary conditions, read a resource-allocation graph, run the Banker's safety algorithm to completion and say when a request is granted, and run the detection algorithm.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Formula to know cold</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>waiting = completion - arrival - burst; turnaround = completion - arrival</td>
+<td>Week 4</td>
+</tr>
+<tr>
+<td>τ(n+1) = α·t(n) + (1 - α)·τ(n)</td>
+<td>Week 4</td>
+</tr>
+<tr>
+<td>CFS share = weight / sum of weights; vruntime += delta × 1024 / weight</td>
+<td>Week 4</td>
+</tr>
+<tr>
+<td>RM bound U ≤ n(2^(1/n) - 1); EDF bound U ≤ 1</td>
+<td>Week 4</td>
+</tr>
+<tr>
+<td>Need = Max - Allocation; safe iff some order has Need ≤ Work at every step</td>
+<td>Week 7</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">How to study for it</p>
+<p>Do not re-read; re-derive. Take a past exercise, cover the solution and produce it again. For traces, such as scheduling Gantt charts, semaphore values and the Banker's algorithm, use a table with one row per step: nearly all lost marks on traces come from skipping a step in your head. Time yourself: the midterm rewards fluency.</p>
+</div>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 6.1</span><span class="lvl lvl-warmup">warm-up</span><h4>Trace the semaphores</h4></header><div class="ex-q"><p>A bounded buffer has N = 3 slots, with <code>empty_slots</code> = 3 and <code>full_slots</code> = 0 initially (blocking implementation, values may go negative). One producer calls <code>put</code> four times, with no consumer running. Then a consumer calls <code>get</code> once. Give the values of both semaphores after each of the five operations, and say which calls block.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Start: empty = 3, full = 0. Put 1: empty 2, full 1. Put 2: empty 1, full 2. Put 3: empty 0, full 3. Put 4: <code>wait(empty)</code> makes empty = -1, so the producer blocks (full stays 3). The consumer's <code>get</code> does <code>wait(full)</code>: full 2, takes an item, then <code>signal(empty)</code>: empty becomes 0, which is not above zero, so the sleeping producer is woken. It then inserts its item and does <code>signal(full)</code>: full 3. Final values: empty 0, full 3, so the buffer is full again with three items (four were produced, one consumed). Only the fourth put blocked.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 6.2</span><span class="lvl lvl-core">core</span><h4>Swapped waits</h4></header><div class="ex-q"><p>In the bounded buffer, the consumer code is changed to <code>wait(mutex); wait(full_slots); ...; signal(mutex); signal(empty_slots)</code>. The producer code is unchanged. Describe the interleaving that deadlocks.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Start with an empty buffer (full_slots = 0). The consumer runs <code>wait(mutex)</code> and gets the mutex, then calls <code>wait(full_slots)</code> and blocks because the count is 0, still holding the mutex. The producer runs <code>wait(empty_slots)</code>, which succeeds, and then <code>wait(mutex)</code>, which blocks because the consumer holds it. The producer would signal <code>full_slots</code>, but only after it gets the mutex; the consumer would release the mutex only after it gets an item. Each waits for the other: deadlock. The fix is to wait for the counting semaphore before the mutex in both roles.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 6.3</span><span class="lvl lvl-core">core</span><h4>Signal or broadcast?</h4></header><div class="ex-q"><p>A memory pool monitor has <code>alloc(n)</code>: <code>while (free &lt; n) wait(&amp;more); free -= n;</code> and <code>release(m)</code>: <code>free += m; signal(&amp;more);</code>. Thread A waits in <code>alloc(8)</code>, then thread B waits in <code>alloc(2)</code> (A first in the queue); <code>free</code> is 0. A third thread calls <code>release(3)</code>. What happens, and what change fixes it?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p><code>release(3)</code> sets free = 3 and signals one waiter, normally the oldest: A. A wakes, finds <code>free &lt; 8</code> (3 &lt; 8), and goes back to sleep. B, which needs only 2 and could proceed, was never woken, so 3 units of memory sit free while B waits. Nothing else will wake B until another release happens. The waiters have different predicates but share one condition variable, so <code>signal</code> can wake the wrong one. Replace <code>signal</code> by <code>pthread_cond_broadcast</code>: both wake, A goes back to sleep and B finds 3 ≥ 2 and proceeds. (Alternatively use one condition variable per waiter.)</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 6.4</span><span class="lvl lvl-core">core</span><h4>Readers-writers trace</h4></header><div class="ex-q"><p>With the readers-preference semaphore solution, events happen in this order: R1 arrives (and starts reading), R2 arrives, W1 arrives, R3 arrives, R1 leaves, R2 leaves, R3 leaves. Give the value of <code>read_count</code> after each event, say who blocks where, and say when W1 gets in. What changes under writers preference?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>R1 arrives: read_count 1, it is the first reader so it does <code>wait(rw_mutex)</code> (succeeds) and reads. R2: read_count 2, reads. W1 arrives: <code>wait(rw_mutex)</code> blocks, because the reader group holds it. R3 arrives: read_count 3; it is not the first reader, so it does not touch <code>rw_mutex</code> and reads at once, even though W1 is waiting. R1 leaves: 2. R2 leaves: 1. R3 leaves: read_count 0, so it does <code>signal(rw_mutex)</code> and W1 enters. W1 waited for all three readers, including R3, which arrived after it. Under writers preference, R3 would be held back as soon as W1 was waiting, so W1 would enter when R2 leaves (after R1 and R2 only), and R3 would read after W1 finishes.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="challenging"><header><span class="ex-n">Exercise 6.5</span><span class="lvl lvl-challenging">challenging</span><h4>Why limiting diners to N - 1 works</h4></header><div class="ex-q"><p>Five philosophers use the limited strategy with a semaphore <code>room</code> = 4 (each takes the left fork, then the right). Prove that deadlock cannot occur.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Number the seats 0 to 4; philosopher <em>i</em> needs fork <em>i</em> first and fork <em>(i + 1) mod 5</em> second. At most four philosophers are inside the room, so at least one seat is empty. If nobody is inside there is nothing to prove; otherwise, walking round the circle we find an occupied seat <em>s</em> whose next seat <em>s + 1</em> is empty. Fork <em>s + 1</em> is philosopher <em>s</em>'s second fork and also the first fork of seat <em>s + 1</em>; nobody sits there, so fork <em>s + 1</em> is free. Who could be holding philosopher <em>s</em>'s first fork, fork <em>s</em>? Only philosopher <em>s - 1</em>, and only as his second fork, which means he holds both forks and is eating, so he will finish and release it. Hence philosopher <em>s</em> either already holds fork <em>s</em> and takes the free fork <em>s + 1</em>, or gets fork <em>s</em> soon and then takes fork <em>s + 1</em>. Either way philosopher <em>s</em> eats and leaves, so some philosopher always makes progress and a circular wait among the diners is impossible.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="challenging"><header><span class="ex-n">Exercise 6.6</span><span class="lvl lvl-challenging">challenging</span><h4>Write a reusable barrier</h4></header><div class="ex-q"><p>Using one mutex and one condition variable, write <code>barrier_wait</code> so that N threads all wait until the last one arrives, and the barrier can be used again in a loop. Explain why a plain <code>arrived</code> counter and a <code>while (arrived &lt; N)</code> loop is not enough.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><pre><code class="language-c">typedef struct {
+    pthread_mutex_t lock;
+    pthread_cond_t  all_here;
+    int needed, arrived;
+    unsigned generation;            /* distinguishes one use of the barrier from the next */
+} barrier_t;
+
+void barrier_wait(barrier_t *b) {
+    pthread_mutex_lock(&amp;b-&gt;lock);
+    unsigned my_gen = b-&gt;generation;
+    if (++b-&gt;arrived == b-&gt;needed) {            /* last thread to arrive */
+        b-&gt;arrived = 0;
+        b-&gt;generation++;                        /* start a new round */
+        pthread_cond_broadcast(&amp;b-&gt;all_here);   /* release everyone waiting in this round */
+    } else {
+        while (my_gen == b-&gt;generation)         /* predicate: my round has not finished */
+            pthread_cond_wait(&amp;b-&gt;all_here, &amp;b-&gt;lock);
+    }
+    pthread_mutex_unlock(&amp;b-&gt;lock);
+}
+</code></pre>
+<p>The last thread resets <code>arrived</code> to 0 so the barrier is ready for the next round. With a plain <code>while (arrived &lt; N)</code> loop, a fast thread that is released and immediately calls <code>barrier_wait</code> again would increase the counter of the <em>next</em> round while slow threads from the previous round have not yet woken up and re-checked; the reset to 0 would also make a sleeping thread see <code>arrived &lt; N</code> again and sleep forever. The generation number gives each round its own predicate that, once true, stays true. We ran this code with four threads and three rounds, and a checker found no violation.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="core"><header><span class="ex-n">Exercise 6.7</span><span class="lvl lvl-core">core</span><h4>Sizing the buffer</h4></header><div class="ex-q"><p>A producer makes one item every 2 ms; a consumer needs 5 ms per item. The buffer holds N = 10 items and both start at time 0 with an empty buffer. Using a smooth (fluid) approximation, (a) when does the buffer fill, (b) what is the long-run throughput, and (c) what fraction of time is the producer blocked? Does doubling N help the throughput?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) The producer adds 1 / 2 = 0.5 items per ms and the consumer removes 1 / 5 = 0.2 items per ms, a net gain of 0.3 items per ms. The buffer reaches 10 items after 10 / 0.3 ≈ 33 ms. (b) Once full, the producer can insert only as fast as the consumer removes, so the long-run throughput is the consumer's rate: 1 item per 5 ms = 200 items per second, even though the producer could do 500. (c) The producer is busy making items for 2 ms out of every 5 ms, so it is blocked 3 / 5 = 60 percent of the time. Doubling N to 20 only delays the point at which the buffer fills, from about 33 ms to about 67 ms; the throughput is unchanged because the consumer is the bottleneck. A buffer smooths out bursts; it cannot fix a sustained rate mismatch.</p></div></details></section>
+<h2 id="lab-read-write-locks-and-starvation">Lab: read-write locks and starvation</h2>
+<p>This lab makes the starvation of the previous sections measurable. Four reader threads loop forever (for one second), each holding a read lock for 2 ms and starting 0.5 ms apart so that at least one reader is always inside. After 50 ms a single writer asks for the lock and we time how long it waits. The program takes one argument, <code>reader</code> or <code>writer</code>, choosing the lock's preference policy. Save it as <code>rwstarve.c</code>.</p>
+<pre><code class="language-c">/* rwstarve.c: can continuous readers starve a writer? Compare two pthread_rwlock policies. */
+#define _GNU_SOURCE
+#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+#define NREADERS 4
+#define RUN_MS   1000                  /* readers keep going for 1 second */
+
+static pthread_rwlock_t rw;
+static double deadline_ms;            /* readers stop at this time */
+
+static double now_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &amp;t);
+    return t.tv_sec * 1000.0 + t.tv_nsec / 1e6;
+}
+
+static void *reader(void *arg) {
+    long id = (long)arg;
+    usleep(id * 500);                          /* stagger so the read periods overlap */
+    while (now_ms() &lt; deadline_ms) {
+        pthread_rwlock_rdlock(&amp;rw);
+        usleep(2000);                          /* hold the read lock for 2 ms */
+        pthread_rwlock_unlock(&amp;rw);
+    }
+    return NULL;
+}
+
+int main(int argc, char **argv) {
+    const char *mode = argc &gt; 1 ? argv[1] : &quot;reader&quot;;
+    pthread_rwlockattr_t attr;
+    pthread_rwlockattr_init(&amp;attr);
+    pthread_rwlockattr_setkind_np(&amp;attr, strcmp(mode, &quot;writer&quot;) == 0
+        ? PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
+        : PTHREAD_RWLOCK_PREFER_READER_NP);
+    pthread_rwlock_init(&amp;rw, &amp;attr);
+
+    deadline_ms = now_ms() + RUN_MS;
+    pthread_t r[NREADERS];
+    for (long i = 0; i &lt; NREADERS; i++) pthread_create(&amp;r[i], NULL, reader, (void *)i);
+
+    usleep(50000);                             /* let the readers get going */
+    double t0 = now_ms();
+    pthread_rwlock_wrlock(&amp;rw);                /* one writer asks for the lock */
+    double waited = now_ms() - t0;
+    pthread_rwlock_unlock(&amp;rw);
+    printf(&quot;%-6s preference: writer waited %.1f ms\n&quot;, mode, waited);
+
+    for (int i = 0; i &lt; NREADERS; i++) pthread_join(r[i], NULL);
+    return 0;
+}
+</code></pre>
+<p>Build and run:</p>
+<pre><code class="language-bash">gcc -Wall -Wextra -pthread -O2 rwstarve.c -o rwstarve
+./rwstarve reader
+./rwstarve writer
+</code></pre>
+<p><strong>What to observe.</strong> On our test machine the output was:</p>
+<pre><code class="language-text">reader preference: writer waited 951.7 ms
+writer preference: writer waited 1.4 ms
+</code></pre>
+<p>With reader preference the writer waited until the readers stopped on their own, about 950 ms, which is the entire remaining run: textbook starvation, produced by four readers that are individually well behaved. With writer preference, new readers are held back as soon as the writer is waiting; it only waits for the (at most 2 ms) readers already inside. Run each several times: the first number changes by a few milliseconds and the second stays near the reader hold time, and the gap between them is the cost of the policy choice. Note that <code>PTHREAD_RWLOCK_PREFER_WRITER_NP</code> is a trap: in glibc it behaves like reader preference; only <code>PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP</code> gives writers priority, and it forbids a thread from taking the read lock twice.</p>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Compile and run the other programs in this chapter (<code>bb_sem.c</code>, <code>bb_mon.c</code>, <code>mysem.c</code>, <code>rw.c</code>, <code>phil.c</code>), then run each under <code>-fsanitize=thread</code>. Which ones, if any, does the tool complain about, and why?</li>
+<li>In <code>bb_sem.c</code>, swap the order of <code>sem_wait(&amp;empty_slots)</code> and <code>pthread_mutex_lock(&amp;mutex)</code> in the producer and set <code>ITEMS</code> large. Does the program deadlock every time? Explain the frequency you see.</li>
+<li>Make the writer in <code>rwstarve.c</code> loop 100 times and print the average wait under each policy, then add a second writer and compare. How does writer-versus-writer fairness behave?</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Program hangs with every thread asleep</td>
+<td>Waits taken in the wrong order (mutex before counting semaphore), or a <code>signal</code> that never comes</td>
+<td>Print which call each thread is stuck in (attach <code>gdb</code> and use <code>thread apply all bt</code>); fix the order</td>
+</tr>
+<tr>
+<td>Consumer reads a stale or garbage item</td>
+<td><code>if</code> instead of <code>while</code> around <code>pthread_cond_wait</code>, or reading <code>buf[out]</code> outside the lock</td>
+<td>Loop on the predicate and keep every buffer access inside the critical section</td>
+</tr>
+<tr>
+<td>Some waiters never wake, memory or tokens sit idle</td>
+<td>One condition variable shared by waiters with different predicates, <code>signal</code> wakes the wrong one</td>
+<td>Use <code>broadcast</code>, or one condition variable per predicate</td>
+</tr>
+<tr>
+<td>Writer waits forever while readers keep arriving</td>
+<td>Readers-preference policy</td>
+<td>Choose writer-preferring or fair locking; check the lock's documentation</td>
+</tr>
+<tr>
+<td>Philosophers freeze occasionally, only under load</td>
+<td>Circular wait with a tiny window</td>
+<td>Order the locks globally, or limit the number of concurrent acquirers</td>
+</tr>
+<tr>
+<td>Lost wake-up: thread sleeps although the condition is already true</td>
+<td>Predicate not stored in shared data, or checked outside the mutex</td>
+<td>Update and test the predicate only while holding the mutex</td>
+</tr>
+<tr>
+<td>Semaphore count drifts over time</td>
+<td>A <code>post</code> on an error path with no matching <code>wait</code>, or the reverse</td>
+<td>Pair every <code>wait</code> with a <code>post</code> on all paths; assert with <code>sem_getvalue</code> while debugging</td>
+</tr>
+<tr>
+<td>Barrier deadlocks on its second use</td>
+<td>Counter reset too early or no generation number</td>
+<td>Use a generation counter as in Exercise 6</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>Bounded buffer: <code>empty_slots</code> starts at N, <code>full_slots</code> at 0, and a mutex guards the indices; wait on the counting semaphore first and the mutex second.</li>
+<li>A monitor couples shared data, one lock and condition variables. Practical systems use Mesa semantics (signal and continue), so every wait sits in a <code>while</code> loop.</li>
+<li>Semaphores and monitors can each be built from the other; semaphores remember signals, condition variables wait for arbitrary predicates.</li>
+<li>Readers-writers has no neutral solution: readers preference starves writers, writers preference starves readers, and fair variants cost throughput.</li>
+<li>Dining philosophers deadlock through circular wait; global resource ordering or limiting the diners to N - 1 breaks it.</li>
+<li>Review for the midterm by re-deriving traces (scheduling, semaphores, Banker's) on blank paper, one table row per step.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 6 (monitors) and Chapter 7 (Synchronization Examples: bounded buffer, readers-writers, dining philosophers).</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapters "Semaphores" and "Common Concurrency Problems", including the dining philosophers and the producer-consumer solutions.</li>
+<li><strong>Essential.</strong> Tanenbaum and Bos, <em>Modern Operating Systems</em>, Chapter 2, the parts on monitors and on the classical IPC problems (dining philosophers, readers and writers).</li>
+<li>C. A. R. Hoare, "Monitors: An Operating System Structuring Concept", <em>Communications of the ACM</em> 17(10), 1974.</li>
+<li>B. W. Lampson and D. D. Redell, "Experience with Processes and Monitors in Mesa", <em>Communications of the ACM</em> 23(2), 1980.</li>
+<li>P. J. Courtois, F. Heymans and D. L. Parnas, "Concurrent Control with Readers and Writers", <em>Communications of the ACM</em> 14(10), 1971.</li>
+<li>K. M. Chandy and J. Misra, "The Drinking Philosophers Problem", <em>ACM Transactions on Programming Languages and Systems</em> 6(4), 1984.</li>
+<li>Manual pages: <code>pthread_cond_wait(3)</code>, <code>pthread_rwlock_rdlock(3)</code>, <code>pthread_rwlockattr_setkind_np(3)</code>, <code>sem_overview(7)</code>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="6">Mark Week 6 as complete</button></div><div class="pager"><a class="pn prev" href="week-05.html"><small>Previous</small>Week 5: Synchronization I</a><a class="pn next" href="week-07.html"><small>Next</small>Week 7: Deadlocks</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#the-bounded-buffer-problem">The bounded buffer problem</a></li><li><a href="#monitors-and-condition-variables">Monitors and condition variables</a></li><li><a href="#readers-writers">Readers-writers</a></li><li><a href="#dining-philosophers">Dining philosophers</a></li><li><a href="#midterm-review-a-ten-item-checklist">Midterm review: a ten-item checklist</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab-read-write-locks-and-starvation">Lab: read-write locks and starvation</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

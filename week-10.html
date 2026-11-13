@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 10: Page Replacement, Frame Allocation and Thrashing · Operating Systems for Dummies</title>
+<meta name="description" content="What the OS does when RAM is full and a page fault needs a frame: the FIFO, LRU, OPT and Clock replacement algorithms with worked traces, Belady&#x27;s anomaly, how frames are divided among processes, and why too much multiprogramming causes thrashing.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="3"><article class="week" data-week="10"><header class="week-head" data-num="10"><p class="kicker">Week 10 · Phase 3: Memory</p><h1>Page Replacement, Frame Allocation and Thrashing</h1><p class="abstract">What the OS does when RAM is full and a page fault needs a frame: the FIFO, LRU, OPT and Clock replacement algorithms with worked traces, Belady&#x27;s anomaly, how frames are divided among processes, and why too much multiprogramming causes thrashing.</p><ul class="chips"><li><b>36</b> min read</li><li><b>1</b> demo</li><li><b>4</b> figures</li><li><b>10</b> code blocks</li><li><b>7</b> exercises</li><li class="tag-due"><b>Due</b> Assignment 3 (memory manager or page replacement simulator)</li></ul><p class="lab-line"><b>Lab.</b> Build a page replacement simulator in C, compute working-set sizes, draw fault-rate curves for local and random traces, and watch a page-fault-frequency controller resize a process.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Trace FIFO, LRU, OPT and Clock page replacement on a reference string and count the page faults</li><li>Demonstrate Belady&#x27;s anomaly and explain why stack algorithms such as LRU cannot exhibit it</li><li>Explain how the reference bit, aging and the Clock algorithm approximate LRU cheaply</li><li>Divide a pool of frames among processes using equal, proportional and priority allocation, and contrast global with local replacement</li><li>Define thrashing and explain it with the working set model and page-fault frequency</li><li>Compute working-set sizes for a window and decide whether a set of processes can all stay resident</li><li>Describe how Linux reclaims page-cache memory and when the OOM killer runs</li></ul></section><div class="prose"><p>In <a href="week-09.html">Week 9</a> we let a page be absent from RAM and fetched on demand. One step of the page-fault handler was left as a promise: "if no frame is free, run page replacement to choose a victim". This week we keep that promise. Memory is always full on a busy machine (the kernel happily uses every spare frame as cache), so almost every page fault needs a victim, and the quality of the choice decides whether the machine feels fast or crawls.</p>
+<p>Replacement is a decision about the future made with knowledge of the past, so it relies on locality of reference exactly as demand paging did. We will meet a perfect but impossible algorithm (OPT), a simple but sometimes foolish one (FIFO), an excellent but expensive one (LRU), and the cheap hardware-friendly approximation that real kernels use (Clock). Then we widen the view from one process to many: how many frames each process gets, what happens when the answer is "too few", and why that leads to the collapse called thrashing. The next chapter, <a href="week-11.html">Week 11</a>, looks at the disks that sit behind all of this.</p>
+<h2 id="page-replacement-the-basic-idea">Page replacement: the basic idea</h2>
+<p>Think of a small desk (RAM) and a big filing cabinet (disk). The desk is full of papers, and you need one more from the cabinet. You must put a paper back before you can fetch the new one. A good clerk returns the paper you will not need for the longest time; a poor one returns the paper you are about to reach for again.</p>
+<div class="admonition definition">
+<p class="admonition-title">Page replacement</p>
+<p>Page replacement is the policy that chooses a <strong>victim</strong> frame when a page fault occurs and no frame is free. The kernel evicts the victim's page (writing it to disk first if it was modified) and loads the faulting page into the freed frame.</p>
+</div>
+<p>The modified fault handler of <a href="week-09.html#handling-a-page-fault">Week 9</a> therefore has these steps in place of "find a free frame":</p>
+<ol>
+<li>Look for a free frame. If one exists, use it.</li>
+<li>Otherwise run the replacement algorithm to pick a victim frame.</li>
+<li>If the victim is <strong>dirty</strong>, write it to the backing store; then mark its page-table entry invalid (and flush any TLB entry for it).</li>
+<li>Read the wanted page into the freed frame and update the page table.</li>
+<li>Restart the faulting instruction.</li>
+</ol>
+<p>The <strong>dirty bit</strong> (also called the modify bit) is set by the hardware whenever a page is written. A clean victim costs one disk read (the new page); a dirty victim costs a write plus a read, doubling the fault service time. Algorithms therefore prefer clean victims when the choice is otherwise close, and read-only pages such as code can simply be dropped, because the executable file on disk already holds a copy.</p>
+<h3 id="reference-strings">Reference strings</h3>
+<p>To compare algorithms we do not need real addresses. Only the sequence of <em>pages</em> touched matters, and only changes of page matter (consecutive references to one page cannot fault). A <strong>reference string</strong> is that sequence, for example <code>7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1</code>. With 4 KB pages, the addresses 0x1000, 0x1ff0 and 0x1004 all map to page 1. We assume a process is given a fixed number of frames and measure the number of page faults for each algorithm.</p>
+<p>Two facts bound everything. A reference string touching <code>d</code> distinct pages causes at least <code>d</code> faults (each page must be loaded once, the <strong>cold</strong> or compulsory misses), and with at least <code>d</code> frames exactly <code>d</code> faults happen. And, as the figure shows for our 20-reference string, more frames means fewer faults, with a steep drop at first and a plateau once the working set fits.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> LRU faults on 7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1   (20 references)
+
+ frames  faults
+   1     20 ####################
+   2     17 #################
+   3     12 ############
+   4      8 ########
+   5      7 #######
+   6      6 ######        &lt;- 6 distinct pages: the cold-miss floor
+   7      6 ######
+</pre></div><figcaption><b>Figure 10.1..</b> Page faults fall quickly as frames are added, then flatten at the number of distinct pages. The last frames are worth far less than the first.</figcaption></figure>
+<h2 id="fifo-opt-and-lru">FIFO, OPT and LRU</h2>
+<p>We use the reference string above with <strong>3 frames</strong>. All frames start empty, so the first three distinct pages fault no matter what.</p>
+<h3 id="fifo-first-in-first-out">FIFO: first in, first out</h3>
+<p>FIFO evicts the page that has been in memory the longest. It needs only a queue of frames in load order. Intuitively it is the clerk who returns the oldest paper on the desk, regardless of how recently it was read.</p>
+<h3 id="opt-the-optimal-algorithm">OPT: the optimal algorithm</h3>
+<p>OPT (also called MIN, or Belady's optimal algorithm) evicts the page whose next use is farthest in the future, or that is never used again. It has the lowest fault count of any algorithm on a given string and frame count, so it is the yardstick. It cannot be built, since the kernel cannot see the future, but a simulator that has the whole trace can compute it, and that tells you how much room for improvement a real algorithm has.</p>
+<h3 id="lru-least-recently-used">LRU: least recently used</h3>
+<p>LRU evicts the page that was used longest ago. It is OPT run backward in time: instead of looking at the future to find the page used farthest ahead, it looks at the past to find the page used farthest back, betting on temporal locality.</p>
+<p>The three traces side by side follow. Each cell shows the three physical frames after the reference; <strong>F</strong> marks a page fault. (This table is the output of the simulator in the Lab, reformatted.)</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">t</th>
+<th style="text-align: right;">ref</th>
+<th>FIFO</th>
+<th>LRU</th>
+<th>OPT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">7</td>
+<td><code>7 - -</code> <strong>F</strong></td>
+<td><code>7 - -</code> <strong>F</strong></td>
+<td><code>7 - -</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td><code>7 0 -</code> <strong>F</strong></td>
+<td><code>7 0 -</code> <strong>F</strong></td>
+<td><code>7 0 -</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td><code>7 0 1</code> <strong>F</strong></td>
+<td><code>7 0 1</code> <strong>F</strong></td>
+<td><code>7 0 1</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">2</td>
+<td><code>2 0 1</code> <strong>F</strong></td>
+<td><code>2 0 1</code> <strong>F</strong></td>
+<td><code>2 0 1</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
+<td><code>2 0 1</code></td>
+<td><code>2 0 1</code></td>
+<td><code>2 0 1</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3</td>
+<td><code>2 3 1</code> <strong>F</strong></td>
+<td><code>2 0 3</code> <strong>F</strong></td>
+<td><code>2 0 3</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">0</td>
+<td><code>2 3 0</code> <strong>F</strong></td>
+<td><code>2 0 3</code></td>
+<td><code>2 0 3</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">4</td>
+<td><code>4 3 0</code> <strong>F</strong></td>
+<td><code>4 0 3</code> <strong>F</strong></td>
+<td><code>2 4 3</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">2</td>
+<td><code>4 2 0</code> <strong>F</strong></td>
+<td><code>4 0 2</code> <strong>F</strong></td>
+<td><code>2 4 3</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">3</td>
+<td><code>4 2 3</code> <strong>F</strong></td>
+<td><code>4 3 2</code> <strong>F</strong></td>
+<td><code>2 4 3</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">0</td>
+<td><code>0 2 3</code> <strong>F</strong></td>
+<td><code>0 3 2</code> <strong>F</strong></td>
+<td><code>2 0 3</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">3</td>
+<td><code>0 2 3</code></td>
+<td><code>0 3 2</code></td>
+<td><code>2 0 3</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">2</td>
+<td><code>0 2 3</code></td>
+<td><code>0 3 2</code></td>
+<td><code>2 0 3</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">1</td>
+<td><code>0 1 3</code> <strong>F</strong></td>
+<td><code>1 3 2</code> <strong>F</strong></td>
+<td><code>2 0 1</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">2</td>
+<td><code>0 1 2</code> <strong>F</strong></td>
+<td><code>1 3 2</code></td>
+<td><code>2 0 1</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">0</td>
+<td><code>0 1 2</code></td>
+<td><code>1 0 2</code> <strong>F</strong></td>
+<td><code>2 0 1</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">1</td>
+<td><code>0 1 2</code></td>
+<td><code>1 0 2</code></td>
+<td><code>2 0 1</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">7</td>
+<td><code>7 1 2</code> <strong>F</strong></td>
+<td><code>1 0 7</code> <strong>F</strong></td>
+<td><code>7 0 1</code> <strong>F</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">0</td>
+<td><code>7 0 2</code> <strong>F</strong></td>
+<td><code>1 0 7</code></td>
+<td><code>7 0 1</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">1</td>
+<td><code>7 0 1</code> <strong>F</strong></td>
+<td><code>1 0 7</code></td>
+<td><code>7 0 1</code></td>
+</tr>
+<tr>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td><strong>15 faults</strong></td>
+<td><strong>12 faults</strong></td>
+<td><strong>9 faults</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Check a few steps by hand. At t = 6 (page 3), page 7 was already replaced by 2 at t = 4, so FIFO's oldest page is 0 (loaded at t = 2), and FIFO evicts it even though page 0 was used at t = 5, one step earlier. That is FIFO's flaw: it throws out <code>0</code>, which is needed again at t = 7 and faults. LRU at t = 6 sees that 2 was last used at t = 4, 0 at t = 5 and 1 at t = 3, so it evicts 1. OPT at t = 8 (page 4) looks ahead: of frames <code>2 0 3</code>, page 2 is next used at t = 9, page 3 at t = 10, page 0 at t = 11, so it evicts 0, the farthest.</p>
+<p>The totals are 15, 12 and 9 faults, a fault rate of 75, 60 and 45 percent. Notice that OPT is only 3 faults better than LRU. LRU is usually close to optimal because the past predicts the future well.</p>
+<div class="admonition intuition">
+<p class="admonition-title">Why FIFO fails and LRU works</p>
+<p>FIFO measures how long a page has been <em>here</em>; LRU measures how long since the page was <em>used</em>. A page that was loaded long ago but is touched constantly (a hot loop counter, the C library) looks ancient to FIFO and gets evicted, only to fault straight back. LRU keeps it, because each use refreshes it.</p>
+</div>
+<p>Try your own reference strings in the simulator: pick a policy, change the number of frames, and compare the fault counts and the frame contents step by step.</p>
+<div class="demo" data-demo="page-replacement"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Replay a reference string under FIFO, LRU, OPT and Clock</span></div><div class="demo-body"></div></div>
+<h2 id="beladys-anomaly">Belady's anomaly</h2>
+<p>It seems obvious that giving a process more frames can only help. For FIFO it is not true.</p>
+<div class="admonition definition">
+<p class="admonition-title">Belady's anomaly</p>
+<p>Belady's anomaly is the situation in which the number of page faults under a replacement algorithm <em>increases</em> when the number of allocated frames increases, for the same reference string.</p>
+</div>
+<p>The standard example is <code>1,2,3,4,1,2,5,1,2,3,4,5</code>. The simulator gives:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Frames</th>
+<th style="text-align: right;">FIFO faults</th>
+<th style="text-align: right;">LRU faults</th>
+<th style="text-align: right;">OPT faults</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;"><strong>9</strong></td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;"><strong>10</strong></td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">6</td>
+</tr>
+</tbody>
+</table>
+<p>FIFO gets <em>worse</em> going from 3 to 4 frames (9 to 10), while LRU and OPT improve (10 to 8, 7 to 6). Trace FIFO on this string with 3 frames: it faults at steps 1 to 7, hits at 8 and 9, faults at 10 and 11, and hits at 12, for 9 faults. With 4 frames it faults at steps 1 to 4, hits at 5 and 6, then faults at every step from 7 to 12, for 10 faults (run <code>./pagesim -v -f 4 ...</code> from the Lab to see the frames).</p>
+<p>With four frames FIFO happens to evict pages 1 and 2 just before they are re-used at steps 8 and 9. The set of pages FIFO holds with 4 frames is <em>not</em> always a superset of the set it holds with 3 frames, and that is the root cause.</p>
+<h3 id="stack-algorithms">Stack algorithms</h3>
+<p>An algorithm is a <strong>stack algorithm</strong> if, for every reference string and every time <code>t</code>, the set of pages resident with <code>n</code> frames is a subset of the set resident with <code>n + 1</code> frames. Such an algorithm cannot show Belady's anomaly, because anything that hit with <code>n</code> frames also hits with <code>n + 1</code>. LRU qualifies: with <code>n</code> frames it holds the <code>n</code> most recently used distinct pages, and those are always among the <code>n + 1</code> most recently used. OPT qualifies for the same reason (it holds the pages used soonest). FIFO does not. Exercise 7 asks you to prove the LRU claim carefully.</p>
+<div class="admonition history">
+<p class="admonition-title">A surprise in 1969</p>
+<p>László Belády, Robert Nelson and Gerard Shedler published the anomaly in 1969, showing that FIFO is not a stack algorithm. Belády had also written the 1966 paper that defined the optimal algorithm. Mattson, Gecsei, Slutz and Traiger formalized stack algorithms in 1970, which let a single pass over a trace compute the fault count for every memory size at once.</p>
+</div>
+<h2 id="approximating-lru-in-practice">Approximating LRU in practice</h2>
+<p>True LRU needs, on <em>every memory reference</em>, an update of a timestamp or a reordering of a list. Memory references happen billions of times a second and the hardware does the translation, so the OS cannot be in that path. Real systems use the single bit that hardware does give for free.</p>
+<p>The <strong>reference bit</strong> (accessed bit) in each page-table entry is set to 1 by the MMU whenever the page is read or written. The OS clears it periodically. A page with a 1 was used since the last clear; a page with 0 was not. This gives a coarse "used recently or not", not an ordering, but several tricks refine it.</p>
+<h3 id="additional-reference-bits-aging">Additional reference bits (aging)</h3>
+<p>Keep an 8-bit history byte per page. Every timer tick (say every 100 ms), shift each byte right by one and put the page's reference bit into the top bit, then clear the reference bit. A page used in each of the last eight intervals has history <code>11111111</code>; a page not used in eight intervals has <code>00000000</code>. Interpreting the byte as an unsigned number, the page with the <strong>smallest value</strong> is the approximate least recently used victim. Pages with equal values are broken by FIFO.</p>
+<pre><code class="language-text">tick:      1         2         3
+page A   10000000  11000000  01100000   (used in ticks 1,2; not in 3)
+page B   00000000  10000000  11000000   (not used in 1; used in 2,3)
+smallest history = coldest page; here A (01100000 = 96) &lt; B (11000000 = 192)
+</code></pre>
+<h3 id="second-chance-and-the-clock-algorithm">Second chance and the Clock algorithm</h3>
+<p>The <strong>second-chance algorithm</strong> is FIFO with a safety valve. Pages sit in a queue by load time. To pick a victim, look at the page at the head. If its reference bit is 0, evict it. If it is 1, clear the bit, give it a second chance by moving it to the back of the queue, and look at the next. If every page has bit 1, the algorithm cycles once, clears them all and degenerates to plain FIFO.</p>
+<p>Moving pages around a queue is wasteful, so implementations arrange the frames in a circle and keep a <strong>hand</strong>. This is the <strong>Clock algorithm</strong>.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   frames form a circle; the hand points at the next candidate
+
+            +---------+            +---------+
+       +---&gt;|  pg 4   |-----------&gt;|  pg 3   |---+      On a fault, look at
+       |    |  ref=1  |            |  ref=1  |   |      the frame under the hand:
+       |    +---------+            +---------+   |
+       |                                         |      ref = 1: clear it to 0,
+       |    +---------+            +---------+   |         move the hand on
+       +----|  pg 1   |&lt;-----------|  pg 2   |&lt;--+      ref = 0: evict this page,
+            |  ref=0  |            |  ref=0  |             load the new page
+            +---------+            +---------+             here, move the hand on
+                 ^
+               HAND
+</pre></div><figcaption><b>Figure 10.2..</b> The Clock algorithm. The hand advances only when a victim is needed. A page survives a sweep only if it was referenced since the hand last passed it.</figcaption></figure>
+<p>On the 20-reference string with 3 frames, Clock (a newly loaded page starts with its reference bit set to 1, since it has just been referenced) takes <strong>14 faults</strong>, between FIFO's 15 and LRU's 12. The Silberschatz text and many courses draw the same structure and call it second chance.</p>
+<h4 id="enhanced-second-chance-the-nru-class">Enhanced second chance (the NRU class)</h4>
+<p>Also considering the dirty bit gives four classes by the pair (reference, modify):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Class</th>
+<th style="text-align: center;">Reference</th>
+<th style="text-align: center;">Modify</th>
+<th>Meaning</th>
+<th>Evict preference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td>not recently used, clean</td>
+<td>best victim</td>
+</tr>
+<tr>
+<td style="text-align: right;">1</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1</td>
+<td>not recently used, dirty</td>
+<td>good (needs a write first)</td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+<td>recently used, clean</td>
+<td>poor</td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">1</td>
+<td>recently used, dirty</td>
+<td>worst</td>
+</tr>
+</tbody>
+</table>
+<p>The enhanced Clock hand scans for class 0, then class 1 (clearing reference bits as it goes), and repeats if necessary. It prefers clean pages because they cost no write-back. This is close to what several older Unix kernels did.</p>
+<h3 id="counting-based-and-buffering-ideas">Counting-based and buffering ideas</h3>
+<p>LFU (least frequently used) and MFU (most frequently used) count references per page. LFU remembers pages that were hot long ago and never forgets them; MFU assumes a page with a small count was only just loaded and has yet to be used. Neither is common. A much more useful trick is <strong>page buffering</strong>: the OS keeps a small pool of free frames, writes dirty pages to disk in the background so that victims are already clean, and remembers which page was in each recently freed frame. If a process faults on a page whose frame has not yet been reused, the OS can hand the frame back with no disk read at all (a <em>soft</em> or <em>minor</em> fault).</p>
+<div class="admonition warning">
+<p class="admonition-title">Scan resistance</p>
+<p>Plain LRU performs badly on a long sequential scan larger than memory. Reading a 10 GB file once pushes every useful page out, replacing them with pages that will never be touched again. Real kernels therefore separate pages touched once from pages touched repeatedly (the active and inactive lists in Linux, ARC and 2Q in other systems) so that a scan cannot flush the hot set.</p>
+</div>
+<h2 id="frame-allocation">Frame allocation</h2>
+<p>Replacement chooses <em>which page</em>; allocation decides <em>how many frames each process gets</em>. If there are <code>m</code> frames and <code>n</code> processes, how do we divide them?</p>
+<h3 id="minimum-number-of-frames">Minimum number of frames</h3>
+<p>Each process needs a minimum number of frames, set by the architecture: the instruction that faults must be restartable, so all the pages it touches must fit at once. An instruction that has its own page, an operand in a second page and an indirect operand pointer in a third needs at least three frames. Architectures with multi-level indirection or block-move instructions need more. The maximum is the number of frames installed.</p>
+<h3 id="allocation-schemes">Allocation schemes</h3>
+<ul>
+<li><strong>Equal allocation.</strong> Give each of <code>n</code> processes <code>m / n</code> frames. Simple but unfair: a 10-page editor and a 1000-page database each receive the same share.</li>
+<li><strong>Proportional allocation.</strong> Let process <code>i</code> have virtual size <code>sᵢ</code> pages and let <code>S = Σ sᵢ</code>. It receives <code>aᵢ = (sᵢ / S) × m</code> frames, rounded and never below the minimum. With <code>m = 62</code> and sizes 10 and 127 pages, the shares are about 4.5 and 57.5 frames.</li>
+<li><strong>Priority allocation.</strong> Use the proportional formula with <em>priority</em> (or priority combined with size) in place of size, so important processes get more frames. Alternatively let a high-priority process steal frames from a low-priority one when it faults.</li>
+</ul>
+<p>All shares must be recomputed as processes start and finish, because <code>n</code> and <code>S</code> change.</p>
+<h3 id="global-versus-local-replacement">Global versus local replacement</h3>
+<div class="admonition definition">
+<p class="admonition-title">Global and local replacement</p>
+<p>With <strong>global replacement</strong>, a faulting process may choose its victim from <em>any</em> frame in the system, including frames owned by other processes. With <strong>local replacement</strong>, it may choose only from its own frames, so each process keeps a fixed number of frames (until the allocator adjusts it).</p>
+</div>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Global</th>
+<th>Local</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Throughput</td>
+<td>Usually higher: idle frames flow to where they are needed</td>
+<td>Can waste frames held by processes that do not need them</td>
+</tr>
+<tr>
+<td>Predictability</td>
+<td>A process's fault rate depends on the behaviour of others</td>
+<td>A process's fault rate depends mostly on itself</td>
+</tr>
+<tr>
+<td>Low-priority victims</td>
+<td>A high-priority process can take frames from a low-priority one</td>
+<td>Not possible without a policy</td>
+</tr>
+<tr>
+<td>Thrash containment</td>
+<td>One thrashing process steals frames and drags others down</td>
+<td>Thrashing stays inside the offender (but its disk queue still hurts everyone)</td>
+</tr>
+<tr>
+<td>Typical use</td>
+<td>General-purpose kernels such as Linux</td>
+<td>Systems needing isolation, such as cgroup memory limits</td>
+</tr>
+</tbody>
+</table>
+<p>General-purpose kernels use mostly global replacement because it gives better overall throughput, then add limits (Linux cgroups, per-process resident limits) where isolation matters. A global policy needs a safeguard against the collapse described next.</p>
+<h2 id="thrashing">Thrashing</h2>
+<p>Suppose a process does not have enough frames to hold the pages it is actively using. It faults, evicts a page it will need almost immediately, faults again, and so on: it spends all its time paging and almost none computing.</p>
+<div class="admonition definition">
+<p class="admonition-title">Thrashing</p>
+<p>A process is <strong>thrashing</strong> if it spends more time servicing page faults than executing. A system thrashes when many processes do so at once.</p>
+</div>
+<p>The real danger is a feedback loop in global replacement. A process faults and steals frames from others, who now fault more and steal back. CPU utilization drops because processes wait for the disk, so the scheduler sees idle CPU and <em>admits more processes</em> to raise utilization. The new processes take more frames, causing more faults and still lower utilization.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> CPU utilization
+   100% |            ____---*----____
+        |         .-'                `-.
+        |       .'                       `.
+        |     .'                           `.         thrashing:
+        |    /                                `.       everyone is waiting
+        |   /                                    `--.   for the paging disk
+        |  /                                          `-----.....
+      0 +-----------------------------------------------------------&gt;
+         few            optimal point               many
+                  degree of multiprogramming (processes in memory)
+</pre></div><figcaption><b>Figure 10.3..</b> Utilization rises with more processes, peaks, then collapses when memory is so over-committed that every process faults continually. Adding more processes after the peak makes things worse, not better.</figcaption></figure>
+<p>The cure is not a better replacement algorithm. Local replacement limits the spread but does not cure a process that has too few frames. The cure is to give each process the frames its locality needs, or else run fewer processes.</p>
+<h3 id="the-working-set-model">The working set model</h3>
+<p>Peter Denning's <strong>working set model</strong> (1968) makes "the frames its locality needs" precise. Fix a <strong>working-set window</strong> of <code>Δ</code> (delta) most recent page references.</p>
+<div class="admonition definition">
+<p class="admonition-title">Working set</p>
+<p>The working set <code>WS(t, Δ)</code> of a process at time <code>t</code> is the set of distinct pages referenced in the last <code>Δ</code> references. Its size is written <code>WSS</code>. If <code>Δ</code> is too small the set misses part of the locality; too large and it spans several localities; infinite and it is every page the process ever touched.</p>
+</div>
+<p>The OS computes the working set size <code>WSSᵢ</code> of each process <code>i</code> and sums the demand <code>D = Σ WSSᵢ</code>. If <code>D &gt; m</code> (total frames), some process lacks its working set and the system will thrash. The remedy under the working set policy is to <strong>suspend</strong> (swap out) one or more whole processes until <code>D ≤ m</code>, and to resume them when frames free up. If <code>D</code> is comfortably below <code>m</code>, the OS may start another process.</p>
+<p>A small example with <code>Δ = 6</code> and the reference string <code>1,2,1,3,1,2,4,1,3,2,1,4, 5,6,5,7,5,6,7,5,6,5,7,6</code> (the process moves from pages 1 to 4 to pages 5 to 7 after reference 12):</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> ref:  1 2 1 3 1 2 4 1 3 2 1 4 | 5 6 5 7 5 6 7 5 6 5 7 6
+ WSS:  1 2 2 3 3 3 4 4 4 4 4 4 | 5 6 5 5 4 3 3 3 3 3 3 3
+                                  ^ transition: old and new locality overlap
+                                    inside the window, so WSS spikes to 6
+</pre></div><figcaption><b>Figure 10.4..</b> Working-set size with window Δ = 6. During a stable phase WSS equals the size of the locality (3 or 4 pages); at a phase change the window briefly holds both localities.</figcaption></figure>
+<p>The program in Lab Part 2 reports a maximum WSS of 6 and a mean of 3.50 for this string. The spike at the transition is exactly when extra faults occur: the process needs the new locality's frames before the old ones age out of the working set.</p>
+<p>Tracking an exact working set would require the same per-reference work as LRU, so real systems approximate it with the reference bit and a timer: a page is in the working set if its reference bit was set at any of the last few timer ticks (the aging history above is such a record). The <strong>WSClock</strong> algorithm combines the working-set test with the Clock hand and is a practical favourite in textbooks.</p>
+<h3 id="page-fault-frequency">Page-fault frequency</h3>
+<p>Working-set tracking is heavy machinery. A simpler, direct control is <strong>page-fault frequency</strong> (PFF): measure each process's fault rate and compare it to two thresholds.</p>
+<ul>
+<li>If the rate exceeds the <strong>upper bound</strong>, the process needs more frames: give it one, and if none are free, suspend a process.</li>
+<li>If the rate falls below the <strong>lower bound</strong>, it holds more frames than it needs: take one away.</li>
+<li>Otherwise leave it alone.</li>
+</ul>
+<p>The fault rate is the symptom of insufficient memory, so controlling it indirectly controls thrashing. The Lab's third program simulates this controller and shows the allocation tracking the process's phases.</p>
+<h2 id="linux-page-cache-reclaim-and-the-oom-killer">Linux page-cache reclaim and the OOM killer</h2>
+<p>Linux treats most free memory as file cache, so "RAM is full" is the normal state, not an emergency. Free memory is kept above three <strong>watermarks</strong> (min, low, high) per memory zone. When free pages drop below <em>low</em>, the kernel thread <code>kswapd</code> wakes and reclaims pages in the background until free memory reaches <em>high</em>. If an allocation arrives when memory is below <em>min</em>, the allocating process itself must reclaim pages (<strong>direct reclaim</strong>), and it stalls while doing so.</p>
+<p>Reclaim uses a variant of the two-list Clock idea. Pages live on <strong>active</strong> and <strong>inactive</strong> lists for each of file-backed memory and anonymous memory. A page first goes on the inactive list; a second reference while it is there promotes it to the active list (so a one-time scan does not flush hot pages). The tail of the inactive list is the reclaim candidate: clean file pages are simply dropped, dirty file pages are written back first, and anonymous pages (heap and stack) are written to <strong>swap</strong> space. Newer kernels (6.1 onward) can use <em>multi-generational LRU</em> (MGLRU), which tracks several age generations instead of two lists. The <code>vm.swappiness</code> setting (default 60) shifts the balance between reclaiming file cache and swapping anonymous pages. Linux uses global reclaim overall, with <code>cgroup</code> memory limits (<code>memory.max</code>, <code>memory.high</code>) imposing local limits per group.</p>
+<p>If reclaim cannot free enough memory (swap is full or absent, and nothing more can be dropped), the kernel invokes the <strong>OOM killer</strong>. It scores each process (roughly by the memory it uses, adjusted by <code>oom_score_adj</code>) and kills the highest score, freeing its pages. This is the end of the road that <a href="week-09.html#user-level-memory-allocation">Week 9</a> warned about: overcommitted memory that <code>malloc</code> happily promised. The kernel log (<code>dmesg</code>) records the kill and the score table. Modern kernels also expose <strong>pressure stall information</strong> in <code>/proc/pressure/memory</code>, which reports the fraction of time tasks stalled waiting for memory, a direct, modern measure of thrashing.</p>
+<div class="admonition tip">
+<p class="admonition-title">How to see thrashing on a real machine</p>
+<p>Run <code>vmstat 1</code>. Healthy: <code>si</code> and <code>so</code> (swap in and out per second) near zero, and <code>b</code> (blocked processes) small. Thrashing: <code>si</code> and <code>so</code> both large and sustained, <code>wa</code> (I/O wait) high, <code>us</code> (user CPU) low. <code>/proc/pressure/memory</code> showing <code>some avg10</code> above a few tens of percent tells the same story.</p>
+</div>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="core"><header><span class="ex-n">Exercise 10.1</span><span class="lvl lvl-core">core</span><h4>FIFO, LRU and OPT with three frames</h4></header><div class="ex-q"><p>Reference string <code>2,3,2,1,5,2,4,5,3,2,5,2</code> with 3 frames. Count the page faults for FIFO, LRU and OPT.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Cold misses: pages 2, 3, 1 fault at t = 1, 2, 4 for all three (t = 3 is a hit on 2).</p>
+<p><strong>FIFO.</strong> The load order is 2, 3, 1. t = 5 (page 5): evict 2 (oldest), queue 3, 1, 5. t = 6 (page 2): evict 3, queue 1, 5, 2. t = 7 (page 4): evict 1, queue 5, 2, 4. t = 8 (page 5): hit. t = 9 (page 3): evict 5, queue 2, 4, 3. t = 10 (page 2): hit. t = 11 (page 5): evict 2, queue 4, 3, 5. t = 12 (page 2): evict 4, queue 3, 5, 2. Faults at t = 1, 2, 4, 5, 6, 7, 9, 11, 12: <strong>9 faults</strong>.</p>
+<p><strong>LRU.</strong> t = 5: last uses are 2 at t = 3, 3 at t = 2, 1 at t = 4; evict 3: <code>2 5 1</code>. t = 6: hit (2). t = 7 (page 4): last uses 2 at 6, 5 at 5, 1 at 4; evict 1: <code>2 5 4</code>. t = 8: hit. t = 9 (page 3): last uses 2 at 6, 5 at 8, 4 at 7; evict 2: <code>3 5 4</code>. t = 10 (page 2): last uses 3 at 9, 5 at 8, 4 at 7; evict 4: <code>3 5 2</code>. t = 11, 12: hits. Faults at t = 1, 2, 4, 5, 7, 9, 10: <strong>7 faults</strong>.</p>
+<p><strong>OPT.</strong> Same through t = 4. t = 5 (page 5): frames <code>2 3 1</code>; next uses are 2 at t = 6, 3 at t = 9, 1 never; evict 1. t = 6: hit. t = 7 (page 4): frames <code>2 3 5</code>; next uses are 2 at t = 10, 3 at t = 9, 5 at t = 8; the farthest is 2, so evict it, giving <code>4 3 5</code>. t = 8, 9: hits. t = 10 (page 2): frames <code>4 3 5</code>; pages 4 and 3 are never used again, so evict either (say 4). t = 11, 12: hits. Faults at t = 1, 2, 4, 5, 7, 10: <strong>6 faults</strong>.</p>
+<p>Answer: FIFO 9, LRU 7, OPT 6. Ordering FIFO ≥ LRU ≥ OPT, as expected.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 10.2</span><span class="lvl lvl-core">core</span><h4>Trace the Clock algorithm</h4></header><div class="ex-q"><p>Use 3 frames, arranged in slots 0, 1, 2 with the hand starting at slot 0. A page loaded into a frame has reference bit 1; a hit sets the bit to 1. When a victim is needed the hand sweeps: if the bit is 1 clear it and advance; if 0, evict there, load the new page, and advance the hand one more slot. Run the reference string <code>1,2,3,2,4,1,5,3,2,1</code>. Give the faults and the final frame contents, bits and hand position.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>t = 1, 2, 3: pages go into slots 0, 1, 2 (three faults), all bits 1, hand at 0. t = 4 (page 2): hit.</p>
+<p>t = 5 (page 4): hand clears slots 0, 1, 2 in turn (bits to 0), wraps to slot 0 (bit 0) and evicts page 1. Frames <code>4 2 3</code>, bits <code>1 0 0</code>, hand 1.
+t = 6 (page 1): slot 1 has bit 0: evict page 2. Frames <code>4 1 3</code>, bits <code>1 1 0</code>, hand 2.
+t = 7 (page 5): slot 2 bit 0: evict page 3. Frames <code>4 1 5</code>, bits <code>1 1 1</code>, hand 0.
+t = 8 (page 3): sweep clears all three bits, evict slot 0 (page 4). Frames <code>3 1 5</code>, bits <code>1 0 0</code>, hand 1.
+t = 9 (page 2): slot 1 bit 0: evict page 1. Frames <code>3 2 5</code>, bits <code>1 1 0</code>, hand 2.
+t = 10 (page 1): slot 2 bit 0: evict page 5. Frames <code>3 2 1</code>, bits <code>1 1 1</code>, hand 0.</p>
+<p>Every reference except t = 4 faults: <strong>9 faults</strong> (the simulator confirms this). Final: frames <code>3 2 1</code>, all bits 1, hand at slot 0.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="warm-up"><header><span class="ex-n">Exercise 10.3</span><span class="lvl lvl-warmup">warm-up</span><h4>Belady and OPT on the anomaly string</h4></header><div class="ex-q"><p>For the string <code>1,2,3,4,1,2,5,1,2,3,4,5</code>, how many faults does OPT take with 3 frames and with 4 frames? Is this consistent with OPT being a stack algorithm?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>The simulator reports 7 faults with 3 frames and 6 with 4 frames. (Check 4 frames by hand: pages 1 to 4 fault, 1 and 2 hit, 5 faults at t = 7 and evicts 4 (used farthest, at t = 11); t = 8, 9, 10 hit; page 4 faults at t = 11 and evicts a page never used again, such as 1; page 5 hits at t = 12. Faults at t = 1, 2, 3, 4, 7, 11 = 6.) The count falls as frames increase, so there is no anomaly, consistent with OPT being a stack algorithm. It is also a lower bound for FIFO (9 and 10) and LRU (10 and 8) at each size.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 10.4</span><span class="lvl lvl-core">core</span><h4>Working set sizes</h4></header><div class="ex-q"><p>Reference string <code>1,2,3,2,2,4,1,4,4,5,3,3</code> and window <code>Δ = 4</code>. (a) Compute the working-set size after each reference. (b) What are the maximum and mean sizes? (c) A second process has maximum working set 30 frames, a third 25, and a fourth 20, and the machine has 60 frames available for them. May all three run? What does the working set policy do?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) The window at time <code>t</code> covers references <code>t − 3</code> to <code>t</code>:</p>
+<table>
+<thead>
+<tr>
+<th>t</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+<th>10</th>
+<th>11</th>
+<th>12</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ref</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>2</td>
+<td>2</td>
+<td>4</td>
+<td>1</td>
+<td>4</td>
+<td>4</td>
+<td>5</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr>
+<td>WSS</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>3</td>
+<td>2</td>
+<td>3</td>
+<td>3</td>
+<td>3</td>
+<td>2</td>
+<td>3</td>
+<td>3</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>For example at t = 7 the window is references 4 to 7 = <code>2,2,4,1</code>, giving pages {1, 2, 4}: size 3.</p>
+<p>(b) Maximum 3. Mean = <code>31 / 12 ≈ 2.58</code>.</p>
+<p>(c) <code>D = 30 + 25 + 20 = 75 &gt; 60</code>, so not all can have their working sets resident; the system would thrash. The policy suspends one process. Suspending the 20-page process leaves <code>D = 55 ≤ 60</code>: the other two run with their full working sets, and the suspended process resumes when memory frees up.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 10.5</span><span class="lvl lvl-core">core</span><h4>Proportional allocation</h4></header><div class="ex-q"><p>A system has <code>m = 100</code> frames. Three processes have virtual sizes 20, 60 and 120 pages. (a) Allocate frames proportionally. (b) A fourth process of 100 pages arrives; recompute and round to whole frames. (c) Why is pure proportional allocation questionable?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) <code>S = 200</code>: <code>20/200 × 100 = 10</code>, <code>60/200 × 100 = 30</code>, <code>120/200 × 100 = 60</code>. Total 100.</p>
+<p>(b) <code>S = 300</code>: <code>20/300 × 100 = 6.67</code>, <code>60/300 × 100 = 20</code>, <code>120/300 × 100 = 40</code>, <code>100/300 × 100 = 33.33</code>. Rounded: 7, 20, 40, 33, which sums to 100.</p>
+<p>(c) Size is a poor measure of need. A 120-page process that is in a tight loop over 5 pages needs far fewer than 60 frames, while a 20-page process that scans all its pages needs all 20. Allocation based on the working set, or on observed fault rates (PFF), tracks actual demand instead.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="core"><header><span class="ex-n">Exercise 10.6</span><span class="lvl lvl-core">core</span><h4>EAT with dirty victims</h4></header><div class="ex-q"><p>Memory access time is 100 ns. Servicing a fault when the victim is clean takes 8 ms (one disk transfer). When the victim is dirty it takes 16 ms (a write plus a read). 60 percent of victims are dirty, and one access in 100,000 faults. Compute the effective access time.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Mean service time <code>S = 0.4 × 8 + 0.6 × 16 = 3.2 + 9.6 = 12.8 ms = 12,800,000 ns</code>.</p>
+<p><code>p = 10⁻⁵</code>. <code>EAT = (1 − 10⁻⁵) × 100 + 10⁻⁵ × 12,800,000 = 99.999 + 128 = 227.999 ns ≈ 228 ns</code>.</p>
+<p>The program runs about 2.3 times slower than the fault-free 100 ns, and the dirty write-backs account for <code>0.6 × 8 ms × 10⁻⁵ = 48 ns</code> of the 128 ns of fault cost. That is why kernels write dirty pages back in the background ahead of time.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 10.7</span><span class="lvl lvl-challenging">challenging</span><h4>Why LRU is a stack algorithm</h4></header><div class="ex-q"><p>(a) Prove that LRU has the stack property: for every reference string and time <code>t</code>, <code>LRU(n)</code> resident set ⊆ <code>LRU(n + 1)</code> resident set. (b) Conclude that LRU has no Belady anomaly. (c) Show that a strict cyclic scan <code>1,2,3,4,1,2,3,4,1,2,3,4</code> with 3 frames is the worst case for LRU, and compare with OPT.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Claim: after the reference at time <code>t</code>, the resident set of LRU with <code>k</code> frames is the set of the <code>k</code> most recently used distinct pages (fewer if fewer distinct pages have been seen). Induction on <code>t</code>: a reference to page <code>x</code> makes <code>x</code> the most recently used. If <code>x</code> was resident, the <code>k</code> most recent pages are unchanged except for reordering. If it was not, it enters and the least recent of the old <code>k</code> is removed, which is precisely the new set of the <code>k</code> most recent. Since the <code>n</code> most recent pages are always among the <code>n + 1</code> most recent, <code>LRU(n) ⊆ LRU(n + 1)</code> at every time.</p>
+<p>(b) A reference that hits with <code>n</code> frames finds its page in <code>LRU(n)</code>, hence in <code>LRU(n + 1)</code>: it also hits with <code>n + 1</code> frames. So faults with <code>n + 1</code> frames can never exceed faults with <code>n</code>.</p>
+<p>(c) With 3 frames, each reference is to the page used longest ago: every page is evicted just before its next use, so all 12 references fault (100 percent). FIFO and Clock fault 12 times too. OPT evicts the page needed farthest ahead and faults only 6 times (3 cold plus 3 more), a fault rate of 50 percent. Loops slightly larger than memory are the pathological case for LRU; with 4 frames all four pages fit and only 4 cold faults remain.</p></div></details></section>
+<h2 id="lab">Lab</h2>
+<p>You will build the simulator behind this chapter's tables, then measure working-set sizes, fault curves and a page-fault-frequency controller. Compile each with <code>gcc -Wall -pthread -o name name.c</code>. All outputs below are what these programs print.</p>
+<h3 id="part-1-a-page-replacement-simulator">Part 1: a page replacement simulator</h3>
+<p>Each policy is a victim-selection rule inside one loop. The program takes an optional reference string (comma-separated), <code>-f N</code> for the number of frames and <code>-v</code> to print the trace.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define MAXF 16
+enum { FIFO, LRU, OPT, CLOCK };
+static const char *names[] = { &quot;FIFO&quot;, &quot;LRU&quot;, &quot;OPT&quot;, &quot;CLOCK&quot; };
+
+/* Simulate one policy; return the number of page faults.
+   If verbose, print one trace line per reference. */
+static int simulate(int policy, const int *ref, int n, int nframes, int verbose) {
+    int frame[MAXF], loaded[MAXF], last[MAXF], refbit[MAXF];
+    int used = 0, faults = 0, hand = 0;
+    for (int t = 0; t &lt; n; t++) {
+        int page = ref[t], hit = -1;
+        for (int i = 0; i &lt; used; i++) if (frame[i] == page) { hit = i; break; }
+        int victim = -1;
+        if (hit &gt;= 0) {
+            last[hit] = t; refbit[hit] = 1;
+        } else {
+            faults++;
+            if (used &lt; nframes) {
+                victim = used++;
+            } else if (policy == FIFO) {
+                victim = 0;
+                for (int i = 1; i &lt; used; i++) if (loaded[i] &lt; loaded[victim]) victim = i;
+            } else if (policy == LRU) {
+                victim = 0;
+                for (int i = 1; i &lt; used; i++) if (last[i] &lt; last[victim]) victim = i;
+            } else if (policy == OPT) {
+                int far = -1;
+                for (int i = 0; i &lt; used; i++) {
+                    int next = n;                 /* n means never used again */
+                    for (int k = t + 1; k &lt; n; k++) if (ref[k] == frame[i]) { next = k; break; }
+                    if (next &gt; far) { far = next; victim = i; }
+                }
+            } else {                              /* CLOCK */
+                while (refbit[hand]) { refbit[hand] = 0; hand = (hand + 1) % nframes; }
+                victim = hand;
+                hand = (hand + 1) % nframes;
+            }
+            frame[victim] = page; loaded[victim] = t; last[victim] = t;
+            refbit[victim] = (policy == CLOCK) ? 1 : 0;
+        }
+        if (verbose) {
+            printf(&quot;%2d  %d  &quot;, t + 1, page);
+            for (int i = 0; i &lt; nframes; i++)
+                if (i &lt; used) printf(&quot;%d &quot;, frame[i]); else printf(&quot;- &quot;);
+            printf(&quot; %s\n&quot;, hit &gt;= 0 ? &quot;&quot; : &quot;fault&quot;);
+        }
+    }
+    return faults;
+}
+
+int main(int argc, char **argv) {
+    int ref[256], n = 0, nframes = 3, verbose = 0;
+    const char *s = &quot;7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1&quot;;
+    for (int i = 1; i &lt; argc; i++) {
+        if (!strcmp(argv[i], &quot;-v&quot;)) verbose = 1;
+        else if (!strcmp(argv[i], &quot;-f&quot;) &amp;&amp; i + 1 &lt; argc) nframes = atoi(argv[++i]);
+        else s = argv[i];
+    }
+    char buf[1024];
+    strncpy(buf, s, sizeof buf - 1); buf[sizeof buf - 1] = 0;
+    for (char *tok = strtok(buf, &quot;,&quot;); tok &amp;&amp; n &lt; 256; tok = strtok(NULL, &quot;,&quot;))
+        ref[n++] = atoi(tok);
+    if (nframes &lt; 1 || nframes &gt; MAXF) { fprintf(stderr, &quot;frames 1..%d\n&quot;, MAXF); return 1; }
+
+    for (int p = FIFO; p &lt;= CLOCK; p++) {
+        if (verbose) printf(&quot;== %s, %d frames ==\n&quot;, names[p], nframes);
+        int f = simulate(p, ref, n, nframes, verbose);
+        printf(&quot;%-5s %2d faults of %d references (%.0f%% fault rate)\n&quot;,
+               names[p], f, n, 100.0 * f / n);
+    }
+    return 0;
+}
+</code></pre>
+<p>Run <code>./pagesim</code> and then the Belady string with 3 and 4 frames:</p>
+<pre><code class="language-text">$ ./pagesim
+FIFO  15 faults of 20 references (75% fault rate)
+LRU   12 faults of 20 references (60% fault rate)
+OPT    9 faults of 20 references (45% fault rate)
+CLOCK 14 faults of 20 references (70% fault rate)
+$ ./pagesim 1,2,3,4,1,2,5,1,2,3,4,5
+FIFO   9 faults of 12 references (75% fault rate)
+LRU   10 faults of 12 references (83% fault rate)
+OPT    7 faults of 12 references (58% fault rate)
+CLOCK  9 faults of 12 references (75% fault rate)
+$ ./pagesim -f 4 1,2,3,4,1,2,5,1,2,3,4,5
+FIFO  10 faults of 12 references (83% fault rate)
+LRU    8 faults of 12 references (67% fault rate)
+OPT    6 faults of 12 references (50% fault rate)
+CLOCK 10 faults of 12 references (83% fault rate)
+</code></pre>
+<p>The counts 15, 12 and 9 match the table in the chapter, and FIFO rises from 9 to 10 with the fourth frame (Clock does too: it is also not a stack algorithm). Use <code>-v</code> to print the per-step traces and compare them with the table. The OPT victim search looks ahead in the array, which is only possible in a simulator. This is the core of Assignment 3: extend it with a dirty bit (a second string of reads and writes), count write-backs, and add the enhanced Clock policy.</p>
+<h3 id="part-2-working-set-size">Part 2: working-set size</h3>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+/* Working-set size at time t: number of distinct pages among the last
+   'delta' references (positions t-delta+1 .. t). */
+static int wss(const int *ref, int t, int delta) {
+    int seen[64] = {0}, count = 0;
+    int start = t - delta + 1 &lt; 0 ? 0 : t - delta + 1;
+    for (int i = start; i &lt;= t; i++)
+        if (!seen[ref[i]]) { seen[ref[i]] = 1; count++; }
+    return count;
+}
+
+int main(void) {
+    /* Phase 1 uses pages {1,2,3,4}; phase 2 uses pages {5,6,7}. */
+    int ref[] = {1,2,1,3,1,2,4,1,3,2,1,4,   5,6,5,7,5,6,7,5,6,5,7,6};
+    int n = sizeof ref / sizeof ref[0], delta = 6;
+    printf(&quot;delta = %d\n t  ref  WSS\n&quot;, delta);
+    int maxw = 0, sum = 0;
+    for (int t = 0; t &lt; n; t++) {
+        int w = wss(ref, t, delta);
+        printf(&quot;%2d  %3d  %3d\n&quot;, t + 1, ref[t], w);
+        if (w &gt; maxw) maxw = w;
+        sum += w;
+    }
+    printf(&quot;max WSS = %d, mean WSS = %.2f\n&quot;, maxw, (double)sum / n);
+    return 0;
+}
+</code></pre>
+<p>The output is:</p>
+<pre><code class="language-text">delta = 6
+ t  ref  WSS
+ 1    1    1
+ 2    2    2
+ 3    1    2
+ 4    3    3
+ 5    1    3
+ 6    2    3
+ 7    4    4
+ 8    1    4
+ 9    3    4
+10    2    4
+11    1    4
+12    4    4
+13    5    5
+14    6    6
+15    5    5
+16    7    5
+17    5    4
+18    6    3
+19    7    3
+20    5    3
+21    6    3
+22    5    3
+23    7    3
+24    6    3
+max WSS = 6, mean WSS = 3.50
+</code></pre>
+<p>Compare the WSS column with Figure 10.4. At t = 14 the window holds references 9 to 14, which are <code>3,2,1,4,5,6</code>: six distinct pages, the phase-change spike.</p>
+<h3 id="part-3-fault-curves-local-versus-random">Part 3: fault curves, local versus random</h3>
+<p>This program creates two 4,000-reference traces over 40 pages: one with phases of strong locality (95 percent of references go to a hot set of 8 pages that changes every 400 references) and one uniformly random. It reports LRU faults for several memory sizes.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define N 4000
+#define PAGES 40
+
+static unsigned long long seed = 12345;
+static int rnd(int m) {                 /* small LCG, so output is identical everywhere */
+    seed = seed * 6364136223846793005ULL + 1442695040888963407ULL;
+    return (int)((seed &gt;&gt; 33) % m);
+}
+
+static int lru_faults(const int *ref, int n, int nframes) {
+    int frame[PAGES], last[PAGES], used = 0, faults = 0;
+    for (int t = 0; t &lt; n; t++) {
+        int hit = -1;
+        for (int i = 0; i &lt; used; i++) if (frame[i] == ref[t]) { hit = i; break; }
+        if (hit &gt;= 0) { last[hit] = t; continue; }
+        faults++;
+        int v = used;
+        if (used &lt; nframes) used++;
+        else { v = 0; for (int i = 1; i &lt; used; i++) if (last[i] &lt; last[v]) v = i; }
+        frame[v] = ref[t]; last[v] = t;
+    }
+    return faults;
+}
+
+int main(void) {
+    static int local[N], uniform[N];
+    /* local: every 400 references pick a new &quot;phase&quot; of 8 hot pages; 95% of
+       references go to the hot set, 5% wander anywhere */
+    int hot[8] = {0};
+    for (int t = 0; t &lt; N; t++) {
+        if (t % 400 == 0) { int base = rnd(PAGES); for (int i = 0; i &lt; 8; i++) hot[i] = (base + i) % PAGES; }
+        local[t] = rnd(100) &lt; 95 ? hot[rnd(8)] : rnd(PAGES);
+        uniform[t] = rnd(PAGES);
+    }
+    printf(&quot;frames  local  uniform   (LRU faults per %d references, %d pages)\n&quot;, N, PAGES);
+    int sizes[] = {2, 4, 6, 8, 10, 16, 24, 32, 40};
+    for (int i = 0; i &lt; 9; i++)
+        printf(&quot;%6d  %5d  %7d\n&quot;, sizes[i], lru_faults(local, N, sizes[i]),
+               lru_faults(uniform, N, sizes[i]));
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">frames  local  uniform   (LRU faults per 4000 references, 40 pages)
+     2   3068     3772
+     4   2123     3572
+     6   1282     3355
+     8    502     3153
+    10    246     2970
+    16    170     2383
+    24    124     1589
+    32     76      841
+    40     40       40
+</code></pre>
+<p>The locality trace has a sharp knee around 8 to 10 frames, the size of the hot set: with 2 frames 77 percent of references fault, with 6 frames 32 percent, with 8 frames 12.5 percent and with 10 frames about 6 percent. The random trace has no locality, so its fault count falls only linearly with memory (the hit rate is about <code>frames / 40</code>) and there is no working set to protect. With 40 frames both traces take only the 40 cold faults.</p>
+<h3 id="part-4-a-page-fault-frequency-controller">Part 4: a page-fault-frequency controller</h3>
+<p>This simulates one process whose hot set is 6 pages, then 14 pages in windows 5 to 8, then 6 pages again. Every 200 references the controller reads the fault rate and adjusts the process's frame quota, growing it by 4 above 0.20 and shrinking it by 1 below 0.04.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define PAGES 40
+#define WINDOW 200
+#define NWIN 12
+
+static unsigned long long seed = 7;
+static int rnd(int m) {
+    seed = seed * 6364136223846793005ULL + 1442695040888963407ULL;
+    return (int)((seed &gt;&gt; 33) % m);
+}
+
+static int resident[PAGES], lastuse[PAGES], count = 0;   /* one process's frames */
+
+static void evict_lru(void) {
+    int v = 0;
+    for (int i = 1; i &lt; count; i++) if (lastuse[i] &lt; lastuse[v]) v = i;
+    resident[v] = resident[count - 1]; lastuse[v] = lastuse[count - 1]; count--;
+}
+
+int main(void) {
+    int quota = 4;
+    const double upper = 0.20, lower = 0.04;
+    printf(&quot;win  quota  faults  rate   action\n&quot;);
+    for (int w = 0; w &lt; NWIN; w++) {
+        int faults = 0, big = (w &gt;= 4 &amp;&amp; w &lt; 8);          /* locality grows to 14 pages in windows 5-8 */
+        for (int t = 0; t &lt; WINDOW; t++) {
+            int page = big ? rnd(14) : 20 + rnd(6);       /* disjoint hot sets */
+            int hit = -1;
+            for (int i = 0; i &lt; count; i++) if (resident[i] == page) hit = i;
+            if (hit &gt;= 0) { lastuse[hit] = w * WINDOW + t; continue; }
+            faults++;
+            if (count &gt;= quota) evict_lru();
+            resident[count] = page; lastuse[count] = w * WINDOW + t; count++;
+        }
+        double rate = (double)faults / WINDOW;
+        const char *act = &quot;keep&quot;;
+        int before = quota;
+        if (rate &gt; upper) { quota += 4; act = &quot;grow +4&quot;; }
+        else if (rate &lt; lower &amp;&amp; quota &gt; 2) { quota -= 1; act = &quot;shrink -1&quot;; }
+        while (count &gt; quota) evict_lru();
+        printf(&quot;%3d  %5d  %6d  %.3f  %s%s\n&quot;, w + 1, before, faults, rate, act,
+               big &amp;&amp; w == 4 ? &quot;   (locality grew)&quot; : &quot;&quot;);
+    }
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">win  quota  faults  rate   action
+  1      4      68  0.340  grow +4
+  2      8       2  0.010  shrink -1
+  3      7       0  0.000  shrink -1
+  4      6       0  0.000  shrink -1
+  5      5     131  0.655  grow +4   (locality grew)
+  6      9      68  0.340  grow +4
+  7     13      20  0.100  keep
+  8     13      11  0.055  keep
+  9     13       6  0.030  shrink -1
+ 10     12       0  0.000  shrink -1
+ 11     11       0  0.000  shrink -1
+ 12     10       0  0.000  shrink -1
+</code></pre>
+<p>Watch the controller discover the 6-page locality in windows 1 to 4, get caught short when the locality grows (65 percent fault rate in window 5, a thrashing burst), and catch up in two steps. After the small locality returns it hands frames back slowly, one per window.</p>
+<h3 id="part-5-watching-a-real-system">Part 5: watching a real system</h3>
+<p>On a Linux machine (outputs vary, so none are shown here):</p>
+<pre><code class="language-bash">vmstat 1 5                              # si/so = swap in/out per second; b = blocked tasks
+grep -E 'pgfault|pgmajfault|pswp' /proc/vmstat   # cumulative fault and swap counters
+cat /proc/sys/vm/swappiness             # reclaim balance, default 60
+cat /proc/pressure/memory               # pressure stall information, if the kernel has PSI
+</code></pre>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Add a dirty bit to the simulator: read a second comma-separated string of <code>r</code>/<code>w</code> flags, count write-backs, and implement the enhanced second-chance (reference, modify) policy. Compare write-backs against plain Clock.</li>
+<li>Add a <code>-w DELTA</code> mode that, for a trace and window size, prints the mean working-set size, then use it to pick the smallest frame count for which LRU faults less than 5 percent of references. Compare with the knee in Part 3.</li>
+<li>Change Part 4 to run two processes sharing 20 frames under global LRU versus a PFF controller per process. Create a phase in which their combined working sets exceed 20 frames and observe which design thrashes.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fault count off by a few in a hand trace</td>
+<td>Forgot that the first <code>k</code> distinct pages always fault, or counted a hit as a fault</td>
+<td>Mark each step F or hit in a table, and add up F only</td>
+</tr>
+<tr>
+<td>LRU trace evicts the wrong page</td>
+<td>Compared load times (FIFO) instead of last-use times</td>
+<td>Write the last-use time next to each frame and update it on every hit</td>
+</tr>
+<tr>
+<td>OPT trace "evicts" a page that is used soon</td>
+<td>Looked backward, or stopped looking ahead at the first match for only one page</td>
+<td>For each frame find its next use time; evict the largest, with "never" counting as infinity</td>
+</tr>
+<tr>
+<td>Claimed "more frames never hurts"</td>
+<td>Forgot Belady's anomaly</td>
+<td>It holds for stack algorithms (LRU, OPT) but not for FIFO or Clock</td>
+</tr>
+<tr>
+<td>Clock hand evicts immediately</td>
+<td>Newly loaded page left with reference bit 0, or hand not advanced after eviction</td>
+<td>Set the bit on load, and advance the hand past the evicted slot</td>
+</tr>
+<tr>
+<td>Proportional shares do not add up to <code>m</code></td>
+<td>Rounded each share independently</td>
+<td>Round, then adjust the largest remainders until the total equals <code>m</code></td>
+</tr>
+<tr>
+<td>Working-set size always equals Δ</td>
+<td>Counted references instead of distinct pages</td>
+<td>Count distinct pages in the window; WSS ≤ Δ</td>
+</tr>
+<tr>
+<td>System slow, CPU idle, disk busy</td>
+<td>Thrashing from over-committed memory</td>
+<td>Check <code>vmstat</code> si/so, reduce running processes, add RAM, or lower per-process memory use</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>When memory is full, a page fault needs a victim; dirty victims cost an extra disk write, so clean pages and background write-back matter.</li>
+<li>On the string <code>7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1</code> with 3 frames FIFO faults 15 times, LRU 12 and the unattainable OPT 9; LRU is near optimal because the past predicts the future.</li>
+<li>FIFO suffers Belady's anomaly (9 faults with 3 frames, 10 with 4 on <code>1,2,3,4,1,2,5,1,2,3,4,5</code>); stack algorithms like LRU and OPT never do.</li>
+<li>Hardware gives only a reference bit, so real kernels use LRU approximations: aging, second chance and Clock, with active and inactive lists in Linux.</li>
+<li>Frames are divided by equal, proportional or priority allocation; global replacement is efficient but one process can hurt others, local replacement isolates them but wastes memory.</li>
+<li>Thrashing occurs when processes have fewer frames than their working sets; admitting more processes makes it worse. Control it with the working set model (<code>D = Σ WSSᵢ ≤ m</code>) or page-fault frequency, and suspend processes if memory is over-committed.</li>
+<li>Linux reclaims in the background with <code>kswapd</code>, in the foreground by direct reclaim, and as a last resort kills a process with the OOM killer.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 10 "Virtual Memory": sections on page replacement, allocation of frames, thrashing and the working-set model.</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau and Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapter "Beyond Physical Memory: Policies" (OPT, FIFO, LRU, approximating LRU with the clock algorithm, and thrashing).</li>
+<li><strong>Essential.</strong> Tanenbaum and Bos, <em>Modern Operating Systems</em>, Chapter 3.4 "Page Replacement Algorithms" (NRU, FIFO, second chance, Clock, LRU, aging, WSClock).</li>
+<li>L. A. Belady, "A Study of Replacement Algorithms for a Virtual-Storage Computer", IBM Systems Journal, 1966.</li>
+<li>L. A. Belady, R. A. Nelson and G. S. Shedler, "An Anomaly in Space-Time Characteristics of Certain Programs Running in a Paging Machine", Communications of the ACM, 1969.</li>
+<li>R. L. Mattson, J. Gecsei, D. R. Slutz and I. L. Traiger, "Evaluation Techniques for Storage Hierarchies", IBM Systems Journal, 1970.</li>
+<li>Peter J. Denning, "The Working Set Model for Program Behavior", Communications of the ACM, 1968; and "Thrashing: Its Causes and Prevention", AFIPS Fall Joint Computer Conference, 1968.</li>
+<li>Man pages: <code>vmstat(8)</code>, <code>proc(5)</code> (<code>/proc/vmstat</code>, <code>/proc/pressure</code>), <code>madvise(2)</code>, <code>mlock(2)</code>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="10">Mark Week 10 as complete</button></div><div class="pager"><a class="pn prev" href="week-09.html"><small>Previous</small>Week 9: Virtual Memory</a><a class="pn next" href="week-11.html"><small>Next</small>Week 11: Mass Storage: Disks, SSDs, Scheduling and RAID</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#page-replacement-the-basic-idea">Page replacement: the basic idea</a></li><li><a href="#fifo-opt-and-lru">FIFO, OPT and LRU</a></li><li><a href="#beladys-anomaly">Belady's anomaly</a></li><li><a href="#approximating-lru-in-practice">Approximating LRU in practice</a></li><li><a href="#frame-allocation">Frame allocation</a></li><li><a href="#thrashing">Thrashing</a></li><li><a href="#linux-page-cache-reclaim-and-the-oom-killer">Linux page-cache reclaim and the OOM killer</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab">Lab</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

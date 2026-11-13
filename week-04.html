@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 4: CPU Scheduling · Operating Systems for Dummies</title>
+<meta name="description" content="How the OS decides which ready thread gets the CPU next, from FCFS and shortest-job-first through round robin and multilevel feedback queues to Linux&#x27;s fair scheduler and real-time policies, with exact worked Gantt traces.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="1"><article class="week" data-week="4"><header class="week-head" data-num="04"><p class="kicker">Week 4 · Phase 1: Foundations</p><h1>CPU Scheduling</h1><p class="abstract">How the OS decides which ready thread gets the CPU next, from FCFS and shortest-job-first through round robin and multilevel feedback queues to Linux&#x27;s fair scheduler and real-time policies, with exact worked Gantt traces.</p><ul class="chips"><li><b>34</b> min read</li><li><b>2</b> demos</li><li><b>4</b> figures</li><li><b>14</b> code blocks</li><li><b>7</b> exercises</li><li class="tag-due"><b>Due</b> Assignment 1 (shell and fork/exec)</li></ul><p class="lab-line"><b>Lab.</b> Build a tick-by-tick scheduling simulator in C and check its output against hand-drawn Gantt charts.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Compute waiting, turnaround and response times from a Gantt chart for a given set of arrival times and bursts</li><li>Trace FCFS, SJF, SRTF, round robin and a multilevel feedback queue by hand without arithmetic mistakes</li><li>Explain why SRTF minimizes average waiting time, and why it cannot be implemented exactly</li><li>Choose a round-robin quantum by weighing context-switch overhead against responsiveness</li><li>Compute CPU shares and virtual runtime updates under Linux CFS from nice values</li><li>Apply the rate-monotonic utilization bound and the EDF test to a periodic task set</li></ul></section><div class="prose"><p>In <a href="week-02.html">Week 2</a> a process moved between the ready, running and waiting states, and in <a href="week-03.html">Week 3</a> we saw that the kernel really schedules threads, not whole processes. One question was left open each time: when several threads are ready and there is only one CPU (or fewer CPUs than threads), which one runs next? This chapter is about the answer. The timer interrupt from <a href="week-01.html">Week 1</a> gives the kernel the <em>mechanism</em> to take the CPU away; the scheduling algorithm is the <em>policy</em> that decides where it goes.</p>
+<p>We build up in order of sophistication. First the vocabulary and metrics, then four classical algorithms evaluated on one process set so that every number can be compared, then multilevel feedback queues, which are the ancestors of what real kernels do. Finally we look at how Linux schedules (fair-share by virtual runtime) and how real-time systems schedule (deadlines). <a href="week-04.html#lab-a-scheduling-simulator">Assignment 1</a> is due this week: your shell uses <code>fork</code>, <code>exec</code> and <code>wait</code>, and the first listing below uses the same trio to measure what the scheduler did to a program. <a href="week-05.html">Week 5</a> then tackles what happens when the threads you schedule share data.</p>
+<h2 id="the-scheduling-problem-and-how-to-judge-it">The scheduling problem and how to judge it</h2>
+<h3 id="cpu-bursts-and-the-ready-queue">CPU bursts and the ready queue</h3>
+<p>Almost every program alternates between computing and waiting for I/O. A stretch of computing is a <strong>CPU burst</strong>; a stretch of waiting is an <strong>I/O burst</strong>. A text editor has tiny CPU bursts (a keystroke) separated by long I/O bursts (waiting for the human). A video encoder has long CPU bursts. Measurements across many systems show the same shape: a great many short bursts and a few long ones. That fact drives most scheduler design, because a scheduler that favours short bursts keeps interactive programs snappy.</p>
+<p>The scheduler only chooses among threads in the <strong>ready</strong> state, which the kernel keeps in a <strong>ready queue</strong> (a data structure, not necessarily FIFO). The part of the kernel that actually switches to the chosen thread is the <strong>dispatcher</strong>: it performs the context switch, switches to user mode and jumps to the right instruction. The time it takes is the <strong>dispatch latency</strong>.</p>
+<p>Scheduling decisions happen at four moments: (1) a thread blocks for I/O (running to waiting), (2) a timer or other interrupt moves it from running to ready, (3) an I/O completes (waiting to ready), (4) a thread exits. Decisions 1 and 4 are forced, since the CPU is free. A scheduler that acts only then is <strong>non-preemptive</strong> (cooperative). One that may also act at 2 and 3 is <strong>preemptive</strong>: it can take the CPU from a running thread. Every modern general-purpose OS is preemptive.</p>
+<h3 id="three-times-and-four-goals">Three times and four goals</h3>
+<p>Suppose a job arrives at time A, first gets the CPU at time S, needs a total of B units of CPU, and finishes at time F.</p>
+<div class="admonition definition">
+<p class="admonition-title">Waiting, turnaround and response time</p>
+<p><strong>Turnaround time</strong> = F - A: everything from arrival to completion.
+<strong>Waiting time</strong> = turnaround - B: the time spent sitting in the ready queue (assuming the job does no I/O).
+<strong>Response time</strong> = S - A: how long until the job is first run. For an interactive user this is the delay before anything visibly happens.</p>
+</div>
+<p>Schedulers are also judged by <strong>CPU utilization</strong> (fraction of time the CPU is busy), <strong>throughput</strong> (jobs finished per unit time) and <strong>fairness</strong> (no job starves). No algorithm wins on all of them, so the design question is always "which metric do I care about?"</p>
+<div class="admonition intuition">
+<p class="admonition-title">The supermarket</p>
+<p>Picture one checkout lane. FCFS is a single queue: whoever arrived first goes first, so one person with a overflowing trolley delays everyone. Shortest-job-first is the "10 items or fewer" lane: average waiting falls, but the person with the huge trolley may wait forever. Round robin is a cashier who scans ten items for you, then moves to the next customer: nobody waits long to <em>start</em>, but everybody takes longer to <em>finish</em>.</p>
+</div>
+<h3 id="measuring-it-yourself">Measuring it yourself</h3>
+<p>The following program runs a command and reports what the kernel recorded. The relevant numbers are CPU time (the sum of the burst lengths), and the number of <strong>voluntary</strong> context switches (the process blocked) versus <strong>involuntary</strong> ones (the scheduler preempted it). The structure is exactly the <code>fork</code>, <code>exec</code>, <code>wait</code> pattern from Assignment 1.</p>
+<pre><code class="language-c">/* mytime.c: run a command, then report wall time, CPU time and context switches. */
+#define _DEFAULT_SOURCE
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/resource.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char **argv) {
+    if (argc &lt; 2) { fprintf(stderr, &quot;usage: %s cmd [args...]\n&quot;, argv[0]); return 2; }
+    struct timespec a, b;
+    clock_gettime(CLOCK_MONOTONIC, &amp;a);
+    pid_t pid = fork();
+    if (pid &lt; 0) { perror(&quot;fork&quot;); return 1; }
+    if (pid == 0) {
+        execvp(argv[1], &amp;argv[1]);
+        perror(&quot;execvp&quot;);
+        _exit(127);
+    }
+    int status;
+    struct rusage ru;
+    if (wait4(pid, &amp;status, 0, &amp;ru) &lt; 0) { perror(&quot;wait4&quot;); return 1; }
+    clock_gettime(CLOCK_MONOTONIC, &amp;b);
+    double wall = (b.tv_sec - a.tv_sec) + (b.tv_nsec - a.tv_nsec) / 1e9;
+    double user = ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6;
+    double sys  = ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6;
+    fprintf(stderr, &quot;wall %.3fs  cpu %.3fs  off-cpu %.3fs  voluntary %ld  involuntary %ld\n&quot;,
+            wall, user + sys, wall - user - sys, ru.ru_nvcsw, ru.ru_nivcsw);
+    return WIFEXITED(status) ? WEXITSTATUS(status) : 1;
+}
+</code></pre>
+<p>Compile with <code>gcc -Wall -pthread mytime.c -o mytime</code>. On a two-CPU machine <code>./mytime sleep 1</code> prints <code>wall 1.002s  cpu 0.001s  off-cpu 1.000s  voluntary 2  involuntary 0</code>: one long I/O-style wait, no preemption. Running one shell loop that counts to 300000 gives <code>wall 0.396s  cpu 0.385s  off-cpu 0.011s  voluntary 1  involuntary 1</code>: a CPU-bound job almost never blocks. Starting three of those loops at once on the two CPUs gives, for example, <code>wall 0.575s  cpu 0.349s  off-cpu 0.226s  voluntary 1  involuntary 60</code>: with three hogs and two CPUs, the scheduler preempted the job about 60 times and it spent 0.226 s waiting in the ready queue. That 0.226 s is its waiting time, measured by the definition above.</p>
+<h2 id="fcfs-sjf-and-srtf-on-one-worked-example">FCFS, SJF and SRTF on one worked example</h2>
+<p>We use one process set for every algorithm in this chapter. Times are in ms and the jobs never do I/O.</p>
+<table>
+<thead>
+<tr>
+<th>Process</th>
+<th>Arrival</th>
+<th>Burst</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>0</td>
+<td>8</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>1</td>
+<td>4</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>2</td>
+<td>9</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>3</td>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+<p>The total work is 8 + 4 + 9 + 5 = 26 ms and the CPU is never idle, so every schedule ends at time 26.</p>
+<h3 id="first-come-first-served">First-come, first-served</h3>
+<p><strong>FCFS</strong> runs jobs in arrival order to completion. P1 runs 0 to 8. P2 runs 8 to 12, P3 runs 12 to 21, P4 runs 21 to 26. Waiting time is start minus arrival here: P1 0, P2 8 - 1 = 7, P3 12 - 2 = 10, P4 21 - 3 = 18. The average is (0 + 7 + 10 + 18) / 4 = 35 / 4 = <strong>8.75 ms</strong>. FCFS is non-preemptive and trivially fair, but suffers the <strong>convoy effect</strong>: short jobs queue behind one long job, like P2 stuck behind P1.</p>
+<h3 id="shortest-job-first-non-preemptive">Shortest-job-first (non-preemptive)</h3>
+<p><strong>SJF</strong> picks, whenever the CPU frees up, the ready job with the shortest next CPU burst. At time 0 only P1 is there, so it runs 0 to 8. At time 8 the ready jobs are P2 (4), P3 (9) and P4 (5): P2 runs 8 to 12, then P4 (5) runs 12 to 17, then P3 runs 17 to 26. Waiting: P1 0, P2 7, P4 12 - 3 = 9, P3 17 - 2 = 15. Average (0 + 7 + 9 + 15) / 4 = 31 / 4 = <strong>7.75 ms</strong>.</p>
+<h3 id="shortest-remaining-time-first-preemptive-sjf">Shortest-remaining-time-first (preemptive SJF)</h3>
+<p><strong>SRTF</strong> re-decides whenever a job arrives: if the newcomer's burst is shorter than the <em>remaining</em> time of the running job, preempt. P1 starts at 0. At time 1, P2 arrives with burst 4, shorter than P1's remaining 7, so P2 preempts. P2 runs 1 to 5 (P3 arrives at 2 with 9 and P4 at 3 with 5, but P2's remaining 3 and then 2 beats both). At time 5 the ready jobs have remaining times P1 7, P3 9, P4 5, so P4 runs 5 to 10. Then P1 (7) runs 10 to 17 and P3 (9) runs 17 to 26.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">        FCFS  |       P1      |   P2  |        P3       |    P4   |
+        SJF   |       P1      |   P2  |    P4   |        P3       |
+        SRTF  |1|   P2  |    P4   |      P1     |        P3       |
+              0 1       5     8   10  12        17      21        26
+</pre></div><figcaption><b>Figure 4.1..</b> Gantt charts for the same four jobs under three algorithms (two characters per millisecond; the single digit 1 under SRTF is P1's first millisecond).</figcaption></figure>
+<p>Because P1 was preempted, waiting time is no longer "start minus arrival"; use the general formula waiting = completion - arrival - burst. Completion times are P1 17, P2 5, P3 26, P4 10. So waiting is P1 17 - 0 - 8 = 9, P2 5 - 1 - 4 = 0, P3 26 - 2 - 9 = 15, P4 10 - 3 - 5 = 2. The average is (9 + 0 + 15 + 2) / 4 = 26 / 4 = <strong>6.5 ms</strong>.</p>
+<p>Here is the full comparison. Turnaround is completion minus arrival and response is first-run minus arrival.</p>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Avg waiting</th>
+<th>Avg turnaround</th>
+<th>Avg response</th>
+<th>Completion order</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FCFS</td>
+<td>8.75</td>
+<td>15.25</td>
+<td>8.75</td>
+<td>P1, P2, P3, P4</td>
+</tr>
+<tr>
+<td>SJF</td>
+<td>7.75</td>
+<td>14.25</td>
+<td>7.75</td>
+<td>P1, P2, P4, P3</td>
+</tr>
+<tr>
+<td>SRTF</td>
+<td>6.50</td>
+<td>13.00</td>
+<td>4.25</td>
+<td>P2, P4, P1, P3</td>
+</tr>
+</tbody>
+</table>
+<p>Per process, FCFS gives turnaround 8, 11, 19, 23 (sum 61); SJF gives 8, 11, 24, 14 (sum 57); SRTF gives 17, 4, 24, 7 (sum 52). Average turnaround is the average waiting time plus the average burst, 26 / 4 = 6.5, which is why the two columns move together: 8.75 + 6.5 = 15.25, 7.75 + 6.5 = 14.25, 6.5 + 6.5 = 13.0.</p>
+<div class="admonition definition">
+<p class="admonition-title">SRTF is optimal for average waiting time</p>
+<p>Among all schedulers that know each job's CPU burst in advance, SRTF achieves the minimum possible average waiting time (non-preemptive SJF is optimal among non-preemptive ones). Sketch of the proof: if a longer job runs before a shorter one, swapping them reduces the shorter job's wait by more than it increases the longer job's, so any schedule with such an inversion can be improved.</p>
+</div>
+<h3 id="the-catch-nobody-knows-the-next-burst">The catch: nobody knows the next burst</h3>
+<p>SJF and SRTF need the length of the next CPU burst, which the OS cannot know. The standard fix is to <strong>predict</strong> it from history with an <strong>exponential average</strong>. Let t(n) be the measured length of the nth burst and τ(n) the prediction for it. Then</p>
+<pre><code class="language-text">τ(n+1) = α · t(n) + (1 - α) · τ(n),      0 ≤ α ≤ 1
+</code></pre>
+<p>With α = 0 history is ignored and the prediction never changes; with α = 1 only the last burst counts; α = 1/2 weighs recent and past equally. Expanding the recurrence shows that older bursts carry geometrically smaller weights, hence "exponential". The other problem with SJF and SRTF is <strong>starvation</strong>: a steady stream of short jobs can keep a long job waiting indefinitely.</p>
+<h2 id="round-robin-and-priority-scheduling">Round robin and priority scheduling</h2>
+<h3 id="round-robin">Round robin</h3>
+<p><strong>Round robin (RR)</strong> is FCFS plus preemption by the timer. Each job gets at most one <strong>time quantum</strong> q on the CPU, then goes to the back of the ready queue. We trace RR with q = 4 on the same set. One convention matters: when a new arrival and a preempted job reach the queue at the same instant, the new arrival goes first.</p>
+<p>P1 runs 0 to 4 (4 left); during that time P2, P3, P4 arrive, so the queue is P2, P3, P4, P1. P2 runs 4 to 8 and finishes (its burst is exactly 4). P3 runs 8 to 12 (5 left), P4 runs 12 to 16 (1 left), P1 runs 16 to 20 and finishes. Then P3 runs 20 to 24 (1 left), P4 runs 24 to 25 and finishes, and P3 runs 25 to 26.</p>
+<table>
+<thead>
+<tr>
+<th>Process</th>
+<th>Completion</th>
+<th>Turnaround</th>
+<th>Waiting</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>20</td>
+<td>20</td>
+<td>12</td>
+<td>0</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>8</td>
+<td>7</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>26</td>
+<td>24</td>
+<td>15</td>
+<td>6</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>25</td>
+<td>22</td>
+<td>17</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Average</td>
+<td></td>
+<td>18.25</td>
+<td>11.75</td>
+<td>4.5</td>
+</tr>
+</tbody>
+</table>
+<p>RR is worst here on average waiting (11.75 versus 6.5 for SRTF) but its response is much better than FCFS (4.5 versus 8.75), and its answer for a newcomer is bounded: with n ready jobs and quantum q, nobody waits more than (n - 1) · q before getting the CPU.</p>
+<p>Choosing q is a trade-off. If q is huge, RR becomes FCFS. If q is tiny, you spend the time on context switches. If a switch costs c, the fraction of the CPU wasted is c / (q + c). With c = 0.1 ms and q = 10 ms the overhead is 0.1 / 10.1 = 0.99 percent; with q = 1 ms it is 0.1 / 1.1 = 9.1 percent. A good rule of thumb is that q should be longer than about 80 percent of CPU bursts, so most jobs finish their burst before being preempted. Typical values are 10 to 100 ms.</p>
+<div class="admonition warning">
+<p class="admonition-title">Smaller quantum does not mean shorter turnaround</p>
+<p>Student intuition says "more sharing means better". In fact for jobs of similar length RR with a small quantum <em>delays</em> everyone's completion, because all jobs finish near the end. Try q = 1 on the example set: average waiting is 12.5, not an improvement over q = 4, and you pay for 23 extra switches. RR optimizes response, not turnaround.</p>
+</div>
+<h3 id="priority-scheduling-and-aging">Priority scheduling and aging</h3>
+<p>In <strong>priority scheduling</strong> each job carries a number and the CPU goes to the highest priority (by convention here, a smaller number means more urgent in some systems and larger in others; always check). SJF is priority scheduling where the priority is the predicted burst. Priorities can be set by the OS (CPU-burst history, memory needs) or externally (the <code>nice</code> command, the importance of the owner). It can be preemptive or not, and it has the same starvation problem as SJF. The remedy is <strong>aging</strong>: gradually raise the priority of a job the longer it waits, so that even the lowest priority job eventually runs. Priority also interacts with locks: a high-priority thread blocked on a lock held by a low-priority one is the <strong>priority inversion</strong> problem we study in <a href="week-05.html#priority-inversion">Week 5</a>.</p>
+<p>The demo implements FCFS, SJF, SRTF, RR with an adjustable quantum and priority scheduling. Load the process set above (arrivals 0, 1, 2, 3 and bursts 8, 4, 9, 5), switch between algorithms and confirm that you reproduce 8.75, 7.75, 6.5 and 11.75 for waiting times. Then change P3's burst to 1 and watch which algorithms benefit.</p>
+<div class="demo" data-demo="scheduler"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Compare scheduling policies on the same process table</span></div><div class="demo-body"></div></div>
+<div class="demo reveal" data-demo="cpu-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">Watch Round Robin rotate processes through the CPU</span></div><div class="demo-body"></div></div>
+<h2 id="multilevel-feedback-queues">Multilevel feedback queues</h2>
+<p>SRTF would be ideal but needs a crystal ball; RR is fair but ignores that some jobs are short. A <strong>multilevel feedback queue (MLFQ)</strong> learns from behaviour instead of predictions. It was used in the CTSS time-sharing system in 1962 and its descendants run in many Unix variants, Windows and macOS. The rules (following Arpaci-Dusseau) are:</p>
+<ol>
+<li>There are several queues, each at a different priority; the scheduler always runs a job from the highest non-empty queue.</li>
+<li>Jobs in the same queue are scheduled round robin, and each queue has its own quantum (short at the top, longer lower down).</li>
+<li>A new job enters the top queue.</li>
+<li>A job that uses its whole quantum is <strong>demoted</strong> one queue. A job that blocks for I/O before its quantum ends stays where it is.</li>
+<li>Periodically, every job is boosted to the top queue (<strong>priority boost</strong>) so long jobs cannot starve, and jobs that change from CPU-bound to interactive are noticed.</li>
+</ol>
+<p>The idea: interactive jobs have short bursts, so they never use the full quantum and remain at the top; CPU-bound jobs use up quanta, drift down and run only when the interactive ones are idle. The scheduler approximates SJF without knowing burst lengths. Let us trace our process set with three queues: Q0 with q = 2, Q1 with q = 4 and Q2 using FCFS (run to completion). The boost period is 100 ms, longer than the whole trace, so it never fires.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   arrivals --&gt; Q0  q=2   [P2][P3][P4]  ...  highest priority
+                 | used the whole quantum: demote
+                 v
+                Q1  q=4   [P1][P2][P3][P4]
+                 | used the whole quantum: demote
+                 v
+                Q2  FCFS  [P1][P3]        lowest priority
+
+   |P1 |P2 |P3 |P4 |  P1   |P2 |   P3  | P4  |P1 | P3  |
+   |       Q0      |            Q1           |   Q2    |
+   0   2   4   6   8       12  14      18    21  23    26
+</pre></div><figcaption><b>Figure 4.2..</b> A three-level MLFQ run on the example set. The lower rows show which queue each slice came from.</figcaption></figure>
+<p>Walk through it. P1 runs 0 to 2 in Q0, uses its quantum (6 ms left) and drops to Q1. P2, P3 and P4, which arrived at 1, 2 and 3, each run 2 ms in Q0 (times 2 to 8). None of them is finished, so all drop to Q1, whose queue is now P1, P2, P3, P4. Q1 runs P1 8 to 12 (it uses all 4 ms, 2 left, drop to Q2), then P2 12 to 14 (its last 2 ms, done), P3 14 to 18 (full quantum, 3 left, drop to Q2), P4 18 to 21 (only 3 left, done). Q2 then runs P1 21 to 23 (done) and P3 23 to 26 (done).</p>
+<table>
+<thead>
+<tr>
+<th>Process</th>
+<th>Completion</th>
+<th>Turnaround</th>
+<th>Waiting</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>23</td>
+<td>23</td>
+<td>15</td>
+<td>0</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>14</td>
+<td>13</td>
+<td>9</td>
+<td>1</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>26</td>
+<td>24</td>
+<td>15</td>
+<td>2</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>21</td>
+<td>18</td>
+<td>13</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Average</td>
+<td></td>
+<td>19.5</td>
+<td>13.0</td>
+<td>1.5</td>
+</tr>
+</tbody>
+</table>
+<p>MLFQ has the <em>worst</em> average waiting time of all five algorithms (13.0) but the <em>best</em> response (1.5): every job starts within 3 ms. That is the trade-off it was built for. In a real system long-running jobs would be in the same state as P1 and P3, running at the bottom whenever nothing interactive is ready. The table below puts all five side by side.</p>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Avg waiting</th>
+<th>Avg turnaround</th>
+<th>Avg response</th>
+<th>Preemptive</th>
+<th>Starvation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FCFS</td>
+<td>8.75</td>
+<td>15.25</td>
+<td>8.75</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>SJF</td>
+<td>7.75</td>
+<td>14.25</td>
+<td>7.75</td>
+<td>No</td>
+<td>Yes (long jobs)</td>
+</tr>
+<tr>
+<td>SRTF</td>
+<td>6.50</td>
+<td>13.00</td>
+<td>4.25</td>
+<td>Yes</td>
+<td>Yes (long jobs)</td>
+</tr>
+<tr>
+<td>RR, q = 4</td>
+<td>11.75</td>
+<td>18.25</td>
+<td>4.50</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>MLFQ (2, 4, FCFS)</td>
+<td>13.00</td>
+<td>19.50</td>
+<td>1.50</td>
+<td>Yes</td>
+<td>Without boost</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Gaming the scheduler</p>
+<p>A job that knows rule 4 can issue a trivial I/O request just before its quantum ends and so stay in the top queue forever, monopolising the CPU. The fix is to account for the <em>total</em> CPU time a job uses at a level (an allotment) instead of resetting at each I/O. This is why real MLFQs keep an allotment per level, not just a quantum.</p>
+</div>
+<h2 id="scheduling-in-linux">Scheduling in Linux</h2>
+<h3 id="cfs-fairness-as-the-goal">CFS: fairness as the goal</h3>
+<p>Linux's default scheduler for ordinary tasks (policy <code>SCHED_OTHER</code>, also called <code>SCHED_NORMAL</code>) was, from kernel 2.6.23 until 6.5, the <strong>Completely Fair Scheduler (CFS)</strong>. Its goal is an "ideal" CPU that runs all n runnable tasks at once, each at 1/n of the speed. Since real hardware can run one task at a time per core, CFS tracks how far each task has fallen behind that ideal and always runs the one that has received the least.</p>
+<p>Two ideas make this concrete. Every nice value from -20 to 19 maps to a <strong>weight</strong>; nice 0 has weight 1024 and each step changes it by a factor of about 1.25. A few entries: nice -5 is 3121, nice 0 is 1024, nice 1 is 820, nice 5 is 335, nice 10 is 110, nice 19 is 15. A task's share of the CPU is its weight divided by the total weight of all runnable tasks on that CPU. Second, each task has a <strong>virtual runtime</strong> (vruntime) that advances only while the task runs, and advances more slowly for heavier tasks:</p>
+<pre><code class="language-text">vruntime += delta_exec × (1024 / weight)      share = weight / (sum of all weights)
+</code></pre>
+<p>CFS always runs the task with the <strong>smallest vruntime</strong>. Since heavy tasks accumulate vruntime slowly, they stay at the left of the line for longer and receive more real time. The kernel keeps runnable tasks in a <strong>red-black tree</strong> (a balanced binary search tree) ordered by vruntime; picking the leftmost node and inserting back are O(log n). A task that wakes after sleeping is placed near the current minimum vruntime, so a long sleeper cannot demand a huge catch-up burst. The target period over which every task runs once is 6 ms by default and the minimum slice is 0.75 ms (both scale up with the CPU count); with many tasks the period stretches so slices never drop below that minimum.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   runnable tasks after 4 ms          timeline of the first 8 ms
+   (tree keyed by vruntime)
+                                       ms: 0 1 2 3 4 5 6 7
+          A  vr = 2.000                    A B C A B A B A
+         /            \
+   B  vr = 1.000   C  vr = 3.057       C used 1 ms and was charged 3.057:
+   ^ leftmost: runs next                1024/335 per ms, A and B 1.0 each
+</pre></div><figcaption><b>Figure 4.3..</b> CFS picks the leftmost node of a tree sorted by vruntime. The lightweight task C is charged about three times faster, so it is picked less often.</figcaption></figure>
+<p>This toy program implements the rule with three tasks and a scan instead of a tree. Task A and B have nice 0 (weight 1024) and C has nice 5 (335). It simulates 2383 ms, the sum of the three weights, so the expected shares are exactly 1024, 1024 and 335 ms.</p>
+<pre><code class="language-c">/* cfs.c: a toy CFS. Always run the task with the smallest virtual runtime. */
+#include &lt;stdio.h&gt;
+
+struct task { const char *name; int nice; double weight; double vruntime; int ran_ms; };
+
+int main(void) {
+    struct task t[3] = {
+        { &quot;A&quot;, 0, 1024, 0, 0 },     /* weight of nice 0 is 1024 */
+        { &quot;B&quot;, 0, 1024, 0, 0 },
+        { &quot;C&quot;, 5,  335, 0, 0 },     /* nice 5 has weight 335    */
+    };
+    const int N = 3, TOTAL_MS = 2383;           /* 2383 = 1024 + 1024 + 335 */
+
+    for (int ms = 0; ms &lt; TOTAL_MS; ms++) {
+        int pick = 0;
+        for (int i = 1; i &lt; N; i++)             /* the kernel uses a red-black tree;  */
+            if (t[i].vruntime &lt; t[pick].vruntime) pick = i;   /* a scan is enough here */
+        t[pick].ran_ms++;
+        t[pick].vruntime += 1.0 * 1024.0 / t[pick].weight;   /* delta_exec * 1024 / weight */
+        if (ms &lt; 8)
+            printf(&quot;ms %d: run %s  (vruntime now %.3f)\n&quot;, ms, t[pick].name, t[pick].vruntime);
+    }
+    for (int i = 0; i &lt; N; i++)
+        printf(&quot;%s nice %d weight %4.0f ran %4d ms = %.1f%%  vruntime %.1f\n&quot;,
+               t[i].name, t[i].nice, t[i].weight, t[i].ran_ms,
+               100.0 * t[i].ran_ms / TOTAL_MS, t[i].vruntime);
+    return 0;
+}
+</code></pre>
+<p>Compiled with <code>gcc -Wall -pthread cfs.c -o cfs</code> it prints:</p>
+<pre><code class="language-text">ms 0: run A  (vruntime now 1.000)
+ms 1: run B  (vruntime now 1.000)
+ms 2: run C  (vruntime now 3.057)
+ms 3: run A  (vruntime now 2.000)
+ms 4: run B  (vruntime now 2.000)
+ms 5: run A  (vruntime now 3.000)
+ms 6: run B  (vruntime now 3.000)
+ms 7: run A  (vruntime now 4.000)
+A nice 0 weight 1024 ran 1024 ms = 43.0%  vruntime 1024.0
+B nice 0 weight 1024 ran 1024 ms = 43.0%  vruntime 1024.0
+C nice 5 weight  335 ran  335 ms = 14.1%  vruntime 1024.0
+</code></pre>
+<p>Notice the last column: all three tasks end with the same vruntime of 1024. That is what "fair" means to CFS. You can see the effect on a real system too. The next program starts two CPU hogs pinned to CPU 0, one at nice 0 and one at nice 5, and counts loop iterations in 4 seconds. The prediction from the weights is a ratio of 1024 / 335 = 3.06.</p>
+<pre><code class="language-c">/* niceburn.c: two CPU hogs share one CPU; the nicer one gets a smaller share. */
+#define _GNU_SOURCE
+#include &lt;sched.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/resource.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+static void burn(int nice_value, int seconds) {
+    cpu_set_t set;
+    CPU_ZERO(&amp;set);
+    CPU_SET(0, &amp;set);
+    sched_setaffinity(0, sizeof set, &amp;set);        /* both hogs on CPU 0 */
+    setpriority(PRIO_PROCESS, 0, nice_value);      /* 0 = this process */
+
+    struct timespec t0, t;
+    clock_gettime(CLOCK_MONOTONIC, &amp;t0);
+    unsigned long long loops = 0;
+    do {
+        for (int i = 0; i &lt; 100000; i++) loops++;
+        clock_gettime(CLOCK_MONOTONIC, &amp;t);
+    } while (t.tv_sec - t0.tv_sec &lt; seconds);
+    printf(&quot;nice %2d: %llu million loops\n&quot;, nice_value, loops / 1000000);
+    exit(0);
+}
+
+int main(void) {
+    if (fork() == 0) burn(0, 4);
+    if (fork() == 0) burn(5, 4);
+    wait(NULL);
+    wait(NULL);
+    return 0;
+}
+</code></pre>
+<p>One run on our two-CPU test machine printed <code>nice  0: 4318 million loops</code> and <code>nice  5: 1410 million loops</code>. The ratio is 4318 / 1410 = 3.06 and the shares are 75.4 and 24.6 percent, matching the weights 1024 / 1359 = 75.4 percent and 335 / 1359 = 24.6 percent. (The exact counts differ per machine and run; the ratio does not.) Lowering your priority with <code>nice</code> therefore gives a precisely calculable, not a vague, reduction.</p>
+<div class="admonition history">
+<p class="admonition-title">From CFS to EEVDF</p>
+<p>Linux 6.6 (October 2023) replaced the CFS picking rule with <strong>EEVDF</strong> (Earliest Eligible Virtual Deadline First), based on a 1995 paper by Stoica and Abdel-Wahab. It keeps weights and virtual time, but each task also has a <em>lag</em> (how much service it is owed) and a virtual deadline derived from its requested slice, so latency-sensitive tasks with short slices are picked sooner without heuristics. Everything in this section about weights, nice values and proportional shares still holds.</p>
+</div>
+<h3 id="real-time-classes">Real-time classes</h3>
+<p>Not every task wants fairness; some want <strong>deadlines</strong>. A <strong>hard real-time</strong> system must never miss a deadline (an airbag controller). A <strong>soft real-time</strong> system tolerates occasional misses (video playback). Linux offers three real-time policies that always beat <code>SCHED_OTHER</code> tasks: <code>SCHED_FIFO</code> (fixed priority 1 to 99, runs until it blocks or a higher priority task arrives), <code>SCHED_RR</code> (the same plus round robin among equal priorities) and <code>SCHED_DEADLINE</code> (declare runtime, deadline and period; scheduled by EDF). The kernel limits real-time tasks to 95 percent of each second by default (<code>sched_rt_runtime_us</code> = 950000 of a <code>sched_rt_period_us</code> of 1000000), so a runaway real-time loop cannot freeze the machine. This program prints the policy facts and tries to enter the real-time class (it needs root or a suitable <code>rlimit</code>; it returns to normal scheduling at once):</p>
+<pre><code class="language-c">/* policy.c: show scheduling policies and try to enter the real-time FIFO class. */
+#define _GNU_SOURCE
+#include &lt;errno.h&gt;
+#include &lt;sched.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+static const char *name(int p) {
+    switch (p) {
+    case SCHED_OTHER: return &quot;SCHED_OTHER (CFS/EEVDF)&quot;;
+    case SCHED_FIFO:  return &quot;SCHED_FIFO&quot;;
+    case SCHED_RR:    return &quot;SCHED_RR&quot;;
+    case SCHED_BATCH: return &quot;SCHED_BATCH&quot;;
+    case SCHED_IDLE:  return &quot;SCHED_IDLE&quot;;
+    default:          return &quot;other&quot;;
+    }
+}
+
+int main(void) {
+    printf(&quot;current policy: %s\n&quot;, name(sched_getscheduler(0)));
+    printf(&quot;SCHED_FIFO priorities: %d..%d\n&quot;,
+           sched_get_priority_min(SCHED_FIFO), sched_get_priority_max(SCHED_FIFO));
+    printf(&quot;SCHED_OTHER priorities: %d..%d\n&quot;,
+           sched_get_priority_min(SCHED_OTHER), sched_get_priority_max(SCHED_OTHER));
+
+    struct sched_param sp = { .sched_priority = 10 };
+    if (sched_setscheduler(0, SCHED_FIFO, &amp;sp) == 0) {
+        printf(&quot;now running as: %s, priority 10\n&quot;, name(sched_getscheduler(0)));
+        sched_setscheduler(0, SCHED_RR, &amp;sp);
+        struct timespec ts;
+        sched_rr_get_interval(0, &amp;ts);
+        printf(&quot;SCHED_RR quantum: %ld ms\n&quot;, ts.tv_nsec / 1000000);
+        sp.sched_priority = 0;
+        sched_setscheduler(0, SCHED_OTHER, &amp;sp);      /* go back at once */
+    } else {
+        printf(&quot;SCHED_FIFO refused: %s\n&quot;, strerror(errno));
+    }
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">current policy: SCHED_OTHER (CFS/EEVDF)
+SCHED_FIFO priorities: 1..99
+SCHED_OTHER priorities: 0..0
+now running as: SCHED_FIFO, priority 10
+SCHED_RR quantum: 100 ms
+</code></pre>
+<p>(As an ordinary user the fourth line is replaced by <code>SCHED_FIFO refused: Operation not permitted</code>, and the fifth line is not printed.)</p>
+<p>For periodic tasks with period T and execution time C, the <strong>utilization</strong> is U = Σ C/T. Two classic algorithms decide whether a set is schedulable. <strong>Rate-monotonic (RM)</strong> gives a fixed priority by period: shorter period, higher priority. Liu and Layland proved in 1973 that n periodic tasks are always schedulable under RM if U ≤ n · (2^(1/n) - 1). The bound is 1.0 for n = 1, 0.8284 for n = 2, 0.7798 for n = 3 and approaches ln 2 = 0.6931 for large n. It is sufficient, not necessary: above it, some sets still work. <strong>Earliest-deadline-first (EDF)</strong> is dynamic: always run the job whose absolute deadline is nearest. For tasks whose deadline equals the period, EDF is optimal on a single CPU: the set is schedulable if and only if U ≤ 1.</p>
+<p>Take T1 with C = 25 ms, T = 50 ms and T2 with C = 35 ms, T = 80 ms. Then U = 25/50 + 35/80 = 0.5 + 0.4375 = 0.9375, above the RM bound of 0.8284 for two tasks, so RM may fail. This script checks both:</p>
+<pre><code class="language-python">&quot;&quot;&quot;Rate-monotonic versus EDF on two periodic tasks (time in ms).&quot;&quot;&quot;
+tasks = [(&quot;T1&quot;, 25, 50), (&quot;T2&quot;, 35, 80)]      # (name, execution time C, period T = deadline)
+HORIZON = 160
+
+def simulate(policy):
+    remaining = {n: 0 for n, _, _ in tasks}
+    deadline = {n: 0 for n, _, _ in tasks}
+    timeline, misses = [], []
+    for t in range(HORIZON):
+        for n, c, p in tasks:
+            if t % p == 0:
+                if remaining[n] &gt; 0:                       # previous job unfinished
+                    misses.append((n, t))
+                remaining[n], deadline[n] = c, t + p
+        ready = [n for n in remaining if remaining[n] &gt; 0]
+        if not ready:
+            timeline.append(&quot;.&quot;); continue
+        if policy == &quot;RM&quot;:
+            pick = min(ready, key=lambda n: dict((x, p) for x, _, p in tasks)[n])
+        else:
+            pick = min(ready, key=lambda n: deadline[n])
+        remaining[pick] -= 1
+        timeline.append(pick[1])
+    return &quot;&quot;.join(timeline), misses
+
+u = sum(c / p for _, c, p in tasks)
+bound = len(tasks) * (2 ** (1 / len(tasks)) - 1)
+print(f&quot;U = {u:.4f}, RM bound for n={len(tasks)} is {bound:.4f}, EDF bound is 1.0&quot;)
+for pol in (&quot;RM&quot;, &quot;EDF&quot;):
+    line, misses = simulate(pol)
+    runs, i = [], 0
+    while i &lt; len(line):
+        j = i
+        while j &lt; len(line) and line[j] == line[i]: j += 1
+        runs.append(f&quot;{line[i]}[{i}-{j}]&quot;); i = j
+    print(pol, &quot; &quot;.join(runs), &quot;| missed:&quot;, misses or &quot;none&quot;)
+</code></pre>
+<pre><code class="language-text">U = 0.9375, RM bound for n=2 is 0.8284, EDF bound is 1.0
+RM 1[0-25] 2[25-50] 1[50-75] 2[75-100] 1[100-125] 2[125-140] .[140-150] 1[150-160] | missed: [('T2', 80)]
+EDF 1[0-25] 2[25-60] 1[60-85] 2[85-100] 1[100-125] 2[125-145] .[145-150] 1[150-160] | missed: none
+</code></pre>
+<p>In the output, <code>1</code> and <code>2</code> mean T1 and T2 and a dot means idle. Under RM, T1 (shorter period) always preempts. T2 gets 25 to 50 (25 ms) and 75 to 80 (5 ms) before its first deadline at 80, a total of 30 ms, 5 ms short of the 35 it needs, so it misses. Under EDF, T2's deadline (80) is earlier than T1's second deadline (100), so T2 keeps running from 25 to 60 and finishes in time.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> T1 deadlines: 50 100 150           T2 deadlines: 80 160
+ RM  |    T1   |    T2   |    T1   |    T2   |    T1   |  T2 |idl| T1|
+ EDF |    T1   |      T2     |    T1   |  T2 |    T1   |   T2  |i| T1|
+ 0                   50          80      100                 150 160
+                                 ^ RM: T2 has run only 30 of 35 ms, misses
+</pre></div><figcaption><b>Figure 4.4..</b> Rate-monotonic misses T2's first deadline at 80 ms; EDF finishes the same job at 60 ms (five characters per 12.5 ms, approximate).</figcaption></figure>
+<h3 id="multiprocessors-and-affinity">Multiprocessors and affinity</h3>
+<p>With several CPUs, Linux keeps a separate ready queue per CPU, because one shared queue would be a contention bottleneck and would destroy cache locality. A <strong>load balancer</strong> periodically moves tasks from busy CPUs to idle ones. Because a task that migrates loses its warm cache, the kernel prefers to keep tasks where they were (<strong>soft affinity</strong>) and lets you demand it (<strong>hard affinity</strong>, <code>taskset</code> or <code>sched_setaffinity</code>, as <code>niceburn</code> did). The tools to inspect all this from the shell are one-liners:</p>
+<pre><code class="language-bash">chrt -p $$                                # policy and priority of this shell
+taskset -cp $$                            # CPUs the shell is allowed to use
+nice -n 10 sh -c 'ps -o pid,ni,cls,comm -p $$'   # run a child at nice 10 and show it
+</code></pre>
+<pre><code class="language-text">pid 565's current scheduling policy: SCHED_OTHER
+pid 565's current scheduling priority: 0
+pid 565's current affinity list: 0,1
+  PID  NI CLS COMMAND
+  568  10  TS sh
+</code></pre>
+<p>The column <code>CLS</code> is the scheduling class (<code>TS</code> is time sharing, that is <code>SCHED_OTHER</code>, <code>FF</code> is FIFO, <code>RR</code> is round robin) and <code>NI</code> is the nice value.</p>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 4.1</span><span class="lvl lvl-warmup">warm-up</span><h4>The convoy effect</h4></header><div class="ex-q"><p>Three jobs all arrive at time 0 with CPU bursts P1 = 24, P2 = 3, P3 = 3. Compute the average waiting and turnaround times under FCFS in the order P1, P2, P3, and under SJF.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>FCFS: P1 runs 0 to 24, P2 24 to 27, P3 27 to 30. Waiting times are 0, 24, 27, average 51 / 3 = 17. Turnaround times are 24, 27, 30, average 81 / 3 = 27. SJF runs P2 0 to 3, P3 3 to 6, P1 6 to 30. Waiting times are P2 0, P3 3, P1 6, average 9 / 3 = 3. Turnaround times 3, 6, 30, average 39 / 3 = 13. The short jobs stuck behind the long one in FCFS is the convoy effect, and it costs a factor of almost six in average waiting time.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 4.2</span><span class="lvl lvl-core">core</span><h4>SJF versus SRTF</h4></header><div class="ex-q"><p>Processes (arrival, burst): P1 (0, 7), P2 (2, 4), P3 (4, 1), P4 (5, 4). Draw the Gantt chart for non-preemptive SJF and for SRTF and compute the average waiting time for each.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>SJF: P1 runs 0 to 7 (the only job when it started). At time 7 the ready jobs are P2 (4), P3 (1), P4 (4), so P3 runs 7 to 8, then P2 (tie with P4, earlier arrival) runs 8 to 12, and P4 runs 12 to 16. Waiting: P1 0, P2 8 - 2 = 6, P3 7 - 4 = 3, P4 12 - 5 = 7. Average 16 / 4 = 4.00.</p>
+<p>SRTF: P1 runs 0 to 2. At 2, P2 arrives with burst 4 against P1's remaining 5, so P2 preempts and runs 2 to 4. At 4, P3 arrives with burst 1 against P2's remaining 2, so P3 runs 4 to 5. At 5, P4 arrives; the remaining times are P2 2, P4 4, P1 5, so P2 runs 5 to 7, P4 runs 7 to 11, P1 runs 11 to 16. Completion times: P1 16, P2 7, P3 5, P4 11. Waiting = completion - arrival - burst: P1 9, P2 1, P3 0, P4 2. Average 12 / 4 = 3.00. SRTF is better (3.00 versus 4.00), as the optimality result says.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 4.3</span><span class="lvl lvl-core">core</span><h4>Round robin with q = 2</h4></header><div class="ex-q"><p>Using the chapter's process set (arrivals 0, 1, 2, 3; bursts 8, 4, 9, 5) and a quantum of 2 ms, compute the average waiting time and average response time under round robin. Break ties so that a new arrival enters the queue before a preempted job.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Gantt: P1 0-2, P2 2-4, P3 4-6, P1 6-8, P4 8-10, P2 10-12, P3 12-14, P1 14-16, P4 16-18, P3 18-20, P1 20-22, P4 22-23, P3 23-26. Completion: P1 22, P2 12, P3 26, P4 23. Waiting = completion - arrival - burst: P1 14, P2 7, P3 15, P4 15, sum 51, average 12.75 ms. Response (first run minus arrival): P1 0, P2 1, P3 2, P4 5, sum 8, average 2.0 ms. Compared with q = 4, response is better (2.0 versus 4.5) and waiting is slightly worse (12.75 versus 11.75), the trade-off you expect from a smaller quantum.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 4.4</span><span class="lvl lvl-core">core</span><h4>Predicting the next burst</h4></header><div class="ex-q"><p>A scheduler uses exponential averaging with α = 1/2 and an initial guess τ0 = 10 ms. The measured bursts are 6, 4, 6, 4 ms. Compute the successive predictions τ1 to τ4. What would the predictions be with α = 0 and with α = 1?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>τ1 = 0.5 · 6 + 0.5 · 10 = 8. τ2 = 0.5 · 4 + 0.5 · 8 = 6. τ3 = 0.5 · 6 + 0.5 · 6 = 6. τ4 = 0.5 · 4 + 0.5 · 6 = 5. With α = 0 every prediction stays at τ0 = 10 (history is ignored, the estimate never learns). With α = 1 each prediction equals the last measured burst: 6, 4, 6, 4. The α = 1/2 sequence 8, 6, 6, 5 tracks the average of about 5 ms while smoothing out the jitter.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 4.5</span><span class="lvl lvl-core">core</span><h4>CFS shares and vruntime</h4></header><div class="ex-q"><p>Two CPU-bound tasks share one CPU: X at nice 0 (weight 1024) and Y at nice -5 (weight 3121). (a) What fraction of the CPU does each receive, and how many ms of each in 100 ms? (b) By how much does each task's vruntime advance per ms of real running time? (c) When X has run for 1 ms, how long must Y have run for the vruntimes to be equal?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) The total weight is 1024 + 3121 = 4145. X gets 1024 / 4145 = 24.7 percent and Y gets 3121 / 4145 = 75.3 percent, so in 100 ms X runs about 24.7 ms and Y about 75.3 ms. (b) vruntime advances by 1024 / weight per ms: X advances 1.0 and Y advances 1024 / 3121 = 0.328. (c) X's vruntime rises by 1.0 for its 1 ms. Y must run t ms with 0.328 · t = 1.0, so t = 3121 / 1024 = 3.05 ms. That is also the ratio of the shares, 75.3 / 24.7 = 3.05.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="challenging"><header><span class="ex-n">Exercise 4.6</span><span class="lvl lvl-challenging">challenging</span><h4>RM versus EDF on three tasks</h4></header><div class="ex-q"><p>Periodic tasks with (C, T) in ms, deadlines equal to periods: Set A: (1, 4), (2, 6), (1, 8). Set B: (1, 4), (2, 6), (3, 8). For each set compute U, apply the RM bound for n = 3 (0.7798) and the EDF bound, and for set B simulate RM from t = 0 to find any deadline miss.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Set A: U = 1/4 + 2/6 + 1/8 = 0.25 + 0.3333 + 0.125 = 0.7083 ≤ 0.7798, so RM is guaranteed to work (and so is EDF). Set B: U = 0.25 + 0.3333 + 0.375 = 0.9583. This exceeds 0.7798, so the RM test is inconclusive, but 0.9583 ≤ 1 so EDF is guaranteed to work. Simulating RM for B (priorities T1 &gt; T2 &gt; T3 by period): T1 runs 0-1, T2 runs 1-3, T3 runs 3-4, T1 (second release at 4) runs 4-5, T3 runs 5-6, T2 (second release at 6) runs 6-8. At t = 8, T3 has received only 2 of its 3 ms but its deadline (8) has arrived, so RM misses T3's first deadline. Hence an RM bound failure is not always a miss (set A passes) but here it is, and EDF still schedules set B.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 4.7</span><span class="lvl lvl-challenging">challenging</span><h4>Defeating an MLFQ</h4></header><div class="ex-q"><p>In the MLFQ rules of this chapter, a job that blocks for I/O before its quantum expires stays in its queue. Describe how a CPU-bound job can exploit this to receive far more than its fair share, and give two changes to the rules that stop it.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>The job runs for almost its whole quantum (say 1.9 ms of a 2 ms quantum) and then issues a trivial I/O request such as a one-byte write. Because it blocked before the quantum ended it is never demoted, stays in Q0, and returns to the CPU almost immediately when the I/O completes, so it dominates the top queue while honest jobs wait below it. Two fixes: (1) account for CPU time cumulatively per level (an allotment), so that after the job has used, say, 2 ms in total at Q0 it is demoted no matter how often it blocks; (2) use the periodic priority boost together with allotments, so demotion is permanent until the boost. The first fix removes the incentive to game the quantum; the boost handles jobs whose behaviour changes.</p></div></details></section>
+<h2 id="lab-a-scheduling-simulator">Lab: a scheduling simulator</h2>
+<p>Assignment 1 builds your shell; this lab builds a tool you can check your hand traces against. The program below simulates FCFS, SJF, SRTF and round robin tick by tick on the chapter's process set and prints the Gantt chart and the three metrics. It uses one ms per tick, reads the policy from the command line, and shows how little code a policy needs once the framework exists. Save it as <code>sched.c</code>.</p>
+<pre><code class="language-c">/* sched.c: tick-by-tick simulator for FCFS, SJF, SRTF and Round Robin. */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define N 4
+#define MAXT 200
+
+static const int arrival[N] = { 0, 1, 2, 3 };
+static const int burst[N]   = { 8, 4, 9, 5 };
+
+static int rem[N], first[N], done_at[N];
+static int slot[MAXT];                 /* slot[t] = process running during [t, t+1), or -1 */
+
+static int pick_shortest(const int *ready, int n) {
+    int best = ready[0];
+    for (int i = 1; i &lt; n; i++)
+        if (rem[ready[i]] &lt; rem[best]) best = ready[i];   /* ties: earlier in queue */
+    return best;
+}
+
+static int simulate(const char *policy, int quantum) {
+    int fcfs = !strcmp(policy, &quot;fcfs&quot;), sjf = !strcmp(policy, &quot;sjf&quot;);
+    int srtf = !strcmp(policy, &quot;srtf&quot;), rr = !strcmp(policy, &quot;rr&quot;);
+    if (!(fcfs || sjf || srtf || rr)) return -1;
+
+    int queue[64], head = 0, tail = 0;       /* ready queue (process indices) */
+    int arrived[N] = { 0 }, finished = 0, cur = -1, used = 0, t = 0;
+    for (int i = 0; i &lt; N; i++) { rem[i] = burst[i]; first[i] = -1; }
+
+    while (finished &lt; N &amp;&amp; t &lt; MAXT) {
+        for (int i = 0; i &lt; N; i++)          /* admit arrivals before anything is re-queued */
+            if (!arrived[i] &amp;&amp; arrival[i] &lt;= t) { arrived[i] = 1; queue[tail++] = i; }
+
+        if (srtf &amp;&amp; cur &gt;= 0) { queue[tail++] = cur; cur = -1; }   /* re-decide every tick */
+        if (cur &lt; 0 &amp;&amp; head &lt; tail) {
+            if (fcfs || rr) cur = queue[head++];
+            else {                                                   /* sjf or srtf */
+                int ready[N], n = 0;
+                for (int k = head; k &lt; tail; k++) ready[n++] = queue[k];
+                cur = pick_shortest(ready, n);
+                for (int k = head; k &lt; tail; k++)                    /* remove cur from queue */
+                    if (queue[k] == cur) {
+                        memmove(&amp;queue[k], &amp;queue[k + 1], (tail - k - 1) * sizeof(int));
+                        tail--;
+                        break;
+                    }
+            }
+            used = 0;
+        }
+        if (cur &lt; 0) { slot[t++] = -1; continue; }                   /* CPU idle */
+
+        if (first[cur] &lt; 0) first[cur] = t;
+        slot[t++] = cur;
+        rem[cur]--; used++;
+        if (rem[cur] == 0) { done_at[cur] = t; finished++; cur = -1; }
+        else if (rr &amp;&amp; used == quantum) {
+            for (int i = 0; i &lt; N; i++)      /* arrivals at time t join BEFORE the preempted job */
+                if (!arrived[i] &amp;&amp; arrival[i] &lt;= t) { arrived[i] = 1; queue[tail++] = i; }
+            queue[tail++] = cur; cur = -1;
+        }
+    }
+    return t;
+}
+
+int main(int argc, char **argv) {
+    const char *policy = argc &gt; 1 ? argv[1] : &quot;fcfs&quot;;
+    int quantum = argc &gt; 2 ? atoi(argv[2]) : 4;
+    int end = simulate(policy, quantum);
+    if (end &lt; 0) { fprintf(stderr, &quot;usage: %s fcfs|sjf|srtf|rr [quantum]\n&quot;, argv[0]); return 2; }
+
+    printf(&quot;%s Gantt:&quot;, policy);
+    for (int s = 0; s &lt; end; ) {
+        int e = s;
+        while (e &lt; end &amp;&amp; slot[e] == slot[s]) e++;
+        printf(&quot; |P%d %d-%d&quot;, slot[s] + 1, s, e);
+        s = e;
+    }
+    printf(&quot;|\n\n proc  arr  burst  done  turnaround  waiting  response\n&quot;);
+    double tw = 0, tt = 0, tr = 0;
+    for (int i = 0; i &lt; N; i++) {
+        int ta = done_at[i] - arrival[i], w = ta - burst[i], r = first[i] - arrival[i];
+        printf(&quot;  P%d  %3d  %5d  %4d  %10d  %7d  %8d\n&quot;, i + 1, arrival[i], burst[i], done_at[i], ta, w, r);
+        tw += w; tt += ta; tr += r;
+    }
+    printf(&quot;average turnaround %.2f, waiting %.2f, response %.2f\n&quot;, tt / N, tw / N, tr / N);
+    return 0;
+}
+</code></pre>
+<p>Build and run it with <code>gcc -Wall -Wextra -pthread sched.c -o sched</code> and then <code>./sched srtf</code> (or <code>fcfs</code>, <code>sjf</code>, <code>rr 4</code>). The SRTF output is:</p>
+<pre><code class="language-text">srtf Gantt: |P1 0-1 |P2 1-5 |P4 5-10 |P1 10-17 |P3 17-26|
+
+ proc  arr  burst  done  turnaround  waiting  response
+  P1    0      8    17          17        9         0
+  P2    1      4     5           4        0         0
+  P3    2      9    26          24       15        15
+  P4    3      5    10           7        2         2
+average turnaround 13.00, waiting 6.50, response 4.25
+</code></pre>
+<p>The other policies give average waiting 8.75 (<code>fcfs</code>), 7.75 (<code>sjf</code>) and 11.75 (<code>rr 4</code>), with <code>rr 4</code> producing <code>|P1 0-4 |P2 4-8 |P3 8-12 |P4 12-16 |P1 16-20 |P3 20-24 |P4 24-25 |P3 25-26|</code>. These match the traces in this chapter. Check each against your hand-drawn Gantt charts; any disagreement is either an arithmetic slip or a tie-breaking convention, and finding which is the real exercise.</p>
+<div class="admonition tip">
+<p class="admonition-title">Use it on your own sets</p>
+<p>Change <code>arrival</code> and <code>burst</code>, recompile, and predict the answer before running. Writing the prediction down first is what builds the skill the exam will test.</p>
+</div>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Add <code>rr</code> quantum sweeps: run <code>./sched rr q</code> for q = 1 to 10 and tabulate average waiting and response. Is waiting monotonic in q?</li>
+<li>Implement the MLFQ from this chapter (Q0 q = 2, Q1 q = 4, Q2 FCFS) as a fifth policy and check that you reproduce average waiting 13.0 and response 1.5.</li>
+<li>Add a context-switch cost of 1 tick to the framework (the CPU does nothing useful for one tick whenever the running process changes) and see how the ranking of the algorithms changes.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Waiting time is computed as start minus arrival for a preempted job</td>
+<td>The formula only works if a job runs once without interruption</td>
+<td>Use waiting = completion - arrival - burst; it is always right when there is no I/O</td>
+</tr>
+<tr>
+<td>Average waiting and turnaround do not differ by the average burst</td>
+<td>Arithmetic error in one process, or wrong completion time</td>
+<td>Check that Σ turnaround - Σ waiting = Σ burst for the set (26 in our example)</td>
+</tr>
+<tr>
+<td>RR trace gives a different order from the answer key</td>
+<td>Tie-breaking between a new arrival and a preempted job</td>
+<td>State your convention (arrivals first is the textbook one) and apply it consistently</td>
+</tr>
+<tr>
+<td>SRTF trace never preempts</td>
+<td>Compared the newcomer with the running job's full burst, not its remaining time</td>
+<td>Always compare with remaining time at the moment of arrival</td>
+</tr>
+<tr>
+<td>Gantt chart has idle gaps that should not exist</td>
+<td>Forgot jobs that arrived while another was running</td>
+<td>Rebuild the ready set at each decision point from arrivals up to that time</td>
+</tr>
+<tr>
+<td><code>nice</code> seems to have no effect</td>
+<td>Machine is idle, or the tasks are on different CPUs</td>
+<td>Pin both with <code>taskset -c 0</code>; niceness matters only under contention</td>
+</tr>
+<tr>
+<td><code>sched_setscheduler</code> returns <code>EPERM</code></td>
+<td>Real-time policies need <code>CAP_SYS_NICE</code> or an rlimit</td>
+<td>Run as root or raise <code>RLIMIT_RTPRIO</code> for an experiment; never leave a spinning real-time task running</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>Waiting = turnaround - burst and turnaround = completion - arrival; response = first run - arrival. The general formula for waiting also works for preempted jobs.</li>
+<li>On our process set the average waiting times are FCFS 8.75, SJF 7.75, SRTF 6.5 and RR (q = 4) 11.75; SRTF is optimal for waiting time but requires knowing future bursts, which are only predicted.</li>
+<li>Round robin buys response time with extra waiting and context switches; the quantum should exceed most CPU bursts while staying small enough for interactivity.</li>
+<li>MLFQ approximates SJF by demoting jobs that use full quanta; it needs allotments and priority boosts to resist gaming and starvation.</li>
+<li>Linux CFS gives each runnable task a CPU share equal to weight / total weight and always runs the smallest vruntime; nice 0 to nice 5 is a ratio of 1024 to 335, about 3 to 1.</li>
+<li>Real-time scheduling is about deadlines: RM guarantees U ≤ n(2^(1/n) - 1), EDF guarantees U ≤ 1.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 5 (CPU Scheduling), including the sections on scheduling criteria, algorithms, real-time scheduling and the Linux scheduler.</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapters "Scheduling: Introduction", "Scheduling: The Multi-Level Feedback Queue" and "Scheduling: Proportional Share".</li>
+<li><strong>Essential.</strong> Tanenbaum and Bos, <em>Modern Operating Systems</em>, Section 2.5 (Scheduling).</li>
+<li>OSTEP chapter "Multiprocessor Scheduling (Advanced)".</li>
+<li>C. L. Liu and J. W. Layland, "Scheduling Algorithms for Multiprogramming in a Hard-Real-Time Environment", <em>Journal of the ACM</em> 20(1), 1973.</li>
+<li>F. J. Corbató, M. Merwin-Daggett and R. C. Daley, "An Experimental Time-Sharing System", <em>Proceedings of the AFIPS Spring Joint Computer Conference</em>, 1962.</li>
+<li>I. Stoica and H. Abdel-Wahab, "Earliest Eligible Virtual Deadline First: A Flexible and Accurate Mechanism for Proportional Share Resource Allocation", 1995.</li>
+<li>Manual pages: <code>sched(7)</code>, <code>sched_setscheduler(2)</code>, <code>nice(1)</code>, <code>chrt(1)</code>, <code>taskset(1)</code>, <code>getrusage(2)</code>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="4">Mark Week 4 as complete</button></div><div class="pager"><a class="pn prev" href="week-03.html"><small>Previous</small>Week 3: Threads and Interprocess Communication</a><a class="pn next" href="week-05.html"><small>Next</small>Week 5: Synchronization I</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#the-scheduling-problem-and-how-to-judge-it">The scheduling problem and how to judge it</a></li><li><a href="#fcfs-sjf-and-srtf-on-one-worked-example">FCFS, SJF and SRTF on one worked example</a></li><li><a href="#round-robin-and-priority-scheduling">Round robin and priority scheduling</a></li><li><a href="#multilevel-feedback-queues">Multilevel feedback queues</a></li><li><a href="#scheduling-in-linux">Scheduling in Linux</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab-a-scheduling-simulator">Lab: a scheduling simulator</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

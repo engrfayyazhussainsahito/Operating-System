@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 15: Virtualization, Containers and Case Studies: Linux and Windows · Operating Systems for Dummies</title>
+<meta name="description" content="How one machine pretends to be many (hypervisors, trap-and-emulate, binary translation, paravirtualization, VT-x and nested page tables), how containers get a similar effect with Linux namespaces and cgroups, and how Linux and Windows put the course ideas together.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="4"><article class="week" data-week="15"><header class="week-head" data-num="15"><p class="kicker">Week 15 · Phase 4: Storage, Protection and Modern Systems</p><h1>Virtualization, Containers and Case Studies: Linux and Windows</h1><p class="abstract">How one machine pretends to be many (hypervisors, trap-and-emulate, binary translation, paravirtualization, VT-x and nested page tables), how containers get a similar effect with Linux namespaces and cgroups, and how Linux and Windows put the course ideas together.</p><ul class="chips"><li><b>27</b> min read</li><li><b>0</b> demos</li><li><b>4</b> figures</li><li><b>12</b> code blocks</li><li><b>7</b> exercises</li></ul><p class="lab-line"><b>Lab.</b> Observe namespaces with unshare and clone(), limit a process group with cgroup v2, list the tasks of a threaded process, simulate CFS weights in C and detect a hypervisor with CPUID.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Distinguish type 1 and type 2 hypervisors and state the Popek and Goldberg condition for classical virtualization</li><li>Explain how trap-and-emulate, binary translation, paravirtualization and hardware-assisted virtualization each handle sensitive instructions</li><li>Compute the cost of a two-dimensional (nested) page walk and explain why TLBs make it tolerable</li><li>Describe what namespaces and cgroups each isolate or limit, and why a container is not a virtual machine</li><li>Compute CFS CPU shares from nice-derived weights and explain vruntime</li><li>Map Windows concepts (executive, object manager, handles, priority levels, working sets, MFT) onto ideas from earlier weeks</li><li>Use unshare and cgroup v2 files to observe and limit a process</li></ul></section><div class="prose"><p>In <a href="week-14.html">Week 14</a> a protection domain was a set of rights around a process, enforced by the kernel. This week we draw the domain around something larger: a whole operating system (a virtual machine) or a group of processes that believe they own the machine (a container). Both reuse mechanisms you know: privilege levels from <a href="week-01.html">Week 1</a>, page tables and TLBs from <a href="week-08.html">Week 8</a> and the scheduler from <a href="week-04.html">Week 4</a>.</p>
+<p>In the second half we read two real kernels as applications of the whole course. Linux builds everything on one primitive (<code>clone</code>); Windows makes different choices for the same problems: an object manager, handles, fixed priority levels and NTFS. The aim is to see the same few ideas recur with different trade-offs.</p>
+<h2 id="virtual-machines-and-hypervisors">Virtual machines and hypervisors</h2>
+<p>Think of an apartment building: each tenant has a private flat, but all share one foundation and one boiler, and the landlord decides who gets how much hot water. A <strong>virtual machine (VM)</strong> is a flat: software that looks to the operating system inside it like a complete computer. The landlord is the <strong>hypervisor</strong>.</p>
+<div class="admonition definition">
+<p class="admonition-title">Hypervisor</p>
+<p>A <em>hypervisor</em>, or <em>virtual machine monitor (VMM)</em>, creates and runs virtual machines. It multiplexes the real CPU, memory and devices among <em>guests</em>, giving each guest OS the illusion of a private machine. The real machine is the <em>host</em>.</p>
+</div>
+<p>Popek and Goldberg (1974) asked three things of a VMM: <strong>fidelity</strong> (programs behave as on real hardware), <strong>safety</strong> (the VMM keeps control of real resources, so a guest cannot harm the host or other guests) and <strong>efficiency</strong> (most guest instructions run directly on the CPU).</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   Type 1 (bare metal)                    Type 2 (hosted)
+
+   +--------+ +--------+ +--------+       +--------+ +--------+
+   | Guest  | | Guest  | | Guest  |       | Guest  | | Guest  |
+   | OS A   | | OS B   | | OS C   |       | OS A   | | OS B   |
+   +--------+ +--------+ +--------+       +--------+ +--------+
+   +--------------------------------+     +-----------------------+
+   |   Hypervisor (Xen, ESXi,       |     | Hypervisor process    |  + your
+   |   Hyper-V, KVM)                |     | (VirtualBox, Workstn) |    other
+   +--------------------------------+     +-----------------------+    apps
+   |          Hardware              |     |  Host OS (Linux, Win) |
+   +--------------------------------+     +-----------------------+
+                                          |       Hardware        |
+                                          +-----------------------+
+</pre></div><figcaption><b>Figure 15.1..</b> A type 1 hypervisor runs directly on hardware; a type 2 hypervisor is an ordinary program on a host OS.</figcaption></figure>
+<p>A <strong>type 1</strong> hypervisor is the most privileged software on the machine: Xen, VMware ESXi and Microsoft Hyper-V. A <strong>type 2</strong> hypervisor is an application on a normal OS, like VirtualBox: easy to install, but with one more layer. The line blurs: <strong>KVM</strong> is a Linux module that makes Linux itself a type 1 hypervisor, with QEMU emulating devices.</p>
+<h2 id="trap-and-emulate">Trap-and-emulate</h2>
+<p>The classic technique uses the privilege levels of <a href="week-01.html">Week 1</a>. The guest kernel believes it runs in kernel mode, but the VMM runs it in <em>user mode</em>. Ordinary instructions run at full speed. When the guest executes a <strong>privileged instruction</strong> (disable interrupts, load a page-table base, touch a device) the CPU traps into the VMM, which <em>emulates</em> the instruction against the guest's <em>virtual</em> state and resumes the guest.</p>
+<p>The model below is not real virtualization, only the control flow. The guest runs six instructions, three privileged; the "VMM" keeps a virtual interrupt flag and never touches a real one. Save as <code>toyvm.c</code>.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+enum op { MOVI, ADD, CLI, STI, OUT, HALT };
+struct insn { enum op op; int a, b; };
+struct vcpu { int reg[4], pc, virt_if; long executed, traps; };
+
+static int is_privileged(enum op o) { return o == CLI || o == STI || o == OUT; }
+
+/* The VMM's trap handler: emulate the instruction on virtual state. */
+static void emulate(struct vcpu *v, struct insn *i) {
+    v-&gt;traps++;
+    if (i-&gt;op == CLI) v-&gt;virt_if = 0;
+    else if (i-&gt;op == STI) v-&gt;virt_if = 1;
+    else printf(&quot;  [vmm] emulated OUT: guest wrote %d to virtual device\n&quot;, v-&gt;reg[i-&gt;a]);
+}
+
+int main(void) {
+    struct insn prog[] = {
+        {MOVI, 0, 40}, {MOVI, 1, 2}, {ADD, 0, 1},   /* r0 = 42, unprivileged */
+        {CLI, 0, 0}, {OUT, 0, 0}, {STI, 0, 0},      /* privileged */
+        {HALT, 0, 0},
+    };
+    struct vcpu v = { .virt_if = 1 };
+    for (;;) {
+        struct insn *i = &amp;prog[v.pc++];
+        if (i-&gt;op == HALT) break;
+        v.executed++;
+        if (is_privileged(i-&gt;op)) { emulate(&amp;v, i); continue; }   /* trap */
+        if (i-&gt;op == MOVI) v.reg[i-&gt;a] = i-&gt;b;                    /* direct */
+        else v.reg[i-&gt;a] += v.reg[i-&gt;b];
+    }
+    printf(&quot;executed=%ld trapped=%ld direct=%ld r0=%d virtual IF=%d\n&quot;,
+           v.executed, v.traps, v.executed - v.traps, v.reg[0], v.virt_if);
+    return 0;
+}
+</code></pre>
+<p>Built with <code>gcc -Wall -pthread -o toyvm toyvm.c</code>, it prints:</p>
+<pre><code class="language-text">  [vmm] emulated OUT: guest wrote 42 to virtual device
+executed=6 trapped=3 direct=3 r0=42 virtual IF=1
+</code></pre>
+<p>Half the instructions trapped, so this guest would be slow. A real guest traps on well under 1% of instructions, which is what makes the approach efficient; each real trap still costs microseconds (Exercise 2).</p>
+<h3 id="why-x86-was-hard-to-virtualize">Why x86 was hard to virtualize</h3>
+<p>A <strong>sensitive</strong> instruction reads or changes machine configuration (mode, page-table base, interrupt state) or behaves differently depending on it. A <strong>privileged</strong> instruction traps in user mode. Popek and Goldberg's theorem: trap-and-emulate works if <em>every sensitive instruction is privileged</em>. The original x86 broke this: about seventeen instructions were sensitive but did <em>not</em> trap. <code>popf</code>, which restores the flags register, silently ignores the interrupt-flag bit in user mode, so the VMM never learns the guest tried to change it.</p>
+<table>
+<thead>
+<tr>
+<th>Technique</th>
+<th>Idea</th>
+<th>Catch</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Binary translation</strong></td>
+<td>The VMM rewrites guest kernel code before running it, replacing problem instructions with safe sequences, and caches the result</td>
+<td>Complex; translation overhead</td>
+<td>VMware (1999)</td>
+</tr>
+<tr>
+<td><strong>Paravirtualization</strong></td>
+<td>The guest kernel is <em>modified</em> to call the VMM through <strong>hypercalls</strong> (system calls from guest to hypervisor)</td>
+<td>Guest source must be changed</td>
+<td>Xen (2003), virtio</td>
+</tr>
+<tr>
+<td><strong>Hardware-assisted</strong></td>
+<td>New CPU mode traps sensitive operations by design</td>
+<td>Needs recent CPUs; VM exits cost time</td>
+<td>KVM, Hyper-V, modern Xen</td>
+</tr>
+</tbody>
+</table>
+<p>Paravirtualization survives mainly for <strong>I/O</strong>, as <em>virtio</em> devices: shared-memory request rings that avoid many traps per packet.</p>
+<h2 id="hardware-support-vt-x-amd-v-and-nested-page-tables">Hardware support: VT-x, AMD-V and nested page tables</h2>
+<p>Around 2005 to 2006 Intel (<strong>VT-x</strong>) and AMD (<strong>AMD-V</strong>) added hardware virtualization. The CPU gains a <strong>root mode</strong> (the VMM) and a <strong>non-root mode</strong> (the guest). In non-root mode the guest kernel runs in its <em>own</em> ring 0 and executes privileged instructions directly. A control structure in memory (the <strong>VMCS</strong> on Intel, <strong>VMCB</strong> on AMD) holds guest register state and lists the events that force a <strong>VM exit</strong>, a switch to the VMM. The VMM handles the exit (say, an access to an emulated device) and does a <strong>VM entry</strong> to resume. Everything not configured to exit runs at native speed, and sensitive instructions now exit by design, so the Popek and Goldberg condition holds again.</p>
+<p>A program can ask whether it is a guest by reading CPUID, the CPU feature instruction. Save as <code>cpuid.c</code> (x86 only).</p>
+<pre><code class="language-c">#include &lt;cpuid.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(void) {
+    unsigned a, b, c, d;
+    __cpuid(1, a, b, c, d);
+    int hv = (c &gt;&gt; 31) &amp; 1;                          /* CPUID.1:ECX bit 31 */
+    printf(&quot;hypervisor bit : %d\n&quot;, hv);
+    printf(&quot;VMX (Intel VT-x): %d\n&quot;, (c &gt;&gt; 5) &amp; 1);  /* CPUID.1:ECX bit 5 */
+    __cpuid(0x80000001, a, b, c, d);
+    printf(&quot;SVM (AMD-V)     : %d\n&quot;, (c &gt;&gt; 2) &amp; 1);  /* CPUID.80000001:ECX bit 2 */
+    if (hv) {
+        char id[13];
+        __cpuid(0x40000000, a, b, c, d);             /* hypervisor vendor leaf */
+        memcpy(id, &amp;b, 4); memcpy(id + 4, &amp;c, 4); memcpy(id + 8, &amp;d, 4);
+        id[12] = 0;
+        printf(&quot;hypervisor id   : \&quot;%s\&quot;\n&quot;, id);
+    }
+    return 0;
+}
+</code></pre>
+<p>The course sandbox, itself a KVM guest, printed:</p>
+<pre><code class="language-text">hypervisor bit : 1
+VMX (Intel VT-x): 0
+SVM (AMD-V)     : 0
+hypervisor id   : &quot;KVMKVMKVM&quot;
+</code></pre>
+<p>VMX and SVM are 0 because this guest may not run VMs of its own (nested virtualization is off). On bare metal you would see the hypervisor bit 0 and VMX or SVM equal to 1.</p>
+<h3 id="memory-shadow-page-tables-and-nested-paging">Memory: shadow page tables and nested paging</h3>
+<p>The guest believes it controls physical memory, but its "physical" addresses are <em>guest-physical</em> (GPA) and must be mapped to <em>host-physical</em> (HPA) memory. With guest virtual addresses (GVA) there are three address spaces, yet the MMU of <a href="week-08.html">Week 8</a> walks one table.</p>
+<ul>
+<li><strong>Shadow page tables</strong> (software): the VMM builds a hidden table mapping GVA directly to HPA and write-protects the guest's own tables, trapping every guest update. Correct, but slow for page-table-heavy work such as process creation.</li>
+<li><strong>Nested paging</strong> (hardware): <strong>EPT</strong> on Intel and <strong>NPT</strong> on AMD (2007 to 2008). The MMU walks the guest table (GVA to GPA) and a hypervisor-owned nested table (GPA to HPA). The guest edits its tables with no traps.</li>
+</ul>
+<figure class="figure"><div class="scroll"><pre class="diagram">   guest virtual address (GVA)
+            |
+            v   guest page table (guest OS controls; entries hold GPAs)
+   +--------------------------+
+   | L4 -&gt; L3 -&gt; L2 -&gt; L1     |   each pointer is a GUEST-physical address,
+   +--------------------------+   so each must itself be translated:
+            |
+            v   nested page table (hypervisor controls)
+   +--------------------------+
+   | GPA -&gt; HPA  (4 levels)   |   one full nested walk per guest level,
+   +--------------------------+   plus one for the final data page
+            |
+            v
+   host physical address (HPA) -&gt; real DRAM
+
+   TLB caches the final GVA -&gt; HPA result, so a hit needs no walk at all.
+</pre></div><figcaption><b>Figure 15.2..</b> Two-dimensional translation. A TLB miss walks the guest table and the nested table together.</figcaption></figure>
+<div class="admonition example">
+<p class="admonition-title">How bad is a nested walk?</p>
+<p>Natively a 4-level walk costs 4 references. Under nested paging each of the 4 guest levels holds a GPA: translating it takes a 4-reference nested walk, then 1 reference reads the entry, so 4 × (4 + 1) = 20. The final data page's GPA needs one more nested walk of 4. Total 24 references, six times native (Exercise 3 generalises this).</p>
+</div>
+<h2 id="containers-namespaces-and-cgroups">Containers: namespaces and cgroups</h2>
+<p>A VM virtualizes <em>hardware</em>, so every guest brings a whole kernel. Often we only need isolation between programs on one kernel. A <strong>container</strong> gives a group of processes their own <em>view</em> of the system and a <em>limit</em> on resource use, with no second kernel.</p>
+<div class="admonition definition">
+<p class="admonition-title">Container</p>
+<p>A <em>container</em> is not a kernel object. It is a set of processes running on the host kernel inside chosen <strong>namespaces</strong> (what they can <em>see</em>) and a <strong>cgroup</strong> (how much they can <em>use</em>), usually with a restricted root file system, fewer capabilities and a seccomp filter (<a href="week-14.html">Week 14</a>).</p>
+</div>
+<h3 id="namespaces-what-a-process-can-see">Namespaces: what a process can see</h3>
+<p>A <strong>namespace</strong> wraps a global resource so that processes inside see a private instance. Every process belongs to one namespace of each kind; <code>/proc/&lt;pid&gt;/ns/</code> lists them.</p>
+<table>
+<thead>
+<tr>
+<th>Namespace</th>
+<th>Flag</th>
+<th>Isolates</th>
+<th>Effect inside</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mount</td>
+<td><code>CLONE_NEWNS</code></td>
+<td>Mount table</td>
+<td>Own root file system</td>
+</tr>
+<tr>
+<td>UTS</td>
+<td><code>CLONE_NEWUTS</code></td>
+<td>Hostname</td>
+<td>Own <code>hostname</code></td>
+</tr>
+<tr>
+<td>IPC</td>
+<td><code>CLONE_NEWIPC</code></td>
+<td>System V and POSIX IPC</td>
+<td>Private shared memory, queues</td>
+</tr>
+<tr>
+<td>PID</td>
+<td><code>CLONE_NEWPID</code></td>
+<td>Process IDs</td>
+<td>First process is PID 1</td>
+</tr>
+<tr>
+<td>Network</td>
+<td><code>CLONE_NEWNET</code></td>
+<td>Interfaces, routes, ports</td>
+<td>Own <code>lo</code>, own port numbers</td>
+</tr>
+<tr>
+<td>User</td>
+<td><code>CLONE_NEWUSER</code></td>
+<td>User and group IDs</td>
+<td>Root inside, ordinary user outside</td>
+</tr>
+<tr>
+<td>Cgroup</td>
+<td><code>CLONE_NEWCGROUP</code></td>
+<td>Cgroup root view</td>
+<td>Sees its group as <code>/</code></td>
+</tr>
+<tr>
+<td>Time</td>
+<td><code>CLONE_NEWTIME</code></td>
+<td>Clock offsets</td>
+<td>Own uptime (Linux 5.6 and later)</td>
+</tr>
+</tbody>
+</table>
+<p>Three system calls manage them: <code>clone</code> (child in new namespaces), <code>unshare</code> (move the <em>caller</em> into new ones) and <code>setns</code> (join an existing one, as <code>docker exec</code> does). A process has a PID in each PID namespace containing it, so a container's PID 1 may be PID 4711 on the host; that PID 1 reaps orphans there like <code>init</code> (<a href="week-02.html">Week 2</a>). The <strong>user namespace</strong> maps IDs: UID 0 inside may be unprivileged UID 1000 outside, which is how <em>rootless</em> containers work. Creating most namespaces needs <code>CAP_SYS_ADMIN</code>, but a new user namespace grants that capability <em>inside itself</em>, so an ordinary user can create the rest.</p>
+<h3 id="cgroups-how-much-a-process-can-use">Cgroups: how much a process can use</h3>
+<p><strong>Control groups (cgroups)</strong> arrange processes in a tree and attach resource controllers to nodes. They were developed at Google and merged into Linux in 2008; the redesigned <strong>cgroup v2</strong> (one unified hierarchy) is the default on current distributions. The interface is a file system, normally at <code>/sys/fs/cgroup</code>: <code>mkdir</code> creates a group, writing a number into a file sets a limit, and writing a PID into <code>cgroup.procs</code> moves a process in.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cpu.max</code></td>
+<td><code>quota period</code> in microseconds: <code>50000 100000</code> is 50% of one CPU</td>
+</tr>
+<tr>
+<td><code>cpu.weight</code></td>
+<td>Relative share under contention (1 to 10000, default 100)</td>
+</tr>
+<tr>
+<td><code>memory.max</code></td>
+<td>Hard limit; exceeding it triggers reclaim, then the OOM killer inside the group</td>
+</tr>
+<tr>
+<td><code>pids.max</code></td>
+<td>Maximum number of tasks (stops fork bombs)</td>
+</tr>
+</tbody>
+</table>
+<p>The two are independent: <code>unshare</code> alone gives a "container" with no limits; a cgroup alone limits a process that still sees everything.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   VIRTUAL MACHINES                          CONTAINERS
+
+   +-----------+ +-----------+               +-----------+ +-----------+
+   |   App     | |   App     |               |   App     | |   App     |
+   | libs, bins| | libs, bins|               | libs, bins| | libs, bins|
+   | Guest     | | Guest     |               +-----------+ +-----------+
+   | kernel    | | kernel    |               |ns + cgroup| |ns + cgroup|
+   +-----------+ +-----------+               +-----------+-+-----------+
+   +-------------------------+               +-------------------------+
+   |  Hypervisor             |               |   ONE shared host kernel|
+   +-------------------------+               +-------------------------+
+   |  Hardware               |               |   Hardware              |
+   +-------------------------+               +-------------------------+
+</pre></div><figcaption><b>Figure 15.3..</b> A VM carries its own kernel; a container is a confined group of processes sharing the host kernel.</figcaption></figure>
+<h2 id="containers-versus-virtual-machines">Containers versus virtual machines</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Virtual machine</th>
+<th>Container</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Virtualized</td>
+<td>Hardware</td>
+<td>OS view and resources</td>
+</tr>
+<tr>
+<td>Kernel</td>
+<td>One per guest</td>
+<td>Shared with the host</td>
+</tr>
+<tr>
+<td>Start-up</td>
+<td>Seconds to minutes (boots an OS)</td>
+<td>Milliseconds to a second (starts a process)</td>
+</tr>
+<tr>
+<td>Isolation</td>
+<td>Strong: narrow hypervisor interface</td>
+<td>Weaker: whole system call interface of the shared kernel</td>
+</tr>
+</tbody>
+</table>
+<p>Docker added <em>images</em>: stacked read-only file system layers merged by <strong>overlayfs</strong>, plus a thin writable layer. Containers from one image share its layers on disk and in the page cache (<a href="week-13.html">Week 13</a>).</p>
+<div class="admonition warning">
+<p class="admonition-title">A container is not a security boundary like a VM</p>
+<p>All containers share one kernel. A kernel bug reachable from a container, or a careless configuration (real root, <code>--privileged</code>, the Docker socket mounted), can give an attacker the host and every other container. Hypervisors expose a much narrower interface, so multi-tenant clouds often run each container inside a micro-VM (Firecracker, Kata Containers) or add a user-space kernel (gVisor).</p>
+</div>
+<h2 id="case-study-linux">Case study: Linux</h2>
+<p>Linux is a monolithic kernel (all major services in kernel mode) extended by loadable modules. We look at four subsystems.</p>
+<h3 id="the-process-model-everything-is-a-task">The process model: everything is a task</h3>
+<p>Linux has no separate kernel notion of "process" and "thread". Both are <strong>tasks</strong> described by a <code>task_struct</code>; they differ only in <em>what they share</em>, which the flags of <code>clone</code> choose.</p>
+<table>
+<thead>
+<tr>
+<th>Created by</th>
+<th><code>clone</code> flags</th>
+<th>Shares with parent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fork()</code></td>
+<td><code>SIGCHLD</code> only</td>
+<td>Nothing (copy-on-write, <a href="week-09.html">Week 9</a>)</td>
+</tr>
+<tr>
+<td><code>pthread_create()</code></td>
+<td><code>CLONE_VM</code>, <code>CLONE_FILES</code>, <code>CLONE_FS</code>, <code>CLONE_SIGHAND</code>, <code>CLONE_THREAD</code></td>
+<td>Address space, files, handlers</td>
+</tr>
+<tr>
+<td>Container's first process</td>
+<td><code>CLONE_NEWPID</code>, <code>CLONE_NEWNS</code>, <code>CLONE_NEWNET</code>, ...</td>
+<td>Nothing, plus new namespaces</td>
+</tr>
+</tbody>
+</table>
+<p>Each task has a unique thread ID (<code>gettid()</code>); tasks in one thread group share a <strong>thread group ID</strong>, which is what <code>getpid()</code> returns. Process 1 (<code>init</code>, normally systemd) adopts orphans and reaps zombies. In a shell, <code>ls /proc/self/task</code> lists the tasks of a process, one per thread.</p>
+<h3 id="scheduling-cfs-and-eevdf">Scheduling: CFS and EEVDF</h3>
+<p>Linux checks <strong>scheduling classes</strong> in order: stop, deadline (<code>SCHED_DEADLINE</code>), real-time (<code>SCHED_FIFO</code>, <code>SCHED_RR</code>), the <strong>fair</strong> class for ordinary processes, then idle. Each CPU has its own run queue, with periodic load balancing.</p>
+<p>The fair class was the <strong>Completely Fair Scheduler (CFS)</strong>, Linux 2.6.23 (2007). With n runnable tasks each should ideally get 1/n of the CPU. Since a CPU runs one task at a time, CFS tracks how far each task has fallen behind.</p>
+<div class="admonition definition">
+<p class="admonition-title">Virtual runtime (vruntime)</p>
+<p><em>vruntime</em> is the CPU time a task has used, scaled by its weight: <code>vruntime += delta × 1024 / weight</code>, where <code>delta</code> is the real time just run. The weight comes from the nice value: 1024 for nice 0, about 1.25 times less per nice step up (nice 5 is 335). A heavier task's vruntime grows more slowly, so it is picked more often.</p>
+</div>
+<p>CFS keeps runnable tasks in a red-black tree ordered by vruntime and runs the leftmost, the task that has received the least scaled service, at O(log n) per operation. In the long run all vruntimes advance equally, so share = weight / total weight. The same weights drive <code>cpu.weight</code> for cgroups, which divide the CPU between groups first and tasks second. Since Linux 6.6 (2023) the fair class uses <strong>EEVDF</strong> (Earliest Eligible Virtual Deadline First, a 1995 algorithm): each task has a <em>lag</em> and a <em>virtual deadline</em>, and the scheduler picks the eligible task with the earliest deadline, so a task asking for a short slice gets low latency without heuristics. Weighted sharing is unchanged. Part 4 of the lab simulates the rule.</p>
+<h3 id="memory-management">Memory management</h3>
+<p>Linux uses demand paging with 4-level page tables (47 bits, 128 TiB, for user space) and 4 KiB pages, plus optional huge pages. The <strong>buddy allocator</strong> hands out frames in power-of-two blocks; <strong>slab</strong> caches serve small kernel objects. Faults are resolved from the page cache, swap or a zero page; <code>fork</code> uses copy-on-write. When free memory drops below watermarks, <code>kswapd</code> reclaims pages from LRU lists, writing dirty ones back first (<a href="week-10.html">Week 10</a>). By default Linux <strong>overcommits</strong>: <code>malloc</code> can succeed beyond RAM plus swap because many pages are never touched. If memory truly runs out, the <strong>OOM killer</strong> picks a victim by score; inside a cgroup with <code>memory.max</code> only that group is a candidate.</p>
+<h3 id="the-vfs">The VFS</h3>
+<p>As in <a href="week-13.html">Week 13</a>, the VFS gives every file system the same objects (superblock, inode, dentry, file) and operation tables: ext4, XFS, NFS, tmpfs, overlayfs and the pseudo file systems <code>/proc</code> and <code>/sys</code> all plug in. The pseudo file systems matter here: namespaces, cgroups and task lists are read and controlled by <em>reading and writing files</em>, so a shell script is a full administration tool, as the lab shows.</p>
+<h2 id="case-study-windows">Case study: Windows</h2>
+<p>Windows NT (designed from 1988 under Dave Cutler, shipped 1993) is the ancestor of all current Windows. It is a <strong>hybrid</strong> kernel: most services run in kernel mode as in a monolithic kernel, but are organised as layered components with defined interfaces.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   User mode
+   +--------------------------------------------------------------------+
+   | Applications | Services | Environment subsystems (Win32, WSL)      |
+   |              +----------+----------------------------------------- |
+   |            Subsystem DLLs (kernel32, user32)  -&gt;  ntdll.dll        |
+   +------------------------------- syscall ----------------------------+
+   Kernel mode
+   +--------------------------------------------------------------------+
+   | EXECUTIVE (ntoskrnl.exe)                                           |
+   |  Object Manager | Process/Thread Mgr | Memory Manager | I/O Manager |
+   |  Security Reference Monitor | Cache Manager | Config Mgr (registry) |
+   +--------------------------------------------------------------------+
+   | KERNEL: thread scheduling, interrupts, synchronization primitives  |
+   +--------------------------------------------------------------------+
+   | Device drivers, file system drivers (NTFS)  |  Hyper-V hypervisor  |
+   +--------------------------------------------------------------------+
+   | HAL (Hardware Abstraction Layer)                                   |
+   +--------------------------------------------------------------------+
+</pre></div><figcaption><b>Figure 15.4..</b> Windows NT architecture. Win32 calls pass through <code>ntdll.dll</code> into the executive; the Hyper-V hypervisor runs beneath the kernel.</figcaption></figure>
+<h3 id="the-executive-and-objects">The executive and objects</h3>
+<p>Applications call the <strong>Win32 API</strong>, which wraps the native <code>Nt*</code> functions in <code>ntdll.dll</code> that issue the system call. The <strong>executive</strong> holds the major managers of Figure 15.4; below it the small <strong>kernel</strong> does low-level scheduling and interrupt dispatch and the <strong>HAL</strong> hides hardware differences.</p>
+<p>Windows is <em>object-based</em>. Processes, threads, files, events, mutexes, semaphores, sections (memory-mapped files) and registry keys are <strong>kernel objects</strong> managed by the <strong>Object Manager</strong>, each with a type, a reference count and a <strong>security descriptor</strong> holding an ACL. User code holds a <strong>handle</strong>, an index into a per-process <em>handle table</em> whose entry records the object and the rights granted at open time. The ACL is checked once, when the handle is created; in the vocabulary of <a href="week-14.html">Week 14</a> the descriptor is an ACL and the handle a capability, as with Unix permission bits and file descriptors. <code>CreateProcess</code> builds the address space and loads an image in one call, instead of <code>fork</code> plus <code>exec</code>.</p>
+<h3 id="scheduling">Scheduling</h3>
+<p>The scheduler is <strong>priority-based and preemptive</strong> with 32 levels, and its unit is the <strong>thread</strong>. Levels 16 to 31 are <em>real-time</em> (fixed priorities, not hard real time), 1 to 15 are <em>variable</em> and used by ordinary programs. It always runs a ready thread of the highest priority; equal priorities share the CPU round-robin in <strong>quanta</strong>. Normal applications start at base priority 8 and get <strong>dynamic boosts</strong>, decaying one level per quantum, for example after I/O or a window event, and the foreground application gets a longer quantum. A thread ready but starved for about four seconds is boosted to 15 briefly, much like aging in <a href="week-04.html">Week 4</a>.</p>
+<h3 id="memory-manager">Memory manager</h3>
+<p>The Memory Manager provides demand-paged virtual memory with 4 KiB pages and optional large pages. A tree of <strong>virtual address descriptors (VADs)</strong> describes each address space, and each process has a <strong>working set</strong>, its resident pages, with minimum and maximum sizes. Under pressure the manager <em>trims</em> working sets: trimmed pages go to the <strong>standby</strong> list (clean; reclaimed cheaply by a <em>soft fault</em>) or the <strong>modified</strong> list (dirty; written to the paging file). A <strong>section object</strong> represents a mapped file or shared memory, the analogue of <code>mmap</code>, and underlies image loading and copy-on-write.</p>
+<h3 id="ntfs-at-an-overview-level">NTFS at an overview level</h3>
+<p><strong>NTFS</strong> divides the volume into <strong>clusters</strong> (commonly 4 KiB) and keeps everything in a <strong>Master File Table (MFT)</strong>: one record, typically 1,024 bytes, per file or directory. A record is a list of <strong>attributes</strong>: standard information (timestamps), file name, security descriptor and <em>data</em>. A small file's data is <em>resident</em> inside the record; a larger file is <em>non-resident</em> and the record holds a compact list of <strong>runs</strong> (start cluster, length), so a contiguous huge file needs one run and a fragmented one many. Directories are B+ trees of names, and even metadata are files (<code>$MFT</code>, <code>$Bitmap</code>, <code>$LogFile</code>). For crash safety NTFS write-ahead logs <em>metadata</em> in <code>$LogFile</code> (<a href="week-13.html">Week 13</a>); user data are not logged. It also offers per-file ACLs, <strong>alternate data streams</strong> and <strong>Volume Shadow Copy</strong> snapshots.</p>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 15.1</span><span class="lvl lvl-warmup">warm-up</span><h4>Sensitive versus privileged</h4></header><div class="ex-q"><p>(a) Define sensitive and privileged instructions. (b) State the Popek and Goldberg condition for trap-and-emulate. (c) On the original x86, <code>popf</code> in user mode silently ignores interrupt-flag changes. Why does this break trap-and-emulate, and what are three fixes?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Sensitive: reads or changes machine configuration or behaves differently depending on it. Privileged: traps in user mode.</p>
+<p>(b) Every sensitive instruction must be privileged, so each one the VMM must intercept does trap.</p>
+<p>(c) <code>popf</code> is sensitive but not privileged, so nothing traps, the VMM never sees the request and the guest's virtual interrupt flag is wrong. Fixes: binary translation, paravirtualization (hypercalls) or hardware virtualization (VM exit).</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 15.2</span><span class="lvl lvl-core">core</span><h4>Cost of trapping</h4></header><div class="ex-q"><p>A guest executes 1,000,000 instructions. Each ordinary one takes 1 ns. 0.5% are privileged and each trap-and-emulate costs 2 µs in total. (a) How long does the guest take and what is the slowdown? (b) With binary translation each of those instructions becomes an inline sequence of 20 ns. What are the time and slowdown?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Privileged: 0.005 × 1,000,000 = 5,000. Ordinary: 995,000 × 1 ns = 0.995 ms. Traps: 5,000 × 2 µs = 10 ms. Total 10.995 ms against a native 1 ms: slowdown 10.995, about 11 times.</p>
+<p>(b) 5,000 × 20 ns = 0.1 ms. Total 0.995 + 0.1 = 1.095 ms, slowdown 1.095 (about 9.5% overhead).</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="challenging"><header><span class="ex-n">Exercise 15.3</span><span class="lvl lvl-challenging">challenging</span><h4>Nested page walks</h4></header><div class="ex-q"><p>A TLB miss under nested paging walks a guest table of n levels and a nested table of m levels. (a) Show that translating one address, not counting the final data access, takes (n + 1)(m + 1) − 1 references, and evaluate for n = m = 4. (b) Evaluate for n = m = 5. (c) Evaluate for n = 4 and a nested table of 2 MiB pages, so m = 3. (d) Why do VMs depend more on the TLB hit ratio than native programs?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Each of the n guest levels reads an entry at a GPA: m nested references plus 1 to read it, so n(m + 1). The final data page's GPA needs m more. Total n(m + 1) + m = (n + 1)(m + 1) − 1. For n = m = 4: 24 (native: 4).</p>
+<p>(b) 6 × 6 − 1 = 35. (c) 5 × 4 − 1 = 19.</p>
+<p>(d) A miss costs up to six times more than native, so the same miss ratio hurts more; a TLB hit avoids the walk entirely.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 15.4</span><span class="lvl lvl-core">core</span><h4>Namespace and ID mappings</h4></header><div class="ex-q"><p>A user namespace has the map <code>0 100000 65536</code> in <code>/proc/self/uid_map</code> (inside start, outside start, length). (a) Which host UID is container UID 1000? (b) Which container UID is host UID 100500? (c) How does a file owned by host UID 70000 appear inside? (d) A process is PID 1 in its container and PID 4711 on the host. What do <code>kill -9 1</code> inside and <code>kill -9 4711</code> on the host do?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) 100000 + 1000 = 101000. (b) 100500 − 100000 = 500. (c) UID 70000 is outside the mapped range 100000 to 165535, so it shows as the overflow ID 65534 (<code>nobody</code>).</p>
+<p>(d) Inside, signals to the namespace's init are ignored unless it has a handler, so nothing happens. From the host, <code>kill -9 4711</code> kills init, and the kernel then kills the rest of that PID namespace.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 15.5</span><span class="lvl lvl-core">core</span><h4>cpu.max, cpu.weight and throttling</h4></header><div class="ex-q"><p>(a) What does <code>cpu.max</code> containing <code>150000 100000</code> mean? (b) A group with that limit runs 4 always-busy threads on a machine with at least 4 idle cores. How far into each period does it run before throttling, how long is it throttled, and how much CPU does each thread get in 10 s of wall time? (c) Two sibling groups with <code>cpu.weight</code> 200 and 100 both want one whole CPU, with no <code>cpu.max</code>. What shares do they get?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) A quota of 150,000 µs per 100,000 µs period: 1.5 CPUs.</p>
+<p>(b) Four threads use 4 ms of CPU per ms of wall time, so the 150 ms quota lasts 150 / 4 = 37.5 ms and the group is throttled for the remaining 62.5 ms. In 10 s there are 100 periods of 150 ms: 15 CPU-seconds, so 15 / 4 = 3.75 s per thread.</p>
+<p>(c) 200 / 300 = 66.7% and 100 / 300 = 33.3%. Weights act only under contention; <code>cpu.max</code> limits even an idle machine.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="core"><header><span class="ex-n">Exercise 15.6</span><span class="lvl lvl-core">core</span><h4>CFS shares and vruntime</h4></header><div class="ex-q"><p>Tasks A and B (nice 0, weight 1024) and C (nice 5, weight 335) are runnable on one CPU. (a) What long-run fraction of the CPU does each get? (b) How fast does each task's vruntime grow per ms of CPU time? (c) Over 100 ms, how much CPU does each get and by how much does each vruntime grow?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Total weight 1024 + 1024 + 335 = 2383. A and B: 1024 / 2383 = 42.97% each; C: 335 / 2383 = 14.06%. </p>
+<p>(b) 1024 / weight per ms: 1.000 for A and B, 1024 / 335 = 3.057 for C.</p>
+<p>(c) A and B get 42.97 ms each, C gets 14.06 ms. A and B's vruntime grows by 42.97; C's by 14.06 × 3.057 = 42.98, equal up to rounding. Equal vruntime growth is exactly what turns weights into shares.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="core"><header><span class="ex-n">Exercise 15.7</span><span class="lvl lvl-core">core</span><h4>NTFS clusters and Windows priorities</h4></header><div class="ex-q"><p>(a) A 10,000-byte file sits on a volume with 4,096-byte clusters. How many clusters and how many bytes of slack? (b) A contiguous 1 GiB file is on the same volume. How many clusters, and how many runs does its data attribute need? (c) Threads T1 (priority 10), T2 (priority 8) and T3 (priority 10) are ready on one CPU. Who runs, and what could change that?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) ceil(10,000 / 4,096) = 3 clusters, which is 12,288 bytes, leaving 12,288 − 10,000 = 2,288 bytes of slack.</p>
+<p>(b) 1 GiB = 1,073,741,824 bytes; divided by 4,096 that is 262,144 clusters. Contiguous, it is one run (start cluster, length 262,144).</p>
+<p>(c) T1 and T3 share the CPU round-robin (highest ready level); T2 waits until they block or its starvation boost (about four seconds) lifts it to 15.</p></div></details></section>
+<h2 id="lab">Lab</h2>
+<p>Everything runs on ordinary Linux. Creating most namespaces and all cgroups needs root; Part 1 shows how an unprivileged user can do the namespace work through a user namespace. Compile C with <code>gcc -Wall -pthread</code>. Output marked "captured" came from the course sandbox (a KVM guest) as root or user <code>nobody</code>; output marked "typical" is what to expect, since the sandbox exposes only cgroup v1.</p>
+<h3 id="part-1-namespaces-with-unshare-no-root-needed">Part 1: namespaces with unshare (no root needed)</h3>
+<p>Save as <code>lab1.sh</code>, run with <code>bash lab1.sh</code>. <code>--map-root-user</code> maps your UID to root inside, which lets an ordinary user create five namespaces at once.</p>
+<pre><code class="language-bash">echo &quot;== host&quot;
+readlink /proc/self/ns/pid; hostname
+tail -n +3 /proc/net/dev | cut -d: -f1 | tr -d &quot; &quot; | tr &quot;\n&quot; &quot; &quot;; echo
+echo &quot;== new user+uts+pid+mount+net namespaces&quot;
+unshare --user --map-root-user --uts --pid --fork --mount-proc --net sh -c '
+  id -u; cat /proc/self/uid_map
+  hostname lab-box; hostname
+  echo &quot;my pid: $$&quot;; ps -o pid,user,comm
+  readlink /proc/self/ns/pid
+  tail -n +3 /proc/net/dev | cut -d: -f1 | tr -d &quot; &quot; | tr &quot;\n&quot; &quot; &quot;; echo
+'
+echo &quot;== host again&quot;; hostname
+</code></pre>
+<p>Captured output (host hostname <code>vm</code>):</p>
+<pre><code class="language-text">== host
+pid:[4026531836]
+vm
+lo ifb0 ifb1 eth0 
+== new user+uts+pid+mount+net namespaces
+0
+         0      65534          1
+lab-box
+my pid: 1
+    PID USER     COMMAND
+      1 root     sh
+      6 root     ps
+pid:[4026532267]
+lo 
+== host again
+vm
+</code></pre>
+<p><code>id -u</code> prints 0 but the map <code>0 65534 1</code> shows "root" is really UID 65534 outside (for UID 1000 you would see <code>0 1000 1</code>). The hostname change stays inside, the shell is PID 1, <code>ps</code> sees only the namespace (its PID varies) and the new network namespace has only <code>lo</code>.</p>
+<h3 id="part-2-clone-with-new-namespaces-needs-root">Part 2: clone() with new namespaces (needs root)</h3>
+<p>The same effect through the system call. Save as <code>clonens.c</code>, run <code>sudo ./clonens</code>.</p>
+<pre><code class="language-c">#define _GNU_SOURCE
+#include &lt;sched.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+static char stack[1024 * 1024];
+
+static int child(void *arg) {
+    (void)arg;
+    sethostname(&quot;sandbox&quot;, 7);
+    char host[64];
+    gethostname(host, sizeof host);
+    printf(&quot;child : pid=%d ppid=%d hostname=%s\n&quot;, getpid(), getppid(), host);
+    fflush(stdout);                 /* clone() children skip the stdio flush at exit */
+    return 0;
+}
+
+int main(void) {
+    char host[64];
+    gethostname(host, sizeof host);
+    printf(&quot;parent: pid=%d hostname=%s\n&quot;, getpid(), host);
+    fflush(stdout);                 /* do not copy buffered text into the child */
+    pid_t p = clone(child, stack + sizeof stack,   /* stack grows down: pass the top */
+                    CLONE_NEWPID | CLONE_NEWUTS | SIGCHLD, NULL);
+    if (p &lt; 0) { perror(&quot;clone (needs root)&quot;); return 1; }
+    printf(&quot;parent: child is pid %d in my namespace\n&quot;, p);
+    waitpid(p, NULL, 0);
+    gethostname(host, sizeof host);
+    printf(&quot;parent: hostname still %s\n&quot;, host);
+    return 0;
+}
+</code></pre>
+<p>Captured output (PIDs vary):</p>
+<pre><code class="language-text">parent: pid=268 hostname=vm
+child : pid=1 ppid=0 hostname=sandbox
+parent: child is pid 270 in my namespace
+parent: hostname still vm
+</code></pre>
+<p>The child is PID 1 with parent 0 (its parent lies outside its namespace) yet the parent knows it as 270.</p>
+<h3 id="part-3-a-cgroup-v2-limit-needs-root-typical-output">Part 3: a cgroup v2 limit (needs root; typical output)</h3>
+<p>Limit a group to half a CPU, 64 MiB and 64 tasks. <code>stat -fc %T /sys/fs/cgroup</code> should print <code>cgroup2fs</code>.</p>
+<pre><code class="language-bash">sudo sh -c '
+cd /sys/fs/cgroup
+echo &quot;+cpu +memory +pids&quot; &gt; cgroup.subtree_control
+mkdir lab &amp;&amp; cd lab
+echo &quot;50000 100000&quot; &gt; cpu.max        # 50 ms per 100 ms = half a CPU
+echo 67108864 &gt; memory.max           # 64 MiB
+echo 0 &gt; memory.swap.max
+echo 64 &gt; pids.max                   # at most 64 tasks
+echo $$ &gt; cgroup.procs               # move this shell into the group
+timeout 5 sh -c &quot;while :; do :; done&quot;
+grep -E &quot;usage_usec|nr_periods|nr_throttled&quot; cpu.stat
+python3 -c &quot;x = b\&quot;x\&quot; * (100 * 1024 * 1024)&quot;; echo &quot;exit status: $?&quot;
+grep -E &quot;^(max|oom_kill)&quot; memory.events
+'
+sudo rmdir /sys/fs/cgroup/lab        # the group is empty once the shell exits
+</code></pre>
+<pre><code class="language-text">usage_usec 2501334
+nr_periods 50
+nr_throttled 49
+Killed
+exit status: 137
+max 27
+oom_kill 1
+</code></pre>
+<p>Five seconds hold about 50 periods; the loop got 50 ms of each, so it used about 2.5 s of CPU (<code>usage_usec</code>, in microseconds) and was throttled nearly every period. The 100 MiB allocation exceeds <code>memory.max</code>, so with swap off the OOM killer ended it (exit status 128 + 9 = 137).</p>
+<h3 id="part-4-a-cfs-simulator">Part 4: a CFS simulator</h3>
+<p>Save as <code>cfs.c</code>. It applies the vruntime rule to a nice 0 task (weight 1024) and a nice 5 task (weight 335) for 1,000 slices of 1 ms.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+struct task { const char *name; int nice; double weight, vruntime, cpu; };
+
+int main(void) {
+    struct task t[] = { {&quot;A&quot;, 0, 1024, 0, 0}, {&quot;B&quot;, 5, 335, 0, 0} };
+    const int n = 2;
+    for (int step = 1; step &lt;= 1000; step++) {
+        int best = 0;                               /* smallest vruntime wins */
+        for (int i = 1; i &lt; n; i++)
+            if (t[i].vruntime &lt; t[best].vruntime) best = i;
+        t[best].cpu += 1.0;                         /* run one 1 ms slice */
+        t[best].vruntime += 1.0 * 1024.0 / t[best].weight;
+        if (step &lt;= 8)
+            printf(&quot;step %d: ran %s  vruntime A=%.2f B=%.2f\n&quot;, step,
+                   t[best].name, t[0].vruntime, t[1].vruntime);
+    }
+    double total = t[0].cpu + t[1].cpu;
+    for (int i = 0; i &lt; n; i++)
+        printf(&quot;%s nice %d: %6.1f ms  (%.1f%%)\n&quot;, t[i].name, t[i].nice,
+               t[i].cpu, 100 * t[i].cpu / total);
+    printf(&quot;ideal share of A = 1024/(1024+335) = %.1f%%\n&quot;, 100 * 1024.0 / (1024 + 335));
+    return 0;
+}
+</code></pre>
+<p>Captured output:</p>
+<pre><code class="language-text">step 1: ran A  vruntime A=1.00 B=0.00
+step 2: ran B  vruntime A=1.00 B=3.06
+step 3: ran A  vruntime A=2.00 B=3.06
+step 4: ran A  vruntime A=3.00 B=3.06
+step 5: ran A  vruntime A=4.00 B=3.06
+step 6: ran B  vruntime A=4.00 B=6.11
+step 7: ran A  vruntime A=5.00 B=6.11
+step 8: ran A  vruntime A=6.00 B=6.11
+A nice 0:  753.0 ms  (75.3%)
+B nice 5:  247.0 ms  (24.7%)
+ideal share of A = 1024/(1024+335) = 75.3%
+</code></pre>
+<p>B's vruntime jumps 3.06 per run, so A runs about three times per run of B and the split matches the weights. On a real machine pin two busy loops to one CPU, <code>taskset -c 0 nice -n 5 sh -c 'while :; do :; done' &amp;</code> and one at nice 0, and read <code>%CPU</code> in <code>top</code>.</p>
+<h3 id="extensions">Extensions</h3>
+<ol>
+<li>Add a third task at nice −5 (weight 3121) to <code>cfs.c</code> and compare simulated shares with weight / total weight.</li>
+<li>In <code>unshare --mount</code>, mount a <code>tmpfs</code> and check with <code>findmnt</code> from another terminal that the host cannot see it.</li>
+<li>In a cgroup with <code>pids.max</code> 20, run a loop of <code>sleep 100 &amp;</code> and watch <code>pids.events</code>. Never do this outside a limited group.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unshare failed: Operation not permitted</code></td>
+<td>No <code>CAP_SYS_ADMIN</code></td>
+<td>Use <code>sudo</code>, or add <code>--user --map-root-user</code></td>
+</tr>
+<tr>
+<td><code>ps</code> in a new PID namespace still lists host processes</td>
+<td><code>/proc</code> not remounted</td>
+<td>Use <code>--mount-proc</code> (and <code>--fork</code>)</td>
+</tr>
+<tr>
+<td><code>cpu.max</code> or <code>memory.max</code> missing or unwritable</td>
+<td>Controller not enabled in the parent, or cgroup v1</td>
+<td>Write <code>+cpu +memory</code> to the parent's <code>cgroup.subtree_control</code>; check <code>stat -fc %T /sys/fs/cgroup</code></td>
+</tr>
+<tr>
+<td>A container is assumed as isolated as a VM</td>
+<td>The kernel is shared</td>
+<td>Add seccomp, drop capabilities, run rootless or use a micro-VM</td>
+</tr>
+<tr>
+<td>Guest very slow in a VM</td>
+<td>No hardware virtualization, or too many VM exits</td>
+<td>Check <code>/dev/kvm</code> and the vmx or svm flag in <code>/proc/cpuinfo</code>; use virtio</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>A hypervisor gives each guest OS a virtual machine; type 1 runs on hardware, type 2 on a host OS. Most guest instructions run directly and only sensitive ones involve the VMM.</li>
+<li>Trap-and-emulate needs every sensitive instruction to be privileged. Original x86 failed, so VMware used binary translation, Xen paravirtualization and VT-x and AMD-V finally added VM exits in hardware.</li>
+<li>Nested paging lets the guest manage its page tables, but a TLB miss costs (n + 1)(m + 1) − 1 references, 24 for 4-level tables.</li>
+<li>Linux containers are ordinary processes inside namespaces (what they see) and cgroups (what they may use), sharing the host kernel: fast and dense, but less isolated than VMs.</li>
+<li>Linux treats processes and threads as tasks made by <code>clone</code>; CFS (now EEVDF) shares CPU by weight using vruntime, and cgroups reuse the weights.</li>
+<li>Windows builds an executive of managers around typed objects reached through handles, schedules 32 priority levels with boosts, and keeps NTFS metadata in the MFT with a metadata journal.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, chapters "Virtual Machines", "The Linux System" and "Windows 10".</li>
+<li><strong>Essential.</strong> OSTEP, appendix "Virtual Machine Monitors" and chapter "Scheduling: Proportional Share".</li>
+<li><strong>Essential.</strong> Linux manual pages: <code>namespaces(7)</code>, <code>cgroups(7)</code>, <code>user_namespaces(7)</code>, <code>clone(2)</code>, <code>unshare(1)</code>, <code>sched(7)</code>.</li>
+<li>Popek and Goldberg, "Formal Requirements for Virtualizable Third Generation Architectures", Communications of the ACM, 1974.</li>
+<li>Barham et al., "Xen and the Art of Virtualization", SOSP, 2003.</li>
+<li>Tanenbaum and Bos, <em>Modern Operating Systems</em>, chapters on virtualization, Linux and Windows.</li>
+<li>Russinovich, Solomon and Ionescu, <em>Windows Internals</em>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="15">Mark Week 15 as complete</button></div><div class="pager"><a class="pn prev" href="week-14.html"><small>Previous</small>Week 14: Protection and Security</a><a class="pn next" href="week-16.html"><small>Next</small>Week 16: Review, Projects and Final Exam</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#virtual-machines-and-hypervisors">Virtual machines and hypervisors</a></li><li><a href="#trap-and-emulate">Trap-and-emulate</a></li><li><a href="#hardware-support-vt-x-amd-v-and-nested-page-tables">Hardware support: VT-x, AMD-V and nested page tables</a></li><li><a href="#containers-namespaces-and-cgroups">Containers: namespaces and cgroups</a></li><li><a href="#containers-versus-virtual-machines">Containers versus virtual machines</a></li><li><a href="#case-study-linux">Case study: Linux</a></li><li><a href="#case-study-windows">Case study: Windows</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab">Lab</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

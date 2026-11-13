@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 7: Deadlocks · Operating Systems for Dummies</title>
+<meta name="description" content="When threads wait forever for each other&#x27;s resources. The four necessary conditions, resource-allocation graphs, prevention by lock ordering, avoidance with the Banker&#x27;s algorithm (fully traced), detection with wait-for graphs, and recovery.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="2"><article class="week" data-week="7"><header class="week-head" data-num="07"><p class="kicker">Week 7 · Phase 2: Concurrency and Deadlocks</p><h1>Deadlocks</h1><p class="abstract">When threads wait forever for each other&#x27;s resources. The four necessary conditions, resource-allocation graphs, prevention by lock ordering, avoidance with the Banker&#x27;s algorithm (fully traced), detection with wait-for graphs, and recovery.</p><ul class="chips"><li><b>32</b> min read</li><li><b>2</b> demos</li><li><b>4</b> figures</li><li><b>7</b> code blocks</li><li><b>7</b> exercises</li><li class="tag-due"><b>Due</b> Assignment 2 (threads and synchronization)</li></ul><p class="lab-line"><b>Lab.</b> Reproduce a two-lock deadlock in C, then remove it with lock ordering and with trylock and back-off.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>State the four necessary conditions for deadlock and name the condition that each prevention technique breaks</li><li>Draw a resource-allocation graph and decide whether a cycle means deadlock for single-instance and multi-instance resources</li><li>Decide whether a system state is safe, and explain why unsafe does not mean deadlocked</li><li>Carry out the Banker&#x27;s safety algorithm and resource-request algorithm by hand on a Need matrix</li><li>Run the detection algorithm on an Allocation and Request matrix and identify the deadlocked processes</li><li>Remove a lock-ordering deadlock in C code by imposing a global lock order</li></ul></section><div class="prose"><p><a href="week-05.html">Week 5</a> gave you locks, and <a href="week-06.html">Week 6</a> ended with the dining philosophers, five diners who each pick up the left fork and then wait forever for the right one. That program did not crash and did not compute a wrong answer. It simply stopped, with every thread alive and none able to move. This chapter studies that failure, called <strong>deadlock</strong>, which is the price of holding one resource while asking for another.</p>
+<p>We first define deadlock and extract the four conditions that must all hold for it to occur. Then we look at three families of defence in order of increasing cost: <strong>prevention</strong> (make one condition impossible), <strong>avoidance</strong> (refuse requests that could lead to deadlock, using the Banker's algorithm) and <strong>detection and recovery</strong> (allow deadlock, find it, break it). Assignment 2 (threads and synchronization) is due this week, and the lock-ordering rule here is the tool for keeping your solution deadlock-free. <a href="week-08.html">Week 8</a> then moves from CPU and synchronization to main memory.</p>
+<h2 id="what-a-deadlock-is">What a deadlock is</h2>
+<h3 id="the-four-way-stop">The four-way stop</h3>
+<div class="admonition intuition">
+<p class="admonition-title">Gridlock</p>
+<p>Four cars arrive at the four corners of an intersection with no traffic light, and each driver politely waits for the car on the right to go first. Nobody moves. Every car holds a piece of road (its own corner) and wants the piece held by the next car. No driver will back up, no police officer will tow a car away, and the pattern is circular. That is deadlock: a set of parties each holding something and waiting for something another member of the set holds.</p>
+</div>
+<div class="admonition definition">
+<p class="admonition-title">Deadlock</p>
+<p>A set of threads is <strong>deadlocked</strong> if every thread in the set is waiting for an event (typically the release of a resource) that can only be caused by another thread in the set. Because every member is waiting, none can ever cause the event, so the wait is permanent.</p>
+</div>
+<p>A resource here means anything a thread must hold exclusively for a while: a mutex, a semaphore, a database row lock, a file lock, a printer, a slot in a fixed-size table. We concentrate on <strong>reusable</strong> resources, which are taken, used and given back unchanged.</p>
+<p>The smallest possible deadlock uses two locks. Thread T1 runs <code>lock(A); lock(B);</code> and thread T2 runs <code>lock(B); lock(A);</code>. If T1 gets A and T2 gets B before either asks for its second lock, each now waits for the lock the other holds. Whether this happens depends on timing, so the program may run correctly a thousand times and then hang in production. Like the races of <a href="week-05.html">Week 5</a>, it is a bug that shows itself only under one interleaving.</p>
+<h3 id="the-four-necessary-conditions">The four necessary conditions</h3>
+<p>In 1971 Coffman, Elphick and Shoshani showed that deadlock can occur only if four conditions hold at the same time. They are <em>necessary</em>, not sufficient: all four can be present without a deadlock yet, but if any one is absent a deadlock is impossible.</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mutual exclusion</td>
+<td>At least one resource can be held by only one thread at a time</td>
+<td>A mutex, a printer</td>
+</tr>
+<tr>
+<td>Hold and wait</td>
+<td>A thread holding at least one resource is waiting to acquire more</td>
+<td>T1 holds A and requests B</td>
+</tr>
+<tr>
+<td>No preemption</td>
+<td>A resource can only be released voluntarily by the thread holding it</td>
+<td>The OS cannot take a mutex away</td>
+</tr>
+<tr>
+<td>Circular wait</td>
+<td>There is a cycle T0 → T1 → ... → Tk → T0 where each thread waits for a resource held by the next</td>
+<td>T1 waits on T2 and T2 waits on T1</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition history">
+<p class="admonition-title">Coffman, Dijkstra and the Banker</p>
+<p>The four conditions come from E. G. Coffman Jr., M. J. Elphick and A. Shoshani, "System Deadlocks" (ACM Computing Surveys, 1971), which is still the reference survey. The avoidance idea is older: Edsger Dijkstra invented the Banker's algorithm in 1965 (for a single resource type), and A. N. Habermann extended it to several resource types in 1969. Like a bank that never lends out so much that it cannot meet every customer's declared credit line, the OS never grants a request that could leave it unable to satisfy everyone's declared maximum.</p>
+</div>
+<p>The first three conditions are properties of how resources work; the fourth is a situation that arises at runtime. That is why prevention mostly attacks the fourth.</p>
+<h3 id="resource-allocation-graphs">Resource-allocation graphs</h3>
+<p>A <strong>resource-allocation graph</strong> makes the circular-wait condition visible. It has two kinds of vertices, threads drawn as circles and resource types drawn as rectangles, with one dot inside the rectangle for each instance of that resource. A <strong>request edge</strong> Ti → Rj means thread Ti is waiting for an instance of Rj. An <strong>assignment edge</strong> Rj → Ti means an instance of Rj is held by Ti.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">        request           assigned
+   T1 ----------&gt; [ R2 ] ----------&gt; T2
+    ^                                 |
+    | assigned                request |
+    |                                 v
+   [ R1 ] &lt;---------------------------+
+
+   Cycle: T1 -&gt; R2 -&gt; T2 -&gt; R1 -&gt; T1
+   R1 and R2 each have ONE instance, so every thread on the cycle is stuck.
+</pre></div><figcaption><b>Figure 7.1..</b> A resource-allocation graph with a cycle through single-instance resources: a deadlock.</figcaption></figure>
+<p>The rule for reading these graphs is short and worth memorizing.</p>
+<ul>
+<li>If the graph has <strong>no cycle</strong>, no deadlock exists.</li>
+<li>If every resource type on a cycle has <strong>exactly one instance</strong>, the cycle means deadlock.</li>
+<li>If some resource types have <strong>several instances</strong>, a cycle is necessary but not sufficient: the system may or may not be deadlocked.</li>
+</ul>
+<figure class="figure"><div class="scroll"><pre class="diagram">   T1 ---&gt; [ R1 :: :: ] ---&gt; T2        R1 has two instances:
+    ^         |                         one held by T2, one held by T3
+    |         +-------------&gt; T3        T2 waits for R2, R2 is held by T1
+    |                         |
+    +----------- [ R2 ] &lt;-----+--- T2 requests R2
+   (R2 -&gt; T1 assigned)                  T3 requests nothing
+
+   Cycle: T1 -&gt; R1 -&gt; T2 -&gt; R2 -&gt; T1, but T3 is not waiting.
+   T3 finishes, returns its instance of R1, T1 obtains it, finishes, frees R2.
+   No deadlock.
+</pre></div><figcaption><b>Figure 7.2..</b> A cycle through a two-instance resource that is not a deadlock, because T3 can still finish and release an instance.</figcaption></figure>
+<h3 id="handling-deadlocks-four-strategies">Handling deadlocks: four strategies</h3>
+<p>An operating system has four broad choices, and real systems mix them: <strong>ignore</strong> the problem, <strong>prevent</strong> it by making a condition impossible, <strong>avoid</strong> it by refusing risky requests, or <strong>detect and recover</strong> after it happens. Ignoring is a respectable engineering decision: if deadlock happens once a year, an expensive scheme that slows every request is a bad trade (Tanenbaum calls it the ostrich algorithm). The rest of this chapter covers the other three, in order of cost.</p>
+<div class="demo reveal" data-demo="deadlock-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">Build a circular wait in 3D and then break it</span></div><div class="demo-body"></div></div>
+<h2 id="deadlock-prevention">Deadlock prevention</h2>
+<p>Prevention makes one of the four conditions fail. Take them in turn and ask what the price is.</p>
+<p><strong>Break mutual exclusion.</strong> Make resources sharable, as with read-only files or a read-write lock. A genuinely non-sharable resource (a printer mid-page, a list being updated) cannot be, so the reach is limited.</p>
+<p><strong>Break hold and wait.</strong> Either a thread must request all its resources at once before starting (so it never holds one while waiting for another), or it must release everything it holds before asking for more. The price is idle resources and possible <strong>starvation</strong>, since a thread needing a popular combination may never see all of it free at once.</p>
+<p><strong>Break no preemption.</strong> If a thread holding resources requests one that is not available, take away what it holds, and restart it when everything is available. This suits resources whose state can be saved and restored (CPU registers, memory pages) but not mutexes or printers. In lock-based code the equivalent is <code>pthread_mutex_trylock</code> with back-off: if the second lock is busy, release the first and retry.</p>
+<p><strong>Break circular wait.</strong> Give every resource type a unique number and require every thread to acquire resources in increasing order of number. A cycle would need some thread to wait for a lower-numbered resource while holding a higher-numbered one, which the rule forbids. This is the only technique with a tiny cost, which is why it is the practical workhorse.</p>
+<div class="admonition tip">
+<p class="admonition-title">Lock ordering in practice</p>
+<p>Pick a global order and write it down in the code: "lock the account with the lower id first", "the directory lock comes before the file lock", "the table lock comes before any row lock". When objects of the same type must be locked together, order them by address or by a stable id. The Linux kernel checks its lock order at run time with a tool called <strong>lockdep</strong>, and ThreadSanitizer reports lock-order inversions even on runs that did not deadlock.</p>
+</div>
+<p>The program below is the standard recipe. It locks the account with the lower address first, so <code>transfer(&amp;a, &amp;b)</code> and <code>transfer(&amp;b, &amp;a)</code> agree on the order.</p>
+<h1 id="include">include <pthread.h></h1>
+<h1 id="include_1">include <stdint.h></h1>
+<h1 id="include_2">include <stdio.h></h1>
+<p>struct account {
+    pthread_mutex_t lock;
+    long balance;
+};</p>
+<p>static struct account a = { PTHREAD_MUTEX_INITIALIZER, 1000 };
+static struct account b = { PTHREAD_MUTEX_INITIALIZER, 1000 };</p>
+<p>/<em> Always lock the account with the lower address first, whatever the argument order. </em>/
+static void transfer(struct account <em>from, struct account </em>to, long amount) {
+    struct account <em>first  = (uintptr_t)from &lt; (uintptr_t)to ? from : to;
+    struct account </em>second = first == from ? to : from;
+    pthread_mutex_lock(&amp;first-&gt;lock);
+    pthread_mutex_lock(&amp;second-&gt;lock);
+    from-&gt;balance -= amount;
+    to-&gt;balance   += amount;
+    pthread_mutex_unlock(&amp;second-&gt;lock);
+    pthread_mutex_unlock(&amp;first-&gt;lock);
+}</p>
+<p>static void <em>t1(void </em>arg) { (void)arg; for (int i = 0; i &lt; 100000; i++) transfer(&amp;a, &amp;b, 1); return NULL; }
+static void <em>t2(void </em>arg) { (void)arg; for (int i = 0; i &lt; 100000; i++) transfer(&amp;b, &amp;a, 1); return NULL; }</p>
+<p>int main(void) {
+    pthread_t x, y;
+    pthread_create(&amp;x, NULL, t1, NULL);
+    pthread_create(&amp;y, NULL, t2, NULL);
+    pthread_join(x, NULL);
+    pthread_join(y, NULL);
+    printf("a = %ld, b = %ld, total = %ld\n", a.balance, b.balance, a.balance + b.balance);
+    return 0;
+}</p>
+<p>Two threads transferring in opposite directions finish at once with the money conserved (<code>a = 1000, b = 1000, total = 2000</code>). Lock <code>from</code> then <code>to</code> instead, and the program can hang, as the lab shows.</p>
+<div class="admonition warning">
+<p class="admonition-title">Ordering must cover every path</p>
+<p>One code path that breaks the order closes the cycle: a callback invoked while a lock is held, or a function that locks one more object "just for a moment". Document the order as part of each function's contract.</p>
+</div>
+<h2 id="deadlock-avoidance-and-the-bankers-algorithm">Deadlock avoidance and the Banker's algorithm</h2>
+<p>Prevention restricts how threads <em>may ask</em>. Avoidance lets them ask freely but has the OS examine each request and say no when granting it could lead to deadlock. For this to work, each thread must declare in advance the <strong>maximum</strong> number of instances of each resource type it will ever need.</p>
+<h3 id="safe-states">Safe states</h3>
+<div class="admonition definition">
+<p class="admonition-title">Safe state</p>
+<p>A state is <strong>safe</strong> if there exists an order of the processes, a <strong>safe sequence</strong> P(1), P(2), ..., P(n), such that each P(i) can obtain all it may still need from what is currently free plus what P(1), ..., P(i-1) will release when they finish. If no such order exists the state is <strong>unsafe</strong>.</p>
+</div>
+<p><strong>Safe means deadlock is avoidable; unsafe means deadlock is possible, not certain.</strong> The OS cannot rely on luck, so the avoidance rule is: <em>grant a request only if the resulting state is safe.</em></p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   +----------------------------------------------------+
+   |                  ALL STATES                        |
+   |   +------------------------------------------+     |
+   |   |     UNSAFE (deadlock possible)           |     |
+   |   |            +-----------------+           |     |
+   |   |            |   DEADLOCKED    |           |     |
+   |   |            +-----------------+           |     |
+   |   +------------------------------------------+     |
+   |   +------------------------------------------+     |
+   |   |     SAFE (a safe sequence exists)        |     |
+   |   +------------------------------------------+     |
+   +----------------------------------------------------+
+   Avoidance keeps the system inside the SAFE region at all times.
+</pre></div><figcaption><b>Figure 7.3..</b> Safe, unsafe and deadlocked states: deadlock lives inside the unsafe region, and avoidance stays out of it.</figcaption></figure>
+<h3 id="the-data-structures">The data structures</h3>
+<p>With n processes and m resource types, the Banker's algorithm keeps four structures.</p>
+<ul>
+<li><code>Available[j]</code>: the number of free instances of resource type j.</li>
+<li><code>Max[i][j]</code>: the maximum demand of process i for resource j (declared in advance).</li>
+<li><code>Allocation[i][j]</code>: the instances of j currently held by process i.</li>
+<li><code>Need[i][j] = Max[i][j] - Allocation[i][j]</code>: what process i may still request.</li>
+</ul>
+<p>For vectors, <code>X ≤ Y</code> means <code>X[j] ≤ Y[j]</code> for every j.</p>
+<h3 id="the-safety-algorithm">The safety algorithm</h3>
+<p>The safety algorithm asks: starting from the current state, can all processes finish one after another? It tries to build a safe sequence.</p>
+<pre><code class="language-text">1. Work = Available;  Finish[i] = false for every i.
+2. Find an i such that  Finish[i] = false  and  Need[i] ≤ Work.
+   If there is no such i, go to step 4.
+3. Work = Work + Allocation[i];  Finish[i] = true;  go to step 2.
+4. If Finish[i] = true for every i, the state is safe; otherwise it is unsafe.
+</code></pre>
+<p>Each pass of step 2 scans n processes and compares m numbers, and there are at most n passes, so the cost is O(m × n²).</p>
+<p><code>Work</code> is the pool of resources that would be free if the processes chosen so far had all finished and handed their allocations back.</p>
+<h3 id="the-resource-request-algorithm">The resource-request algorithm</h3>
+<p>When process Pi asks for a vector <code>Request</code>, the system runs these steps.</p>
+<pre><code class="language-text">1. If Request &gt; Need[i]:       error, the process exceeded its declared maximum.
+2. If Request &gt; Available:     Pi must wait, the resources are not free.
+3. Pretend to allocate:
+       Available  = Available  - Request
+       Allocation[i] = Allocation[i] + Request
+       Need[i]    = Need[i]    - Request
+   Run the safety algorithm on this new state.
+   If safe:    the request is granted.
+   If unsafe:  restore the old state and make Pi wait.
+</code></pre>
+<p>Note that it is the safety test of the hypothetical state, not just availability, that decides.</p>
+<h2 id="a-full-worked-example">A full worked example</h2>
+<p>Five processes P0 to P4 and three resource types A, B and C. There are 10 instances of A, 5 of B and 7 of C in total. The current state is:</p>
+<table>
+<thead>
+<tr>
+<th>Process</th>
+<th>Allocation (A B C)</th>
+<th>Max (A B C)</th>
+<th>Need = Max - Allocation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>0 1 0</td>
+<td>7 5 3</td>
+<td>7 4 3</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>2 0 0</td>
+<td>3 2 2</td>
+<td>1 2 2</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>3 0 2</td>
+<td>9 0 2</td>
+<td>6 0 0</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>2 1 1</td>
+<td>2 2 2</td>
+<td>0 1 1</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>0 0 2</td>
+<td>4 3 3</td>
+<td>4 3 1</td>
+</tr>
+</tbody>
+</table>
+<p>Allocated in total: A = 0+2+3+2+0 = 7, B = 1+0+0+1+0 = 2, C = 0+0+2+1+2 = 5. Subtracting from the totals gives <code>Available = (10-7, 5-2, 7-5) = (3, 3, 2)</code>. The totals and availability agree, a check that always pays off.</p>
+<h3 id="step-1-is-the-initial-state-safe">Step 1: is the initial state safe?</h3>
+<p>Start with <code>Work = (3, 3, 2)</code> and compare each Need row with it.</p>
+<table>
+<thead>
+<tr>
+<th>Round</th>
+<th>Work before</th>
+<th>Candidate</th>
+<th>Need ≤ Work?</th>
+<th>Finish, Work after (Work + Allocation)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>3 3 2</td>
+<td>P1</td>
+<td>(1,2,2) ≤ (3,3,2) yes</td>
+<td>3 3 2 + 2 0 0 = 5 3 2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>5 3 2</td>
+<td>P3</td>
+<td>(0,1,1) ≤ (5,3,2) yes</td>
+<td>5 3 2 + 2 1 1 = 7 4 3</td>
+</tr>
+<tr>
+<td>3</td>
+<td>7 4 3</td>
+<td>P4</td>
+<td>(4,3,1) ≤ (7,4,3) yes</td>
+<td>7 4 3 + 0 0 2 = 7 4 5</td>
+</tr>
+<tr>
+<td>4</td>
+<td>7 4 5</td>
+<td>P0</td>
+<td>(7,4,3) ≤ (7,4,5) yes</td>
+<td>7 4 5 + 0 1 0 = 7 5 5</td>
+</tr>
+<tr>
+<td>5</td>
+<td>7 5 5</td>
+<td>P2</td>
+<td>(6,0,0) ≤ (7,5,5) yes</td>
+<td>7 5 5 + 3 0 2 = 10 5 7</td>
+</tr>
+</tbody>
+</table>
+<p>Everyone finishes, so the state is <strong>safe</strong> with the safe sequence <strong>P1, P3, P4, P0, P2</strong>. In round 1 only P1 and P3 could have started (P0 needs 7 of A, P2 needs 6, P4 needs 4, and only 3 are free). Work ends at (10, 5, 7), the system totals, which is a good arithmetic check: after everyone finishes, every resource is back in the pool.</p>
+<p>Safe sequences are not unique: at round 3, P0 would also have fit, since (7,4,3) ≤ (7,4,3).</p>
+<h3 id="step-2-p1-requests-1-0-2">Step 2: P1 requests (1, 0, 2)</h3>
+<p>P1 asks for one more A and two more C.</p>
+<ol>
+<li><code>Request ≤ Need[1]</code>: (1,0,2) ≤ (1,2,2). Yes.</li>
+<li><code>Request ≤ Available</code>: (1,0,2) ≤ (3,3,2). Yes.</li>
+<li>Pretend to allocate: <code>Available = (3,3,2) - (1,0,2) = (2,3,0)</code>, <code>Allocation[1] = (2,0,0) + (1,0,2) = (3,0,2)</code>, <code>Need[1] = (1,2,2) - (1,0,2) = (0,2,0)</code>.</li>
+</ol>
+<p>Now run the safety algorithm on the new state with <code>Work = (2, 3, 0)</code>. P1 needs (0,2,0) ≤ (2,3,0), so it finishes: Work = (2,3,0) + (3,0,2) = (5,3,2). Then P3: (7,4,3); P4: (7,4,5); P0: (7,5,5); P2: (10,5,7). The new state is safe with the same safe sequence P1, P3, P4, P0, P2, so <strong>the request is granted</strong>. The system now has <code>Available = (2,3,0)</code>.</p>
+<h3 id="step-3-two-more-requests-from-the-new-state">Step 3: two more requests from the new state</h3>
+<p><strong>P4 requests (3, 3, 0).</strong> The Need of P4 is (4,3,1), so step 1 passes. But <code>Available = (2,3,0)</code> and 3 &gt; 2 in the A column, so step 2 fails: P4 must <strong>wait</strong>. No safety test is needed, because the resources simply are not free.</p>
+<p><strong>P0 requests (0, 2, 0).</strong> Step 1: (0,2,0) ≤ (7,4,3) yes. Step 2: (0,2,0) ≤ (2,3,0) yes. Pretend: <code>Available = (2,1,0)</code>, <code>Allocation[0] = (0,3,0)</code>, <code>Need[0] = (7,2,3)</code>. Safety with <code>Work = (2,1,0)</code>:</p>
+<ul>
+<li>P0 needs (7,2,3), more than (2,1,0). No.</li>
+<li>P1 needs (0,2,0), but only 1 of B is free. No.</li>
+<li>P2 needs (6,0,0). No. P3 needs (0,1,1), but no C is free. No. P4 needs (4,3,1). No.</li>
+</ul>
+<p>No process can proceed, so the state is <strong>unsafe</strong> and the request is <strong>denied</strong>, although the resources are free. P0 must wait.</p>
+<div class="admonition warning">
+<p class="admonition-title">Unsafe does not mean deadlocked</p>
+<p>Granting P0's request would not deadlock the system immediately. P0 might never ask for its full maximum, and P1 might release early. The Banker's algorithm is <em>conservative</em>: it assumes every process will claim its entire declared maximum, and refuses any move after which it could not cope with that. The price of the guarantee is that some safe-in-practice requests are delayed.</p>
+</div>
+<p>Try this yourself in the demo: it holds the same matrices in editable form, runs the safety algorithm one step at a time and lets you fire requests.</p>
+<div class="demo" data-demo="banker"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Test a state for safety with the Banker&#x27;s algorithm</span></div><div class="demo-body"></div></div>
+<p>Start with the example above and confirm the safe sequence in step 1. Then edit P1's request to (1,0,2) and watch the state change. Finally enter P0's (0,2,0) from the new state and see the demo refuse it. Finally lower Available to (3,3,0) and watch the safety check fail in round 1, because no process can start.</p>
+<h3 id="the-same-example-in-code">The same example in code</h3>
+<p>The C program below holds the same data. It prints Need, runs the safety algorithm verbosely, and processes the three requests of this section.</p>
+<h1 id="include_3">include <stdio.h></h1>
+<h1 id="include_4">include <string.h></h1>
+<h1 id="define-n-5-processes">define N 5      /<em> processes </em>/</h1>
+<h1 id="define-m-3-resource-types">define M 3      /<em> resource types </em>/</h1>
+<p>static int avail[M]    = {3, 3, 2};
+static int max[N][M]   = {{7,5,3},{3,2,2},{9,0,2},{2,2,2},{4,3,3}};
+static int alloc[N][M] = {{0,1,0},{2,0,0},{3,0,2},{2,1,1},{0,0,2}};
+static int need[N][M];</p>
+<p>/<em> Safety algorithm. Returns 1 and fills seq[] if the state is safe. </em>/
+static int is_safe(int seq[N], int verbose) {
+    int work[M], done[N] = {0}, count = 0;
+    memcpy(work, avail, sizeof work);
+    while (count &lt; N) {
+        int found = 0;
+        for (int i = 0; i &lt; N &amp;&amp; !found; i++) {
+            if (done[i]) continue;
+            int ok = 1;
+            for (int j = 0; j &lt; M; j++) if (need[i][j] &gt; work[j]) ok = 0;
+            if (!ok) continue;
+            for (int j = 0; j &lt; M; j++) work[j] += alloc[i][j];
+            if (verbose)
+                printf("  P%d can finish, Work becomes %d %d %d\n", i, work[0], work[1], work[2]);
+            done[i] = 1; seq[count++] = i; found = 1;
+        }
+        if (!found) return 0;               /<em> nobody can finish: unsafe </em>/
+    }
+    return 1;
+}</p>
+<p>/<em> Check one proposed order: can every process finish when run in exactly this order? </em>/
+static int check_order(const int order[N]) {
+    int work[M];
+    memcpy(work, avail, sizeof work);
+    for (int k = 0; k &lt; N; k++) {
+        int i = order[k];
+        for (int j = 0; j &lt; M; j++) if (need[i][j] &gt; work[j]) return 0;
+        for (int j = 0; j &lt; M; j++) work[j] += alloc[i][j];
+    }
+    return 1;
+}</p>
+<p>/<em> Resource-request algorithm for process p. Returns 1 if granted. </em>/
+static int request(int p, const int req[M]) {
+    for (int j = 0; j &lt; M; j++)
+        if (req[j] &gt; need[p][j]) { printf("  error: exceeds declared maximum\n"); return 0; }
+    for (int j = 0; j &lt; M; j++)
+        if (req[j] &gt; avail[j]) { printf("  P%d must wait: not enough available\n", p); return 0; }
+    for (int j = 0; j &lt; M; j++) {            /<em> pretend to allocate </em>/
+        avail[j] -= req[j]; alloc[p][j] += req[j]; need[p][j] -= req[j];
+    }
+    int seq[N];
+    if (is_safe(seq, 0)) {
+        printf("  granted; safe sequence: ");
+        for (int i = 0; i &lt; N; i++) printf("P%d%s", seq[i], i &lt; N - 1 ? " " : "\n");
+        return 1;
+    }
+    for (int j = 0; j &lt; M; j++) {            /<em> roll back </em>/
+        avail[j] += req[j]; alloc[p][j] -= req[j]; need[p][j] += req[j];
+    }
+    printf("  denied: resulting state would be unsafe\n");
+    return 0;
+}</p>
+<p>int main(void) {
+    for (int i = 0; i &lt; N; i++)
+        for (int j = 0; j &lt; M; j++) need[i][j] = max[i][j] - alloc[i][j];
+    printf("Need = Max - Allocation\n");
+    for (int i = 0; i &lt; N; i++)
+        printf("  P%d: %d %d %d\n", i, need[i][0], need[i][1], need[i][2]);</p>
+<pre><code>int seq[N];
+printf("Safety check, Work = %d %d %d\n", avail[0], avail[1], avail[2]);
+if (is_safe(seq, 1)) printf("State is safe.\n");
+int book[N] = {1, 3, 4, 0, 2};
+printf("Order P1 P3 P4 P0 P2 is %s\n", check_order(book) ? "also valid" : "NOT valid");
+
+int r1[M] = {1,0,2}, r4[M] = {3,3,0}, r0[M] = {0,2,0};
+printf("P1 requests 1 0 2\n"); request(1, r1);
+printf("P4 requests 3 3 0\n"); request(4, r4);
+printf("P0 requests 0 2 0\n"); request(0, r0);
+return 0;
+</code></pre>
+<p>}</p>
+<p>Output:</p>
+<pre><code class="language-text">Need = Max - Allocation
+  P0: 7 4 3
+  P1: 1 2 2
+  P2: 6 0 0
+  P3: 0 1 1
+  P4: 4 3 1
+Safety check, Work = 3 3 2
+  P1 can finish, Work becomes 5 3 2
+  P3 can finish, Work becomes 7 4 3
+  P0 can finish, Work becomes 7 5 3
+  P2 can finish, Work becomes 10 5 5
+  P4 can finish, Work becomes 10 5 7
+State is safe.
+Order P1 P3 P4 P0 P2 is also valid
+P1 requests 1 0 2
+  granted; safe sequence: P1 P3 P0 P2 P4
+P4 requests 3 3 0
+  P4 must wait: not enough available
+P0 requests 0 2 0
+  denied: resulting state would be unsafe
+</code></pre>
+<p>The program scans from P0 each time, so it finds P1, P3, P0, P2, P4 rather than the hand-traced P1, P3, P4, P0, P2. The <code>check_order</code> line confirms that the hand-chosen order is also valid; any one safe sequence proves the state is safe. The three request outcomes match the hand trace.</p>
+<p>One safety check costs O(m × n²), and every request needs one. The scheme also needs every process to declare its maximum in advance and a fixed process count, which most programs cannot honour. That is why general-purpose operating systems do not run it on mutexes.</p>
+<h2 id="deadlock-detection-and-recovery">Deadlock detection and recovery</h2>
+<p>If we neither prevent nor avoid deadlock, we must be ready to find it.</p>
+<h3 id="wait-for-graphs">Wait-for graphs</h3>
+<p>When every resource has a single instance, the resource-allocation graph can be collapsed into a simpler <strong>wait-for graph</strong> by deleting the resource nodes: an edge Ti → Tj means "Ti is waiting for a resource held by Tj". A deadlock exists exactly when this graph has a cycle. The OS (or a database) periodically runs a cycle-finding search, which takes O(n²) time for n threads with an adjacency matrix.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   Resource-allocation graph             Wait-for graph (resources removed)
+
+   T1 -&gt; [R1] -&gt; T2                         T1 ---&gt; T2
+   T2 -&gt; [R2] -&gt; T3            ====&gt;         ^       |
+   T3 -&gt; [R3] -&gt; T1                          |       v
+                                             +------ T3
+   cycle of length 6                      cycle of length 3: T1 -&gt; T2 -&gt; T3 -&gt; T1
+</pre></div><figcaption><b>Figure 7.4..</b> Collapsing a resource-allocation graph into a wait-for graph; a cycle in one is a cycle in the other.</figcaption></figure>
+<p>Detection on a wait-for graph is a depth-first search that keeps the current path and reports a cycle when it meets a vertex already on that path. Suppose T0 waits for T1, T1 for T2, T2 for T3 and T3 for T1. The search from T0 finds the cycle T1 → T2 → T3 → T1. T0 is also stuck, but it is not on the cycle: it stays blocked until the cycle is broken, though it does not cause the deadlock.</p>
+<h3 id="the-detection-algorithm-for-several-instances">The detection algorithm for several instances</h3>
+<p>With several instances of each type we need a matrix algorithm that looks like the safety algorithm, with one difference: it uses the <strong>current Request</strong> matrix instead of the worst-case Need. It asks "can the processes finish if they ask only for what they are asking for <em>now</em>?", an optimistic assumption.</p>
+<pre><code class="language-text">1. Work = Available.  Finish[i] = false if Allocation[i] is non-zero, else true.
+2. Find an i with Finish[i] = false and Request[i] ≤ Work.  None: go to step 4.
+3. Work = Work + Allocation[i];  Finish[i] = true;  go to step 2.
+4. Any process with Finish[i] = false is deadlocked.
+</code></pre>
+<p>Like the safety algorithm, it costs O(m × n²).</p>
+<p>Here is an example with the same five processes and three types, now with <code>Available = (0,0,0)</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Process</th>
+<th>Allocation (A B C)</th>
+<th>Request (A B C)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>0 1 0</td>
+<td>0 0 0</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>2 0 0</td>
+<td>2 0 2</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>3 0 3</td>
+<td>0 0 0</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>2 1 1</td>
+<td>1 0 0</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>0 0 2</td>
+<td>0 0 2</td>
+</tr>
+</tbody>
+</table>
+<p>Start with <code>Work = (0,0,0)</code>. P0 requests nothing, so it can finish and returns (0,1,0): <code>Work = (0,1,0)</code>. P2 requests nothing: <code>Work = (3,1,3)</code>. P1 requests (2,0,2) ≤ (3,1,3): <code>Work = (5,1,3)</code>. P3 requests (1,0,0): <code>Work = (7,2,4)</code>. P4 requests (0,0,2): <code>Work = (7,2,6)</code>. Everyone can finish, in the order P0, P2, P1, P3, P4, so there is <strong>no deadlock</strong>.</p>
+<p>Now suppose P2 makes one more request, for one instance of C, so its Request row becomes (0,0,1). Only P0 can finish (Work becomes (0,1,0)). Every other request needs A or C, and neither is free, so <strong>P1, P2, P3 and P4 are deadlocked</strong>. They hold (2,0,0), (3,0,3), (2,1,1) and (0,0,2) between them, and none of it can be released.</p>
+<h3 id="when-to-run-detection">When to run detection</h3>
+<p>Run the detector often and you waste CPU; run it rarely and deadlocked threads pile up. Common policies are to run it whenever a request cannot be granted at once, or periodically, or when CPU utilization drops below a threshold such as 40%.</p>
+<h3 id="recovery">Recovery</h3>
+<p>Once a deadlock is found there are two ways to break it.</p>
+<ul>
+<li><strong>Terminate processes.</strong> Abort all deadlocked processes (certain, but their work is lost) or one at a time until the cycle disappears (less lost work, but a detection run after each abort). Choose victims by priority, work done and resources held.</li>
+<li><strong>Preempt resources.</strong> Take a resource from a <strong>victim</strong> and give it to another process, <strong>rolling back</strong> the victim to a safe point. Guard against <strong>starvation</strong> by counting past rollbacks in the victim's cost.</li>
+</ul>
+<p>Databases do exactly this: a transaction manager finds cycles in its wait-for graph, aborts the cheapest transaction in each, rolls it back from its log and tells the application to retry.</p>
+<h3 id="related-problems-livelock-and-starvation">Related problems: livelock and starvation</h3>
+<p>Deadlock is not the only way to make no progress.</p>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Threads are...</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Deadlock</td>
+<td>Blocked, using no CPU</td>
+<td>T1 holds A and wants B; T2 holds B and wants A</td>
+</tr>
+<tr>
+<td>Livelock</td>
+<td>Running but making no progress</td>
+<td>Two people in a corridor who keep stepping aside the same way; trylock back-off with identical timing</td>
+</tr>
+<tr>
+<td>Starvation</td>
+<td>One waits unboundedly while others progress</td>
+<td>Reader-preferring lock with a steady stream of readers</td>
+</tr>
+</tbody>
+</table>
+<p>Livelock is the typical failure of naive recovery: if both threads release and retry at the same moment, they can repeat forever. Different or randomized back-off delays break the symmetry, as the lab shows.</p>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 7.1</span><span class="lvl lvl-warmup">warm-up</span><h4>Which condition does each fix break?</h4></header><div class="ex-q"><p>For each fix, name the Coffman condition it removes. (a) Every thread must acquire all its locks in one atomic step before it starts. (b) A global numbering of locks that threads must follow. (c) The OS may forcibly take memory pages from a process. (d) A read-only file is opened without any lock.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Hold and wait: no thread ever holds a lock while waiting for another. (b) Circular wait: a cycle would require a thread to request a lower-numbered lock while holding a higher-numbered one, which the rule forbids. (c) No preemption: the resource can be taken away. (d) Mutual exclusion: the resource is made sharable, so no one waits for it.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 7.2</span><span class="lvl lvl-core">core</span><h4>A cycle that is not a deadlock</h4></header><div class="ex-q"><p>Resource R1 has two instances and R2 has one. P1 holds R2 and requests R1. P2 holds one instance of R1 and requests R2. P3 holds the other instance of R1 and requests nothing. Draw the edges, find the cycle, and decide whether the system is deadlocked.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Edges: R2 → P1 (assigned), P1 → R1 (request), R1 → P2 (assigned), R1 → P3 (assigned), P2 → R2 (request). The cycle is P1 → R1 → P2 → R2 → P1. R1 has two instances, so a cycle is not sufficient. P3 is not waiting: it finishes and releases its instance of R1. P1's request is then satisfied, P1 finishes and releases R2, and P2 gets R2. No deadlock.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 7.3</span><span class="lvl lvl-core">core</span><h4>Safe or unsafe with one resource type</h4></header><div class="ex-q"><p>A system has 10 identical tape drives. Processes A, B and C hold 3, 2 and 2 drives and have declared maximums of 9, 4 and 7. Three drives are free. (a) Is the state safe? (b) A now requests one more drive. Should the Banker's algorithm grant it?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Need = Max - held: A 6, B 2, C 5. Check totals: 3+2+2+3 = 10. (a) Work = 3. B needs 2 ≤ 3, so B finishes and Work = 3 + 2 = 5. C needs 5 ≤ 5, so C finishes and Work = 5 + 2 = 7. A needs 6 ≤ 7, so A finishes, Work = 10. Safe sequence B, C, A. (b) Pretend: A holds 4 (Need 5), Available = 2. B needs 2 ≤ 2, finishes, Work = 2 + 2 = 4. C needs 5 &gt; 4 and A needs 5 &gt; 4, so neither can finish. The new state is unsafe, so the request is denied and A waits, even though a drive is free.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 7.4</span><span class="lvl lvl-core">core</span><h4>Run the detection algorithm</h4></header><div class="ex-q"><p>Two resource types, Available = (0,0). Allocation / Request: P0 (1,0) / (0,1); P1 (0,1) / (1,0); P2 (1,1) / (0,1); P3 (0,0) / (0,0). Which processes, if any, are deadlocked?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Work = (0,0). P3 holds nothing and requests nothing, so it finishes, but it returns (0,0) and Work stays (0,0). P0 requests (0,1) &gt; Work. P1 requests (1,0) &gt; Work. P2 requests (0,1) &gt; Work. No further progress is possible, so P0, P1 and P2 are deadlocked. P3 is not deadlocked.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 7.5</span><span class="lvl lvl-core">core</span><h4>Find and fix the lock-order bug</h4></header><div class="ex-q"><p><code>void swap_owner(file *x, file *y) { lock(&amp;x-&gt;m); lock(&amp;y-&gt;m); ...; unlock(&amp;y-&gt;m); unlock(&amp;x-&gt;m); }</code> is called by T1 as <code>swap_owner(f, g)</code> and by T2 as <code>swap_owner(g, f)</code>. Describe the deadlock and give two fixes.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>T1 locks f-&gt;m and T2 locks g-&gt;m. Then T1 blocks on g-&gt;m (held by T2) and T2 blocks on f-&gt;m (held by T1): circular wait. Fix 1 (break circular wait): inside the function, compare the two pointers or ids and always lock the lower first, as <code>transfer</code> does in this chapter. Fix 2 (break no preemption): lock the first mutex, use <code>pthread_mutex_trylock</code> on the second, and if it fails release the first, back off for a different delay in each thread, and retry. Fix 1 is simpler and cannot livelock. Also handle x == y, which would lock the same mutex twice.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="challenging"><header><span class="ex-n">Exercise 7.6</span><span class="lvl lvl-challenging">challenging</span><h4>Minimum resources for guaranteed freedom</h4></header><div class="ex-q"><p>n processes share identical units of one resource. Each process needs at most m units (m ≥ 1) and requests one unit at a time. Show that the system cannot deadlock if the total number of units R satisfies R ≥ n(m - 1) + 1. How many units are enough for 4 processes with m = 3?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>The worst case for deadlock is that every process holds m - 1 units, one short of its maximum, so n(m - 1) units are in use and nobody can finish. If R ≥ n(m - 1) + 1 there is at least one free unit even in that worst case. Whoever receives it holds its maximum m and can finish, and releases its units, so the others can proceed. By repeating the argument all processes finish; no deadlock is possible. For n = 4 and m = 3: R ≥ 4 × 2 + 1 = 9 units. With 8 units, all four can hold 2 each with none free and none able to finish.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 7.7</span><span class="lvl lvl-challenging">challenging</span><h4>Apply the request algorithm at the initial state</h4></header><div class="ex-q"><p>Use the five-process example in its initial state, Available (3,3,2). (a) P4 requests (3,3,0). (b) Independently, P0 requests (0,2,0). Is each granted? Give the safety reasoning.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Request (3,3,0) ≤ Need[4] = (4,3,1) and ≤ Available (3,3,2). Pretend: Available = (0,0,2), Allocation[4] = (3,3,2), Need[4] = (1,0,1). Safety with Work = (0,0,2): P0 needs (7,4,3), no; P1 (1,2,2), no; P2 (6,0,0), no; P3 (0,1,1), needs 1 B, no; P4 (1,0,1), needs 1 A, no. Nobody can proceed: unsafe, so the request is denied and P4 waits. (b) Request (0,2,0) ≤ Need[0] and ≤ (3,3,2). Pretend: Available = (3,1,2), Allocation[0] = (0,3,0), Need[0] = (7,2,3). Safety: P1 (1,2,2) needs 2 B, only 1 free, no; P3 (0,1,1) ≤ (3,1,2), yes: Work = (5,2,3). Then P1 (1,2,2) ≤ (5,2,3): Work = (7,2,3). Then P0 (7,2,3) ≤ (7,2,3): Work = (7,5,3). Then P2 (6,0,0): Work = (10,5,5). Then P4 (4,3,1): Work = (10,5,7). The state is safe, so the request is granted. The same request is unsafe after P1's (1,0,2) has been granted, because the free pool is then smaller.</p></div></details></section>
+<h2 id="lab-a-two-lock-deadlock-and-two-cures">Lab: a two-lock deadlock and two cures</h2>
+<p>The program below runs two threads that need locks A and B. In mode <code>naive</code>, T1 takes A then B while T2 takes B then A, with a short sleep between the two acquisitions to make the bad interleaving certain. To keep the demo from freezing your terminal, each lock attempt uses <code>pthread_mutex_timedlock</code> with a 2-second limit and reports when it gives up. Mode <code>ordered</code> makes both threads take A first. Mode <code>trylock</code> keeps the opposite order but releases the first lock when the second is busy, then backs off for a different time in each thread.</p>
+<h1 id="define-_posix_c_source-200809l">define _POSIX_C_SOURCE 200809L</h1>
+<h1 id="include_5">include <pthread.h></h1>
+<h1 id="include_6">include <stdio.h></h1>
+<h1 id="include_7">include <string.h></h1>
+<h1 id="include_8">include <time.h></h1>
+<p>static pthread_mutex_t A = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t B = PTHREAD_MUTEX_INITIALIZER;
+static void msleep(int ms) {
+    struct timespec d = { ms / 1000, (ms % 1000) * 1000000L };
+    nanosleep(&amp;d, NULL);
+}</p>
+<p>static int mode;                     /<em> 0 naive, 1 ordered, 2 trylock </em>/</p>
+<p>/<em> Lock m with a 2-second limit so the demo reports a hang instead of freezing. </em>/
+static int lock_or_report(pthread_mutex_t <em>m, const char </em>who, const char *name) {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &amp;t);
+    t.tv_sec += 2;
+    if (pthread_mutex_timedlock(m, &amp;t) != 0) {
+        printf("%s: still waiting for %s after 2 s -&gt; deadlock\n", who, name);
+        return -1;
+    }
+    return 0;
+}</p>
+<p>static void <em>worker(void </em>arg) {
+    int id = (int)(long)arg;                       /<em> 1 or 2 </em>/
+    const char <em>who = id == 1 ? "T1" : "T2";
+    pthread_mutex_t </em>first  = id == 1 ? &amp;A : &B;   /<em> naive: opposite orders </em>/
+    pthread_mutex_t <em>second = id == 1 ? &amp;B : &A;
+    const char </em>fn = id == 1 ? "A" : "B", <em>sn = id == 1 ? "B" : "A";
+    if (mode == 1) {                               /</em> ordered: always A before B <em>/
+        first = &A;  second = &B;  fn = "A";  sn = "B";
+    }
+    for (;;) {
+        if (lock_or_report(first, who, fn)) return NULL;
+        msleep(100);                               /</em> widen the window <em>/
+        if (mode == 2) {                           /</em> trylock: give up and retry <em>/
+            if (pthread_mutex_trylock(second) != 0) {
+                printf("%s: %s busy, releasing %s and retrying\n", who, sn, fn);
+                pthread_mutex_unlock(first);
+                msleep(id == 1 ? 10 : 350);  /</em> different back-offs */
+                continue;
+            }
+        } else if (lock_or_report(second, who, sn)) {
+            return NULL;
+        }
+        printf("%s: holds both locks, working\n", who);
+        pthread_mutex_unlock(second);
+        pthread_mutex_unlock(first);
+        return NULL;
+    }
+}</p>
+<p>int main(int argc, char *<em>argv) {
+    const char </em>m = argc &gt; 1 ? argv[1] : "naive";
+    if      (strcmp(m, "naive")   == 0) mode = 0;
+    else if (strcmp(m, "ordered") == 0) mode = 1;
+    else if (strcmp(m, "trylock") == 0) mode = 2;
+    else { fprintf(stderr, "usage: %s naive|ordered|trylock\n", argv[0]); return 2; }
+    pthread_t t1, t2;
+    pthread_create(&amp;t1, NULL, worker, (void <em>)1L);
+    pthread_create(&amp;t2, NULL, worker, (void </em>)2L);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    printf("main: both threads returned (mode %s)\n", m);
+    return 0;
+}</p>
+<p>Build and run each mode:</p>
+<pre><code class="language-bash">gcc -Wall -Wextra -pthread deadlock.c -o deadlock
+./deadlock naive
+./deadlock ordered
+./deadlock trylock
+</code></pre>
+<p><strong>What to observe.</strong> A run on a two-core test machine printed this (<code>naive</code> pauses 2 seconds, and the order of its two lines can vary).</p>
+<pre><code class="language-text">--- naive
+T2: still waiting for A after 2 s -&gt; deadlock
+T1: still waiting for B after 2 s -&gt; deadlock
+main: both threads returned (mode naive)
+--- ordered
+T2: holds both locks, working
+T1: holds both locks, working
+main: both threads returned (mode ordered)
+--- trylock
+T1: B busy, releasing A and retrying
+T2: A busy, releasing B and retrying
+T1: holds both locks, working
+T2: holds both locks, working
+main: both threads returned (mode trylock)
+</code></pre>
+<p>In <code>naive</code> mode each thread holds one lock and waits for the other, so both time out. With plain <code>pthread_mutex_lock</code> the program would hang forever, and <code>gdb -p &lt;pid&gt;</code> with <code>thread apply all bt</code> would show both threads blocked inside <code>pthread_mutex_lock</code>. In <code>ordered</code> mode there is no cycle. In <code>trylock</code> mode the first attempt collides and both back off, but T1 waits 10 ms and T2 waits 350 ms, so T1 gets both locks next time and T2 follows.</p>
+<p>Without the <code>msleep(100)</code> between the two acquisitions the deadlock almost never appears in a short test, which is why deadlock is dangerous. A delay between acquisitions is a standard way to expose lock-order bugs.</p>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Change the back-off in <code>trylock</code> mode so both threads sleep exactly 10 ms. Run it several times and describe what you see: livelock, or eventual success by chance? Then replace the fixed delays with random ones.</li>
+<li>Extend <code>deadlock.c</code> to three locks and three threads (T1: A then B, T2: B then C, T3: C then A) and confirm that all three deadlock. Which single pair of acquisitions do you need to reverse to remove the cycle?</li>
+<li>Add a fourth, <code>banker</code>, mode: put each thread's maximum claim into the Banker's structure from this chapter and let a thread request its second lock only if the request algorithm says it is safe. Verify that the program never deadlocks and measure what it costs in waiting.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Program hangs, CPU usage near 0, threads alive</td>
+<td>Deadlock (circular wait on locks)</td>
+<td>Attach a debugger, print every thread's stack, look for two threads each waiting in <code>lock</code> on the other's lock</td>
+</tr>
+<tr>
+<td>Program hangs with CPU at 100%</td>
+<td>Livelock or a spinning lock holder</td>
+<td>Look for retry loops; add randomized back-off; check for spinlocks on one core</td>
+</tr>
+<tr>
+<td>Hang appears only under load or on one machine</td>
+<td>Lock-order bug that needs one specific interleaving</td>
+<td>Run under ThreadSanitizer or Helgrind, which report order inversions without needing the hang</td>
+</tr>
+<tr>
+<td>Two functions each work alone, but hang together</td>
+<td>Each takes the same locks in a different order</td>
+<td>Define one global lock order and make both functions obey it</td>
+</tr>
+<tr>
+<td>Deadlock with a single thread</td>
+<td>Locking a non-recursive mutex twice, often through a callback</td>
+<td>Restructure, or use an error-checking mutex to get an error instead of a hang</td>
+</tr>
+<tr>
+<td>Banker's check always denies requests</td>
+<td>Max declared too high, or Need computed from the wrong row</td>
+<td>Recompute Need = Max - Allocation and check that Available plus the sum of Allocation equals the total</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>Deadlock needs all four conditions: mutual exclusion, hold and wait, no preemption and circular wait. Remove one and deadlock cannot happen.</li>
+<li>A cycle in a resource-allocation graph means deadlock only when every resource on it has a single instance; with multi-instance resources it is necessary, not sufficient.</li>
+<li>Lock ordering (a global order on resources) is the cheapest and most widely used prevention technique.</li>
+<li>A state is safe if some order lets every process finish; unsafe does not mean deadlocked, only that deadlock is possible. The Banker's algorithm grants a request only if the resulting state stays safe, at O(m × n²) cost per check.</li>
+<li>In the worked example, the initial state is safe (sequence P1, P3, P4, P0, P2), P1's request (1,0,2) is granted, and P0's request (0,2,0) from that new state is denied as unsafe.</li>
+<li>Detection uses current requests instead of maximum needs; recovery means terminating or preempting victims and guarding against starvation.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 8 (Deadlocks): system model, deadlock characterization, prevention, avoidance (Banker's algorithm), detection and recovery.</li>
+<li><strong>Essential.</strong> Tanenbaum and Bos, <em>Modern Operating Systems</em>, Chapter 6 (Deadlocks), including the ostrich algorithm and the treatment of two-phase locking and livelock.</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapter "Common Concurrency Problems", the section on deadlock bugs in real code and the prevention-by-ordering discussion.</li>
+<li>E. G. Coffman Jr., M. J. Elphick and A. Shoshani, "System Deadlocks", <em>ACM Computing Surveys</em> 3(2), 1971.</li>
+<li>R. C. Holt, "Some Deadlock Properties of Computer Systems", <em>ACM Computing Surveys</em> 4(3), 1972 (resource-allocation graphs).</li>
+<li>A. N. Habermann, "Prevention of System Deadlocks", <em>Communications of the ACM</em> 12(7), 1969 (the Banker's algorithm for several resource types).</li>
+<li>Manual pages: <code>pthread_mutex_lock(3)</code>, <code>pthread_mutex_timedlock(3)</code>, <code>pthread_mutex_trylock(3)</code>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="7">Mark Week 7 as complete</button></div><div class="pager"><a class="pn prev" href="week-06.html"><small>Previous</small>Week 6: Synchronization II</a><a class="pn next" href="week-08.html"><small>Next</small>Week 8: Main Memory</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#what-a-deadlock-is">What a deadlock is</a></li><li><a href="#deadlock-prevention">Deadlock prevention</a></li><li><a href="#deadlock-avoidance-and-the-bankers-algorithm">Deadlock avoidance and the Banker's algorithm</a></li><li><a href="#a-full-worked-example">A full worked example</a></li><li><a href="#deadlock-detection-and-recovery">Deadlock detection and recovery</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab-a-two-lock-deadlock-and-two-cures">Lab: a two-lock deadlock and two cures</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 16: Review, Projects and Final Exam · Operating Systems for Dummies</title>
+<meta name="description" content="A map of the whole course, a cumulative cheat sheet of equations and algorithms, a debugging checklist, guidance for the final project, pointers for studying real kernels, and a 28-question practice final with short solutions.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="4"><article class="week" data-week="16"><header class="week-head" data-num="16"><p class="kicker">Week 16 · Phase 4: Storage, Protection and Modern Systems</p><h1>Review, Projects and Final Exam</h1><p class="abstract">A map of the whole course, a cumulative cheat sheet of equations and algorithms, a debugging checklist, guidance for the final project, pointers for studying real kernels, and a 28-question practice final with short solutions.</p><ul class="chips"><li><b>43</b> min read</li><li><b>0</b> demos</li><li><b>5</b> figures</li><li><b>6</b> code blocks</li><li><b>28</b> exercises</li><li class="tag-due"><b>Due</b> Final project report</li><li class="tag-exam"><b>Exam</b> Final exam (cumulative)</li></ul><p class="lab-line"><b>Lab.</b> Build and run a small C program that combines fork, pipe, threads and mmap, then check it with ThreadSanitizer, AddressSanitizer and Valgrind.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Connect the major mechanisms of the course (processes, memory, storage, protection) into one coherent picture of an operating system</li><li>Apply the cumulative formulas and algorithms to numeric problems and show the units and conventions used</li><li>Diagnose a failing program by choosing the right tool for races, deadlocks, memory and descriptor leaks, zombies and permission errors</li><li>Scope, schedule and evaluate a final project so that its claims are backed by measurements</li><li>Combine fork, pipe, threads and shared memory in one correct program and explain each ownership and cleanup decision</li><li>Choose a real kernel or source tree to study next and read it with a clear question in mind</li><li>Solve a mixed, cumulative set of exam problems under time pressure and check the numeric answers</li></ul></section><div class="prose"><p>Fifteen weeks ago <a href="week-01.html">Week 1</a> asked what an operating system is for. The answer was two jobs: manage the hardware resources fairly and efficiently, and present abstractions that make the hardware usable. Everything since then has been one of those two jobs seen up close: the process and the thread as abstractions of the CPU, schedulers and synchronization as the management of it, virtual memory as both an abstraction and a resource policy, files as an abstraction of storage, and protection as the rule that keeps all of it safe to share.</p>
+<p>This final chapter does not introduce new mechanisms. It ties the old ones together, gives you a one-page reference of every formula and convention we used, lists the habits that find bugs quickly, and prepares you for the two remaining deliverables: the final project report and the cumulative final exam. It ends with the longest exercise set of the course, a practice final that touches every week, and a lab that deliberately mixes four earlier ideas in one program.</p>
+<h2 id="where-we-have-been-a-review-map">Where we have been: a review map</h2>
+<p>The course has four phases. Each one answered a different question, and each depends on the earlier ones.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Phase 1  FOUNDATIONS (Weeks 1-4)      What runs, and who gets the CPU?
+   OS structure, system calls, processes, fork/exec/wait, threads, IPC,
+   scheduling (FCFS, SJF, RR, MLFQ, CFS, RM, EDF)
+        |
+        v
+ Phase 2  CONCURRENCY AND DEADLOCKS (Weeks 5-7)    Cooperate safely?
+   races, critical sections, locks, semaphores, monitors, classic problems,
+   four deadlock conditions, Banker's algorithm
+        |
+        v
+ Phase 3  MEMORY (Weeks 8-10)                      Where do the bytes live?
+   paging, TLB, segmentation, demand paging, copy-on-write,
+   page replacement, working sets, thrashing
+        |
+        v
+ Phase 4  STORAGE, PROTECTION, MODERN SYSTEMS (Weeks 11-16)
+   disks, SSDs, RAID, file systems, journaling, I/O, protection and security,
+   virtualization, containers, Linux and Windows, review
+</pre></div><figcaption><b>Figure 16.1..</b> The four phases of the course and the question each one answers.</figcaption></figure>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Core ideas</th>
+<th>Weeks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Foundations</td>
+<td>Kernel and privileged mode; traps and system calls; process, PCB and states; <code>fork</code>, <code>exec</code>, <code>wait</code>; threads and IPC (a pipe needs its unused ends closed to give EOF); scheduling metrics and policies</td>
+<td><a href="week-01.html">1</a> to <a href="week-04.html">4</a></td>
+</tr>
+<tr>
+<td>Concurrency and deadlocks</td>
+<td><code>counter++</code> is three steps, so updates are lost; mutual exclusion, progress, bounded waiting; mutexes, semaphores, monitors with Mesa semantics (wait in a <code>while</code> loop); four deadlock conditions, lock ordering, Banker's algorithm</td>
+<td><a href="week-05.html">5</a> to <a href="week-07.html">7</a></td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>Paging and the TLB; demand paging, copy-on-write and effective access time; replacement policies (FIFO, LRU, OPT, Clock), working sets and thrashing</td>
+<td><a href="week-08.html">8</a> to <a href="week-10.html">10</a></td>
+</tr>
+<tr>
+<td>Storage, protection, modern systems</td>
+<td>Seek, rotation and transfer; disk scheduling, SSDs, RAID; inodes and directories; journaling, caching, DMA and drivers; access matrix, ACLs, capabilities, least privilege; hypervisors, containers, Linux and Windows</td>
+<td><a href="week-11.html">11</a> to <a href="week-15.html">15</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="how-big-is-each-step-a-latency-ladder">How big is each step? A latency ladder</h3>
+<p>Many exam answers come down to knowing which cost dominates. The figures below are the ones used in earlier chapters.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Access                              Time used in the course      Relative
+ ----------------------------------  ---------------------------  -----------
+ Memory reference / page-cache hit   100 ns                       1
+ Fast system call (typical)          a few hundred ns             ~3
+ Interrupt service                   3 us                         30
+ SSD page fault service              100 us                       1,000
+ fsync on an SSD                     200 us                       2,000
+ HDD page fault service              8 ms                         80,000
+ HDD random 4 KiB read (7200 RPM)    13.2 ms                      132,000
+
+ Moral: one disk access costs as much as a hundred thousand memory references.
+</pre></div><figcaption><b>Figure 16.2..</b> Orders of magnitude from earlier weeks. The disk is five orders of magnitude from RAM.</figcaption></figure>
+<h2 id="the-cheat-sheet-equations-and-algorithms">The cheat sheet: equations and algorithms</h2>
+<p>This section collects every formula and convention from the course. All times follow the same conventions as the earlier chapters, and every row gives a number you can verify. When an exam problem asks for something not in these tables, derive it from the definitions; the derivations are short.</p>
+<h3 id="phase-1-and-phase-2">Phase 1 and Phase 2</h3>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Rule or formula</th>
+<th>Worked number from the chapters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Turnaround time</td>
+<td><code>completion − arrival</code></td>
+<td>Job arrives at 0, finishes at 7: 7</td>
+</tr>
+<tr>
+<td>Waiting time</td>
+<td><code>turnaround − burst</code> (also total time in the ready queue)</td>
+<td>Burst 4, turnaround 10: wait 6</td>
+</tr>
+<tr>
+<td>Response time</td>
+<td><code>first run − arrival</code></td>
+<td>Arrives 3, first runs 6: 3</td>
+</tr>
+<tr>
+<td>Average waiting, Week 4 set</td>
+<td>Sum waits, divide by n</td>
+<td>FCFS 8.75, SJF 7.75, SRTF 6.5, RR (q = 4) 11.75</td>
+</tr>
+<tr>
+<td>Context-switch overhead</td>
+<td><code>s / (q + s)</code> for switch cost s and quantum q</td>
+<td>s = 0.1 ms, q = 10 ms: 0.99%</td>
+</tr>
+<tr>
+<td>Amdahl's law</td>
+<td><code>speedup = 1 / (S + (1 − S) / N)</code>, limit <code>1 / S</code></td>
+<td>S = 0.1, N = 8: 4.71; limit 10</td>
+</tr>
+<tr>
+<td>Fork loop</td>
+<td>n passes of <code>fork()</code> give <code>2ⁿ</code> processes</td>
+<td>n = 4: 16</td>
+</tr>
+<tr>
+<td>CFS share</td>
+<td><code>weight / total weight</code>; nice 0 = 1024, nice 5 = 335</td>
+<td>1024 : 335 is about 3 : 1</td>
+</tr>
+<tr>
+<td>Rate-monotonic bound</td>
+<td><code>U ≤ n (2^(1/n) − 1)</code> (sufficient, not necessary)</td>
+<td>n = 3: 0.7798</td>
+</tr>
+<tr>
+<td>EDF bound</td>
+<td><code>U ≤ 1</code> (necessary and sufficient, deadline = period)</td>
+<td>U = 0.8333: feasible</td>
+</tr>
+<tr>
+<td>Critical section</td>
+<td>Mutual exclusion, progress, bounded waiting</td>
+<td>Peterson's needs memory barriers</td>
+</tr>
+<tr>
+<td>Semaphore uses</td>
+<td>Init 1: lock; init 0: signalling; init N: N resources</td>
+<td>Bounded buffer: <code>empty = N</code>, <code>full = 0</code></td>
+</tr>
+<tr>
+<td>Deadlock conditions</td>
+<td>Mutual exclusion, hold and wait, no preemption, circular wait</td>
+<td>Break any one to prevent deadlock</td>
+</tr>
+<tr>
+<td>Banker: Need</td>
+<td><code>Need = Max − Allocation</code></td>
+<td>Week 7 initial state is safe: P1, P3, P4, P0, P2</td>
+</tr>
+<tr>
+<td>Banker: safety</td>
+<td><code>Work = Available</code>; repeatedly pick unfinished <code>Pi</code> with <code>Need[i] ≤ Work</code>, then <code>Work += Allocation[i]</code></td>
+<td>Cost <code>O(m × n²)</code></td>
+</tr>
+<tr>
+<td>Banker: request</td>
+<td>Check <code>Request ≤ Need</code>, check <code>Request ≤ Available</code>, pretend to grant, run safety; undo if unsafe</td>
+<td>P1 (1,0,2) granted; P0 (0,2,0) denied</td>
+</tr>
+<tr>
+<td>Guaranteed deadlock freedom</td>
+<td><code>n</code> processes, each needing at most <code>m</code> of one resource: <code>R ≥ n (m − 1) + 1</code></td>
+<td>n = 4, m = 3: 9</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-3">Phase 3</h3>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Rule or formula</th>
+<th>Worked number from the chapters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Address splitting</td>
+<td><code>page = address div page size</code>, <code>offset = address mod page size</code></td>
+<td>20,000 with 4 KiB pages: page 4, offset 3616</td>
+</tr>
+<tr>
+<td>Physical address</td>
+<td><code>frame × page size + offset</code></td>
+<td>Frame 7: 7 × 4096 + 3616 = 32,288</td>
+</tr>
+<tr>
+<td>Page table size</td>
+<td>entries = <code>2^(address bits − offset bits)</code>; bytes = entries × entry size</td>
+<td>32-bit, 4 KiB, 4-byte entries: 2²⁰ × 4 B = 4 MiB</td>
+</tr>
+<tr>
+<td>Internal fragmentation</td>
+<td>Wasted space in the last page, up to one page less one byte</td>
+<td>Average about half a page per region</td>
+</tr>
+<tr>
+<td>EAT with TLB</td>
+<td><code>α (t + m) + (1 − α)(t + 2m)</code> for a one-level table</td>
+<td>t = 10, m = 100, α = 0.99: 111 ns</td>
+</tr>
+<tr>
+<td>EAT with page faults</td>
+<td><code>(1 − p) × ma + p × S</code></td>
+<td>ma = 200 ns, S = 8 ms: p must be about 10⁻⁶ or lower</td>
+</tr>
+<tr>
+<td>Largest tolerable fault rate</td>
+<td><code>p ≤ (EATmax − ma) / (S − ma)</code></td>
+<td>ma = 100 ns, S = 8 ms, 25% slowdown: 3.1 × 10⁻⁶</td>
+</tr>
+<tr>
+<td>TLB reach</td>
+<td><code>entries × page size</code></td>
+<td>64 × 4 KiB = 256 KiB</td>
+</tr>
+<tr>
+<td>Buddy system</td>
+<td>Round to a power of two; buddy of block <code>a</code> of size <code>s</code> is <code>a XOR s</code></td>
+<td>Block 0 of size 32: buddy at 32</td>
+</tr>
+<tr>
+<td>Fits</td>
+<td>First: first hole big enough; best: smallest big enough; worst: largest</td>
+<td>Holes 100, 500, 200, 300, 600: best fit places all four requests</td>
+</tr>
+<tr>
+<td>FIFO, LRU, OPT counts</td>
+<td>Simulate on the reference string</td>
+<td>3 frames, Week 10 string: 15, 12, 9 faults</td>
+</tr>
+<tr>
+<td>Belady's anomaly</td>
+<td>FIFO can fault more with more frames</td>
+<td><code>1,2,3,4,1,2,5,1,2,3,4,5</code>: 9 faults (3 frames), 10 (4 frames)</td>
+</tr>
+<tr>
+<td>Stack algorithms</td>
+<td>LRU and OPT never show Belady's anomaly</td>
+<td>Set at n frames is a subset of the set at n + 1</td>
+</tr>
+<tr>
+<td>Working set</td>
+<td><code>D = Σ WSSᵢ</code>; thrashing when <code>D &gt; m</code></td>
+<td>Suspend a process until <code>D ≤ m</code></td>
+</tr>
+<tr>
+<td>Proportional allocation</td>
+<td><code>aᵢ = (sᵢ / Σ s) × m</code></td>
+<td>Larger processes get more frames</td>
+</tr>
+<tr>
+<td>Copy-on-write</td>
+<td>Share frames after <code>fork</code>; copy a page only on the first write</td>
+<td>Child that writes 5 pages copies 5 pages</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-4">Phase 4</h3>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Rule or formula</th>
+<th>Worked number from the chapters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Disk access time</td>
+<td><code>seek + rotational latency + transfer</code>; latency is <code>(60 / RPM) / 2</code></td>
+<td>7200 RPM: 4.17 ms; random 4 KiB read 13.2 ms</td>
+</tr>
+<tr>
+<td>Sequential versus random</td>
+<td>Sequential streams at the transfer rate</td>
+<td>About 500 times faster on the same disk</td>
+</tr>
+<tr>
+<td>SCAN</td>
+<td>Sweep to the disk end, reverse, serve on the way</td>
+<td>Week 11 queue: 236 (toward 0), 331 (toward 199)</td>
+</tr>
+<tr>
+<td>C-SCAN</td>
+<td>Sweep to the end, jump to cylinder 0 (counted), sweep again</td>
+<td>382 on the Week 11 queue</td>
+</tr>
+<tr>
+<td>LOOK, C-LOOK</td>
+<td>Like SCAN, C-SCAN but reverse or jump at the last request</td>
+<td>299 and 322</td>
+</tr>
+<tr>
+<td>FCFS, SSTF</td>
+<td>Arrival order; nearest request first (can starve)</td>
+<td>640 and 236</td>
+</tr>
+<tr>
+<td>Write amplification</td>
+<td><code>flash bytes written / host bytes written</code></td>
+<td>Lowered by TRIM and over-provisioning</td>
+</tr>
+<tr>
+<td>RAID capacity</td>
+<td>RAID 0: <code>N</code>; RAID 1: <code>N / 2</code>; RAID 5: <code>N − 1</code>; RAID 6: <code>N − 2</code>; RAID 10: <code>N / 2</code> (disks)</td>
+<td>8 disks of 4 TB: 32, 16, 28, 24, 16 TB</td>
+</tr>
+<tr>
+<td>RAID small write</td>
+<td>I/Os per small write: RAID 5 = 4, RAID 6 = 6, RAID 1 and 10 = 2</td>
+<td>Random-write IOPS = <code>N × per-disk IOPS / cost</code></td>
+</tr>
+<tr>
+<td>Parity</td>
+<td><code>P = D0 XOR D1 XOR …</code> ; a lost block is the XOR of all the others</td>
+<td>0xA5 XOR 0x3C XOR 0x0F = 0x96</td>
+</tr>
+<tr>
+<td>Inode maximum size</td>
+<td><code>(direct + p + p² + p³) × block size</code>, where <code>p = block size / pointer size</code></td>
+<td>4 KiB, 12 direct: about 4 TiB</td>
+</tr>
+<tr>
+<td>Offset to block</td>
+<td><code>block = offset div block size</code>; subtract region sizes in turn</td>
+<td>Offset 5,000,000 (4 KiB blocks): block 1220, <code>double[0]</code> then <code>block[184]</code></td>
+</tr>
+<tr>
+<td>Cache EAT</td>
+<td><code>h × hit + (1 − h) × miss</code></td>
+<td>0.95, 100 ns, 8 ms: 400,095 ns</td>
+</tr>
+<tr>
+<td>Journal writes for k data blocks</td>
+<td>Data journaling <code>2k + 6</code>; ordered <code>k + 6</code> (one inode, one bitmap)</td>
+<td>k = 10: 26 and 16</td>
+</tr>
+<tr>
+<td>Group commit</td>
+<td>Commits per second = <code>transactions per fsync / fsync time</code></td>
+<td>10 per 200 µs fsync: 50,000 per second</td>
+</tr>
+<tr>
+<td>COW update</td>
+<td><code>h</code> new blocks for a tree of height <code>h</code>, then one root flip</td>
+<td>Height 4: 4 writes</td>
+</tr>
+<tr>
+<td>Permissions</td>
+<td>r = 4, w = 2, x = 1; first matching class decides; <code>mode AND NOT umask</code></td>
+<td><code>0666</code> with umask <code>027</code>: <code>0640</code></td>
+</tr>
+<tr>
+<td>Nested page walk</td>
+<td><code>(n + 1)(m + 1) − 1</code> references for <code>n</code>-level guest and <code>m</code>-level host</td>
+<td>4 and 4: 24</td>
+</tr>
+<tr>
+<td>Container CPU limit</td>
+<td><code>cpu.max = quota period</code>; weights proportional</td>
+<td><code>200000 100000</code> = 2 CPUs</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Units and off-by-one traps</p>
+<p>Convert everything to one unit before you substitute (1 ms = 1,000,000 ns). Page and block numbers start at 0. In SCAN-family problems state whether the jump of C-SCAN is counted; in this course it is. When a formula uses both a hit ratio and a miss ratio, write <code>(1 − h)</code> explicitly instead of doing it in your head. Finally, write the unit next to every number you carry: most lost marks are wrong units, not wrong ideas.</p>
+</div>
+<h2 id="debugging-checklist">Debugging checklist</h2>
+<p>Operating systems bugs have a reputation for being hard because they depend on timing, hidden state or the environment. The cure is a habit: reproduce, shrink, observe, then fix, and always match the tool to the class of bug. Figure 16.3 gives a quick decision path.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Symptom                         First question               First tool
+ ------------------------------  ---------------------------  ----------------
+ Wrong totals, flaky results     Shared data without a lock?  ThreadSanitizer
+ Program stops, CPU idle         Who waits for whom?          gdb: thread
+                                                              apply all bt
+ Program stops, CPU 100%         Spinning or livelock?        perf top, gdb bt
+ Memory grows over time          Allocated but never freed?   Valgrind, ASan
+ &quot;Too many open files&quot;           Descriptor never closed?     ls /proc/PID/fd
+ Defunct (Z) processes in ps     Parent never called wait?    ps -o stat,ppid
+ &quot;Permission denied&quot;             Which check failed?          namei -l, id
+ Crash with no message           Where did it die?            core dump + gdb
+ Slow, with high disk activity   Thrashing or fsync?          vmstat, strace
+</pre></div><figcaption><b>Figure 16.3..</b> Match the symptom to a first question and a first tool.</figcaption></figure>
+<h3 id="races">Races</h3>
+<div class="admonition definition">
+<p class="admonition-title">Data race</p>
+<p>A <strong>data race</strong> is two threads accessing the same memory location, at least one of them writing, with no synchronization ordering the accesses. It is narrower than a <em>race condition</em>, which is any result that depends on timing.</p>
+</div>
+<p>Compile with <code>gcc -g -fsanitize=thread -pthread</code> and run the program: <strong>ThreadSanitizer</strong> instruments memory accesses and reports both conflicting stacks. Valgrind's <code>--tool=helgrind</code> does the same without recompiling, but slower. Remember that a clean run proves little, because the bad interleaving may not have happened; a bug that disappears when you add a print statement or run under a debugger is called a <strong>Heisenbug</strong>, and it nearly always means a race. Run the test many times, on several cores, under load (a <strong>stress test</strong>), and keep the failing seed or command.</p>
+<p>Checklist: Is every shared variable protected by the same lock on every path? Do you hold the lock across the whole read-modify-write? Is every condition-variable wait in a <code>while</code> loop with the predicate in shared state? Did you pass the address of a loop variable to a thread?</p>
+<h3 id="deadlocks">Deadlocks</h3>
+<p>When a program hangs with no CPU use, attach with <code>gdb -p PID</code> and run <code>thread apply all bt</code>. Threads sitting in <code>pthread_mutex_lock</code> or <code>futex</code> wait calls show which lock each one wants; draw the wait-for graph and look for a cycle (<a href="week-07.html">Week 7</a>). Fixes in order of preference: impose one global lock order, hold fewer locks, use <code>pthread_mutex_trylock</code> and back off, or keep each critical section free of calls that take other locks. If the hang has CPU use, suspect a spin or a <strong>livelock</strong> instead.</p>
+<h3 id="memory-errors-and-leaks">Memory errors and leaks</h3>
+<p>A <strong>memory leak</strong> is memory that was allocated and is still held but can no longer be used, because the last pointer to it was lost. Leaks make a long-running server grow until the OOM killer (<a href="week-10.html">Week 10</a>) ends it. A <strong>use-after-free</strong> is reading or writing memory after <code>free</code>, and a double free releases the same block twice; both corrupt the allocator's lists. Compile with <code>gcc -g -fsanitize=address</code>: <strong>AddressSanitizer</strong> places guard zones around allocations and reports out-of-bounds access, use-after-free and (on Linux, through its leak detector) leaks at exit. <strong>Valgrind</strong> (<code>valgrind --leak-check=full ./prog</code>) needs no recompilation and runs the program on a simulated CPU, much more slowly. For a crash, enable a <strong>core dump</strong> (<code>ulimit -c unlimited</code>), the file the kernel writes holding the memory image of a crashed process, and open it with <code>gdb ./prog core</code> to print the <strong>backtrace</strong> (the chain of function calls active at the crash, <code>bt</code> in gdb).</p>
+<h3 id="descriptor-leaks">Descriptor leaks</h3>
+<p>Every <code>open</code>, <code>socket</code>, <code>pipe</code> and <code>accept</code> consumes a <strong>file descriptor</strong>, and each process has a <strong>resource limit</strong> (<code>RLIMIT_NOFILE</code>, shown by <code>ulimit -n</code>, often 1024 for the soft limit) on how many it may hold. A <strong>file descriptor leak</strong> is a descriptor that is never closed; the symptom is the error <code>EMFILE</code>, "Too many open files", usually after hours. List them with <code>ls -l /proc/PID/fd</code> or <code>lsof -p PID</code> and look for many copies of the same file or socket. The cure is a clear owner for each descriptor, a <code>close</code> on every exit path (including errors), and closing unused pipe ends after <code>fork</code> so that readers see EOF. Descriptors are inherited across <code>fork</code> and <code>exec</code> unless marked <code>O_CLOEXEC</code>, so a parent's leak can hold a socket open in a child.</p>
+<h3 id="zombies-and-orphans">Zombies and orphans</h3>
+<p>A terminated child stays in the process table as a <strong>zombie</strong> until its parent calls <code>wait</code> or <code>waitpid</code> (<a href="week-02.html">Week 2</a>). <code>ps -o pid,ppid,stat,cmd</code> shows them with state <code>Z</code> and <code>&lt;defunct&gt;</code>. Zombies use no CPU, but each holds a process-table slot, so thousands can exhaust PIDs. Fix the parent (find it with <code>ppid</code>): call <code>waitpid</code> in a loop or handle <code>SIGCHLD</code>. Killing a zombie does nothing; when its parent exits, PID 1 adopts and reaps it.</p>
+<h3 id="permissions">Permissions</h3>
+<p>"Permission denied" has many causes, so find the one that failed. Run <code>id</code> to see your user and groups, <code>ls -l</code> and <code>stat</code> for the mode and owner, and <code>namei -l /full/path</code> to show the permissions of every directory along the path (a missing <code>x</code> on one directory blocks everything below it). Check <code>getfacl</code> for ACLs, mount options such as <code>ro</code> or <code>noexec</code>, a <code>umask</code> that removed bits at creation, and security modules (SELinux or AppArmor) in the audit log. A setuid program that fails usually sits on a file system mounted <code>nosuid</code>, or has the wrong owner (<a href="week-14.html">Week 14</a>). Never fix permissions with <code>chmod 777</code>: that hides the problem and removes the protection.</p>
+<div class="admonition tip">
+<p class="admonition-title">A general method</p>
+<ol>
+<li>Reproduce reliably; make the smallest input that still fails. 2. Form one hypothesis about the class of bug (Figure 16.3). 3. Observe with <code>strace</code>, a sanitizer or a debugger instead of guessing. 4. Change one thing at a time. 5. Write a regression test, so the bug cannot return unnoticed.</li>
+</ol>
+</div>
+<h2 id="final-project-and-final-exam">Final project and final exam</h2>
+<p>The final project is your chance to build, measure and explain one OS mechanism. It was proposed in <a href="week-08.html">Week 8</a>; this week you submit the report. If you are still choosing or rescoping, use this section as a checklist.</p>
+<h3 id="project-types">Project types</h3>
+<p>Any one of the following scopes works; pick one you can finish and evaluate.</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Core deliverable</th>
+<th>What to measure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shell plus</td>
+<td>Pipes, redirection, job control, built-ins on top of Assignment 1</td>
+<td>Correctness under a test script; behavior with signals</td>
+</tr>
+<tr>
+<td>Thread pool or web server</td>
+<td>A pool, a bounded queue and a request server</td>
+<td>Throughput and tail latency against thread count</td>
+</tr>
+<tr>
+<td>Scheduler simulator</td>
+<td>Several policies plus workloads, including MLFQ or CFS</td>
+<td>Waiting, turnaround and response time per policy</td>
+</tr>
+<tr>
+<td>Memory manager simulator</td>
+<td>Paging, TLB model and several replacement policies</td>
+<td>Fault counts, EAT, thrashing threshold</td>
+</tr>
+<tr>
+<td>Disk or file system simulator</td>
+<td>Disk scheduling, a small inode file system or a journal</td>
+<td>Seek distance, crash recovery tests</td>
+</tr>
+<tr>
+<td>Key-value store with a log</td>
+<td>A write-ahead log with recovery and fsync policy</td>
+<td>Throughput against durability setting</td>
+</tr>
+<tr>
+<td>Container runtime</td>
+<td>A program using <code>clone</code>, namespaces and cgroups</td>
+<td>Isolation tests and resource-limit effect</td>
+</tr>
+<tr>
+<td>xv6 extension</td>
+<td>A new system call, scheduler or <code>mmap</code> in xv6</td>
+<td>Test programs inside xv6</td>
+</tr>
+</tbody>
+</table>
+<h3 id="milestones">Milestones</h3>
+<p>Treat the project as a sequence of checkpoints, finishing each before the next.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">  Wk 8        Wk 10         Wk 12          Wk 14          Wk 15      Wk 16
+  Proposal -&gt; Design   -&gt;   Prototype -&gt;   Feature   -&gt;   Freeze -&gt;  Report
+  1 page:     data structs, runs end to    complete,      bug fixes  due
+  goal,       interfaces,   end on one      benchmark     only,
+  scope,      test plan,    simple case,    scripts       demo
+  risks       repo          tests start     ready         rehearsal
+</pre></div><figcaption><b>Figure 16.4..</b> A suggested schedule. Keep a working version at every step, so you always have something to submit.</figcaption></figure>
+<h3 id="evaluation">Evaluation</h3>
+<p>Your instructor sets the exact weights; a typical rubric looks like this.</p>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Weight</th>
+<th>What earns full marks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Correctness and completeness</td>
+<td>30</td>
+<td>The stated features work on the tests, including error paths</td>
+</tr>
+<tr>
+<td>Evaluation and measurements</td>
+<td>20</td>
+<td>Repeatable experiments, units, several runs, honest limits</td>
+</tr>
+<tr>
+<td>Design and scope</td>
+<td>15</td>
+<td>A clear problem, interfaces, and reasons for each decision</td>
+</tr>
+<tr>
+<td>Report</td>
+<td>15</td>
+<td>A reader can reproduce your results from the report alone</td>
+</tr>
+<tr>
+<td>Code quality and tests</td>
+<td>10</td>
+<td>Readable code, no sanitizer or Valgrind errors, a test script</td>
+</tr>
+<tr>
+<td>Demo or presentation</td>
+<td>10</td>
+<td>A short, clear explanation and a live run</td>
+</tr>
+</tbody>
+</table>
+<p>A good report has: a one-paragraph abstract; the problem and the OS concepts involved (with links back to the weeks); the design, with a figure; the implementation, including what you tried and dropped; the evaluation (setup, workload, a table or graph, and what it shows); limitations; and a short "what I would do next". Report numbers with units and say how many runs you made. Claim only what the measurements show. Cite your sources and write the code yourself; shared designs must be acknowledged.</p>
+<h3 id="the-final-exam">The final exam</h3>
+<p>The final exam is cumulative, with extra weight on Weeks 8 to 15, since the midterm already covered Weeks 1 to 7. Check your syllabus for the date, the length and what you may bring; the practice final below assumes a closed-book exam with a single sheet of formulas, which is why the cheat sheet above is deliberately one page of tables. Two rules help most. First, every numeric problem should show its formula, its substitution and its unit. Second, trace problems (scheduling, page replacement, Banker's, disk scheduling) should be done as a table with one row per step; a table is checkable and gets partial credit when one entry is wrong.</p>
+<p>For the last two weeks: re-derive each table above from the definitions on blank paper, redo the in-chapter traces, take the practice final in one sitting under a time limit, then mark it and repeat only the topics you missed. Explaining an answer aloud to a partner is the best test of understanding.</p>
+<h2 id="next-steps">Next steps</h2>
+<h3 id="reading-real-source-code">Reading real source code</h3>
+<p>Textbook ideas become concrete in code. The best first stop is <strong>xv6</strong>, a re-implementation of Sixth Edition Unix for RISC-V, written at MIT for teaching. Its whole kernel is a few thousand lines: <code>proc.c</code> holds fork, scheduling and sleep and wakeup; <code>vm.c</code> the page tables; <code>fs.c</code>, <code>log.c</code> and <code>bio.c</code> an inode file system, a write-ahead log and a buffer cache; <code>pipe.c</code> and <code>sysfile.c</code> the system calls. Because it is small enough to read in full, you can follow a single <code>write</code> from the trap handler to the disk driver. Pair it with the xv6 book and with John Lions' commentary on the original Unix source, which has taught students the same way for decades.</p>
+<p><strong>Linux</strong> is the opposite: enormous, but organized along the lines of this course. Start where the chapters point. <code>kernel/sched/</code> has the scheduler classes and CFS (now EEVDF); <code>mm/</code> the page fault path, the page cache, reclaim and the OOM killer; <code>fs/</code> the VFS and ext4 (with <code>jbd2</code> for the journal); <code>block/</code> the I/O schedulers; <code>kernel/fork.c</code> the <code>clone</code> family; <code>kernel/cgroup/</code> and <code>kernel/nsproxy.c</code> the container mechanisms; <code>security/</code> the security modules. Do not read top to bottom. Pick a question, such as "what happens in the kernel during <code>fork</code>?", and follow it with <code>git grep</code>, a cross-referenced source browser or <code>ctags</code> and <code>cscope</code>, reading the function called at each step. Use <code>strace</code> and <code>perf trace</code> to see which system calls a real program issues first, then find those entry points in the source. The kernel's own <code>Documentation/</code> directory and the weekly articles on LWN.net explain why the code looks the way it does.</p>
+<div class="admonition intuition">
+<p class="admonition-title">Read with a question</p>
+<p>Reading a large code base from the first line is like reading a dictionary. Choose a question that this course has taught you to ask ("where is the page table walked?", "where is the lock that protects this list?"), find the answer, and write down the call chain. Ten such chains teach more than ten hours of browsing.</p>
+</div>
+<h3 id="other-kernels-to-study">Other kernels to study</h3>
+<table>
+<thead>
+<tr>
+<th>Kernel</th>
+<th>Why study it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>xv6</td>
+<td>A complete Unix-like kernel small enough to read in a week; great for projects</td>
+</tr>
+<tr>
+<td>Minix 3</td>
+<td>A microkernel design with drivers and servers as user processes, by Tanenbaum</td>
+</tr>
+<tr>
+<td>seL4</td>
+<td>A microkernel with a machine-checked proof of correctness; capabilities used throughout</td>
+</tr>
+<tr>
+<td>FreeBSD and OpenBSD</td>
+<td>A cleaner monolithic design than Linux; OpenBSD for its security-minded code</td>
+</tr>
+<tr>
+<td>Zircon (Fuchsia)</td>
+<td>A modern capability-based microkernel</td>
+</tr>
+<tr>
+<td>Windows (NT)</td>
+<td>The other major design; see <a href="week-15.html">Week 15</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="careers-and-further-study">Careers and further study</h3>
+<p>An OS course prepares you for work well beyond kernels. <strong>Systems and infrastructure engineers</strong> build servers, databases, storage and cloud platforms, where scheduling, caching, durability and isolation decide cost. <strong>Site reliability and performance engineers</strong> diagnose production systems with the tools of the debugging checklist. <strong>Kernel, driver and embedded developers</strong> work near the hardware, with real-time limits (<a href="week-04.html">Week 4</a>). <strong>Security engineers</strong> apply protection and isolation (<a href="week-14.html">Week 14</a>). <strong>Compiler, runtime and database engineers</strong> depend on the memory model, threads and I/O of the OS. To go further, take architecture, networks, distributed systems and databases, read the papers listed below, and contribute a small fix to an open-source project. The habit that transfers everywhere is the one this course practiced: for any component, ask what resource it manages, what abstraction it offers, what invariants it keeps and what happens when something fails.</p>
+<h2 id="exercises">Exercises</h2>
+<p>This practice final has 28 questions, ordered by week. Warm-up questions are quick checks, core questions are the typical exam problems, and the challenging ones need two or three ideas together. Try each one on paper before reading the solution.</p>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 16.1</span><span class="lvl lvl-warmup">warm-up</span><h4>1. Privileged or not?</h4></header><div class="ex-q"><p>Which of these actions need kernel mode? (a) adding two registers, (b) disabling interrupts, (c) writing the timer's reload register, (d) reading a variable on your own heap, (e) executing the <code>syscall</code> instruction.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(b) and (c) are privileged instructions: executing them in user mode causes a trap. (a) and (d) are ordinary user-mode operations. (e) is allowed in user mode, because it is the controlled way to enter the kernel: it switches to kernel mode and jumps to a fixed handler address, so the program cannot choose where kernel code starts.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="warm-up"><header><span class="ex-n">Exercise 16.2</span><span class="lvl lvl-warmup">warm-up</span><h4>2. Process states</h4></header><div class="ex-q"><p>A running process calls <code>read()</code> on a disk file that is not cached, the disk finishes, and later the timer interrupt fires while the process is running again. Give the sequence of states and the cause of each transition.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Running → Waiting (blocked on the disk I/O, so it gives up the CPU). Waiting → Ready (the I/O completion interrupt wakes it). Ready → Running (the scheduler dispatches it). Running → Ready (the timer interrupt ends its time slice: preemption). Only the scheduler moves a process from Ready to Running.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 16.3</span><span class="lvl lvl-core">core</span><h4>3. Context-switch overhead</h4></header><div class="ex-q"><p>A context switch costs 0.1 ms. What fraction of CPU time is lost to switching if the quantum is (a) 10 ms and (b) 1 ms? Why not choose a very small quantum?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Overhead = s / (q + s). (a) 0.1 / 10.1 = 0.0099, about 0.99%. (b) 0.1 / 1.1 = 0.0909, about 9.09%.</p>
+<p>A very small quantum improves response time but spends more and more of the CPU on switching (with q = s half of the time is wasted), and also destroys cache and TLB contents. A quantum should be longer than most CPU bursts but short enough to keep interactive tasks responsive.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 16.4</span><span class="lvl lvl-core">core</span><h4>4. Counting processes</h4></header><div class="ex-q"><p>How many processes exist (including the original one) after each of these fragments, assuming every <code>fork</code> succeeds?</p>
+<pre><code class="language-c">for (int i = 0; i &lt; 4; i++) fork();            /* (a) */
+
+for (int i = 0; i &lt; 4; i++)                     /* (b) */
+    if (fork() == 0) break;
+</code></pre></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Every process, parent and child, continues the loop, so each pass doubles the count: 2⁴ = 16 processes (15 new ones).</p>
+<p>(b) Each child breaks out of the loop and creates nothing, while only the original parent continues. The parent creates one child per pass: 1 + 4 = 5 processes.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 16.5</span><span class="lvl lvl-core">core</span><h4>5. Why does the reader hang?</h4></header><div class="ex-q"><p>The parent creates a pipe and forks. The child writes a message and exits. The parent loops on <code>read(fd[0], ...)</code> until it returns 0, but the program never finishes. Why, and what is the fix?</p>
+<pre><code class="language-c">int fd[2]; pipe(fd);
+if (fork() == 0) { write(fd[1], &quot;hi&quot;, 2); _exit(0); }
+char buf[16]; ssize_t n;
+while ((n = read(fd[0], buf, sizeof buf)) &gt; 0) { /* use data */ }
+</code></pre></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p><code>read</code> returns 0 (end of file) only when every write end of the pipe is closed. The child's copy closes at exit, but the parent still holds its own copy of <code>fd[1]</code>, so the kernel knows a writer could still write and the <code>read</code> blocks forever. Fix: the parent must <code>close(fd[1])</code> before the loop (and the child should <code>close(fd[0])</code>). Always close the pipe ends a process does not use.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="core"><header><span class="ex-n">Exercise 16.6</span><span class="lvl lvl-core">core</span><h4>6. Scheduling trace</h4></header><div class="ex-q"><p>Processes (arrival, burst): A (0, 7), B (1, 4), C (2, 1), D (3, 4). Compute the average waiting time under (a) FCFS, (b) SRTF and (c) round robin with q = 2. When a new arrival and a preempted process reach the ready queue at the same moment, the new arrival goes first.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) FCFS runs A 0 to 7, B 7 to 11, C 11 to 12, D 12 to 16. Waits: A 0, B 6, C 9, D 9. Average = 24 / 4 = 6.0.</p>
+<p>(b) SRTF: A runs 0 to 1; B (4) preempts A (6 left) at 1; C (1) preempts B (3 left) at 2; C ends at 3; B resumes 3 to 6; D (4) runs 6 to 10 since 4 &lt; 6; A finishes 10 to 16. Waits = turnaround − burst: A 16 − 7 = 9, B 5 − 4 = 1, C 0, D 7 − 4 = 3. Average = 13 / 4 = 3.25.</p>
+<p>(c) RR q = 2: A 0 to 2, B 2 to 4, C 4 to 5, A 5 to 7, D 7 to 9, B 9 to 11, A 11 to 13, D 13 to 15, A 15 to 16. Completion: A 16, B 11, C 5, D 15. Waits: A 9, B 6, C 2, D 8. Average = 25 / 4 = 6.25.</p>
+<p>SRTF is lowest, as it is optimal for average waiting time; RR gives more equal response at the cost of a worse average than FCFS here.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 16.7</span><span class="lvl lvl-challenging">challenging</span><h4>7. Rate-monotonic or EDF?</h4></header><div class="ex-q"><p>Three periodic tasks (computation time C, period T = deadline) are (1, 4), (2, 6) and (3, 12). (a) Compute the utilization and compare it with the RM bound. (b) Decide by exact response-time analysis whether RM schedules the set. (c) Does EDF?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) U = 1/4 + 2/6 + 3/12 = 0.8333, above the RM bound 3 × (2^(1/3) − 1) = 0.7798. The bound is only sufficient, so it settles nothing.</p>
+<p>(b) RM priorities by period (4, 6, 12). Task 1: R = 1. Task 2: R = 2 + ⌈R/4⌉ = 3. Task 3: R = 3 + ⌈R/4⌉ × 1 + ⌈R/6⌉ × 2, iterating 6 → 7 → 9 → 10 → 10, so R = 10 ≤ 12. All deadlines are met: RM works despite U exceeding the bound.</p>
+<p>(c) EDF is feasible whenever U ≤ 1 (deadline = period): yes.</p></div></details></section>
+<section class="exercise" id="ex-8" data-level="warm-up"><header><span class="ex-n">Exercise 16.8</span><span class="lvl lvl-warmup">warm-up</span><h4>8. Trace a lost update</h4></header><div class="ex-q"><p><code>counter</code> is 5. Two threads each run <code>counter++</code>, compiled as load, add, store. Give an interleaving that ends with 6, and say how a mutex prevents it.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>T1 loads 5; T2 loads 5; T1 adds 1 and stores 6; T2 adds 1 and stores 6. Two increments produced one: a lost update. With a mutex around the whole load-add-store, one thread completes all three steps before the other starts, so the result is always 7. The critical section must cover the whole read-modify-write, not only the store.</p></div></details></section>
+<section class="exercise" id="ex-9" data-level="core"><header><span class="ex-n">Exercise 16.9</span><span class="lvl lvl-core">core</span><h4>9. Swapped waits</h4></header><div class="ex-q"><p>In a bounded buffer, a producer executes <code>wait(mutex); wait(empty); ...; signal(mutex); signal(full)</code>. Explain the deadlock and name the deadlock conditions that hold.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>When the buffer is full the producer takes <code>mutex</code> and then blocks on <code>empty</code>, still holding <code>mutex</code>. The consumer, which would <code>signal(empty)</code>, must first <code>wait(mutex)</code>, so it blocks too. Neither can proceed. The four conditions hold: mutual exclusion (the mutex), hold and wait (the producer holds <code>mutex</code> while waiting), no preemption (a semaphore cannot be taken away), and circular wait (the producer waits for the consumer's signal, the consumer for the producer's mutex). The fix is the right order: <code>wait(empty)</code> first, then <code>wait(mutex)</code>.</p></div></details></section>
+<section class="exercise" id="ex-10" data-level="challenging"><header><span class="ex-n">Exercise 16.10</span><span class="lvl lvl-challenging">challenging</span><h4>10. Dining philosophers</h4></header><div class="ex-q"><p>Five philosophers each pick up their left fork and then their right fork. (a) Explain why letting at most four sit at the table prevents deadlock. (b) Explain why numbering the forks and always taking the lower-numbered fork first also does.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Deadlock needs every one of the five philosophers to hold one fork and wait for the next, a cycle through all five. With at most four seated there are at least five forks for four diners, so the cycle cannot close and someone can always take both forks, eat and release.</p>
+<p>(b) With a global order, each wait goes from a held lower-numbered fork to a wanted higher-numbered one. Numbers strictly increase along a chain, so it cannot loop back: no circular wait. The last philosopher (forks 4 and 0) takes fork 0 first, which breaks the symmetry. This is the lock-ordering rule of <a href="week-07.html">Week 7</a>.</p></div></details></section>
+<section class="exercise" id="ex-11" data-level="core"><header><span class="ex-n">Exercise 16.11</span><span class="lvl lvl-core">core</span><h4>11. Banker&#x27;s algorithm</h4></header><div class="ex-q"><p>Three resource types; Available = (2, 1, 1).</p>
+<table>
+<thead>
+<tr>
+<th>Process</th>
+<th>Allocation</th>
+<th>Max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>(1, 0, 1)</td>
+<td>(3, 2, 2)</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>(2, 1, 0)</td>
+<td>(3, 2, 1)</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>(1, 2, 1)</td>
+<td>(2, 3, 2)</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>(0, 1, 1)</td>
+<td>(1, 2, 3)</td>
+</tr>
+</tbody>
+</table>
+<p>(a) Compute the Need matrix. (b) Is the state safe? Give a safe sequence. (c) P3 requests (0, 1, 1). Should it be granted?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Need = Max − Allocation: P0 (2, 2, 1), P1 (1, 1, 1), P2 (1, 1, 1), P3 (1, 1, 2).</p>
+<p>(b) Work = (2, 1, 1). P0 cannot run (B: 2 &gt; 1). P1 can: Work = (4, 2, 1). Then P0: (5, 2, 2); P2: (6, 4, 3); P3: (6, 5, 4), the system total. Safe, sequence P1, P0, P2, P3.</p>
+<p>(c) (0, 1, 1) ≤ Need of P3 and ≤ Available, so pretend: Available = (2, 0, 0), P3 Need = (1, 0, 1). P0, P1 and P2 each need B ≥ 1, and P3 needs C ≥ 1, but only A is free. Nobody can finish: unsafe, so deny; P3 waits.</p></div></details></section>
+<section class="exercise" id="ex-12" data-level="challenging"><header><span class="ex-n">Exercise 16.12</span><span class="lvl lvl-challenging">challenging</span><h4>12. How many units guarantee freedom?</h4></header><div class="ex-q"><p>Four processes each need at most 3 units of one resource type, requesting one unit at a time. What is the smallest number of units that guarantees deadlock cannot occur? Show that one fewer is not enough.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>The worst case is every process holding as many units as possible without having its maximum: 2 each, 4 × 2 = 8 units, all waiting for a third. With 8 units the system can deadlock. With 9 units, 8 can be held in the worst case and one is free, so some process gets its third unit, finishes and releases 3 units, letting the others finish. General rule: R ≥ n (m − 1) + 1 = 4 × 2 + 1 = 9.</p></div></details></section>
+<section class="exercise" id="ex-13" data-level="warm-up"><header><span class="ex-n">Exercise 16.13</span><span class="lvl lvl-warmup">warm-up</span><h4>13. Paged translation</h4></header><div class="ex-q"><p>Pages are 4 KiB. The logical address 20,000 belongs to a page that the page table maps to frame 7. What are the page number, the offset and the physical address?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Page = 20,000 div 4096 = 4 (4 × 4096 = 16,384). Offset = 20,000 − 16,384 = 3616. Physical address = 7 × 4096 + 3616 = 28,672 + 3616 = 32,288.</p></div></details></section>
+<section class="exercise" id="ex-14" data-level="core"><header><span class="ex-n">Exercise 16.14</span><span class="lvl lvl-core">core</span><h4>14. Page table size</h4></header><div class="ex-q"><p>A 32-bit address space uses 4 KiB pages and 4-byte page-table entries. (a) How large is a single-level page table? (b) With a two-level table (10 + 10 + 12 bits), how much table memory does a process that uses 12 MiB of contiguous, aligned virtual memory need?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) The offset takes 12 bits, leaving 20 bits for the page number: 2²⁰ entries × 4 B = 4 MiB per process.</p>
+<p>(b) One second-level table holds 1024 entries and maps 1024 × 4 KiB = 4 MiB. 12 MiB needs 3 second-level tables plus 1 top-level table, each 1024 × 4 B = 4 KiB: 4 × 4 KiB = 16 KiB, instead of 4 MiB. Multilevel tables allocate table pages only for regions in use.</p></div></details></section>
+<section class="exercise" id="ex-15" data-level="core"><header><span class="ex-n">Exercise 16.15</span><span class="lvl lvl-core">core</span><h4>15. Which fit works?</h4></header><div class="ex-q"><p>Free holes in memory order: 150, 400, 250, 600 (KB). Requests arrive in order: 200, 350, 100, 500, 120. For first fit, best fit and worst fit, say which requests cannot be placed. Each request is placed in a hole and the remainder stays in the hole.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>First fit: 200 goes to 400 (left 200); 350 to 600 (left 250); 100 to 150 (left 50); 500 fails (largest hole is 250); 120 goes to the first hole that fits, 200 (left 80). Fails: 500.</p>
+<p>Best fit: 200 to 250 (left 50); 350 to 400 (left 50); 100 to 150 (left 50); 500 to 600 (left 100); 120 fails (holes 50, 50, 50, 100). Fails: 120.</p>
+<p>Worst fit: 200 to 600 (left 400); 350 to 400 (left 50); 100 to the largest hole, now the other 400 (left 300); 500 fails; 120 to 300 (left 180). Fails: 500.</p>
+<p>No policy places everything: each leaves a different request unplaced, which shows external fragmentation and why no fit rule dominates.</p></div></details></section>
+<section class="exercise" id="ex-16" data-level="core"><header><span class="ex-n">Exercise 16.16</span><span class="lvl lvl-core">core</span><h4>16. EAT with a TLB and page faults</h4></header><div class="ex-q"><p>TLB lookup t = 20 ns, memory access m = 100 ns, TLB hit ratio 0.9, one-level page table. (a) Compute the translation-plus-access time without page faults. (b) A page fault takes 8 ms and occurs with probability p = 10⁻⁶ per access. Compute the EAT. (c) What largest p keeps the EAT at most 150 ns?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Hit: 20 + 100 = 120 ns. Miss: 20 + 100 + 100 = 220 ns. Average: 0.9 × 120 + 0.1 × 220 = 108 + 22 = 130 ns.</p>
+<p>(b) EAT = (1 − 10⁻⁶) × 130 + 10⁻⁶ × 8,000,000 = 129.99987 + 8 = 137.99987, about 138 ns, a 6% slowdown from faults.</p>
+<p>(c) 130 + p × (8,000,000 − 130) ≤ 150, so p ≤ 20 / 7,999,870 = 2.5 × 10⁻⁶, about one fault in 400,000 accesses.</p></div></details></section>
+<section class="exercise" id="ex-17" data-level="core"><header><span class="ex-n">Exercise 16.17</span><span class="lvl lvl-core">core</span><h4>17. Copy-on-write accounting</h4></header><div class="ex-q"><p>A parent with 200 resident pages (4 KiB each) calls <code>fork</code>. The child writes to 5 different pages. Afterwards the parent writes to one of those 5 pages and to one other shared page. How many pages are copied in total, and why?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>At <code>fork</code> nothing is copied: both page tables point to the same 200 frames, marked read-only with a share count of 2 (only the page tables are duplicated). The child's 5 first writes each cause a protection fault and a copy: 5 copies (20 KiB). The parent's write to one of those 5 pages finds the frame's share count now 1, so it simply makes the page writable again: no copy. The parent's write to another still-shared page triggers one copy. Total: 5 + 1 = 6 pages copied (24 KiB), instead of 200 up front.</p></div></details></section>
+<section class="exercise" id="ex-18" data-level="core"><header><span class="ex-n">Exercise 16.18</span><span class="lvl lvl-core">core</span><h4>18. Page replacement</h4></header><div class="ex-q"><p>Reference string 2, 3, 2, 1, 5, 2, 4, 5, 3, 2, 5, 2 with 3 frames, initially empty. Count the page faults under FIFO, LRU and OPT.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>FIFO (faults marked F, victim in parentheses): 2 F, 3 F, 2 hit, 1 F, 5 F (2), 2 F (3), 4 F (1), 5 hit, 3 F (5), 2 hit, 5 F (2), 2 F (4). Total 9 faults.</p>
+<p>LRU: 2 F, 3 F, 2 hit, 1 F, 5 F (3), 2 hit, 4 F (1), 5 hit, 3 F (2), 2 F (4), 5 hit, 2 hit. Total 7 faults.</p>
+<p>OPT (evict the page whose next use is farthest away): 2 F, 3 F, 2 hit, 1 F, 5 F (evict 1, never used again), 2 hit, 4 F (evict 2: next uses are 5 at position 8, 3 at 9, 2 at 10), 5 hit, 3 hit, 2 F (evict 3 or 4, neither is used again), 5 hit, 2 hit. Total 6 faults.</p>
+<p>Result: FIFO 9, LRU 7, OPT 6. OPT is the lower bound; LRU is close to it because recent use predicts future use.</p></div></details></section>
+<section class="exercise" id="ex-19" data-level="core"><header><span class="ex-n">Exercise 16.19</span><span class="lvl lvl-core">core</span><h4>19. Thrashing</h4></header><div class="ex-q"><p>A system has m = 140 frames. Four processes have working set sizes 40, 25, 60 and 30 frames. (a) Is the system likely to thrash? (b) Which process would you suspend, and what is the new total demand?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) D = 40 + 25 + 60 + 30 = 155 &gt; 140. Processes steal each other's frames, faults rise, the CPU idles on disk waits, and a naive scheduler adds more processes, making it worse.</p>
+<p>(b) Remove at least 15 frames of demand. Suspending the 25-frame process gives D = 130 ≤ 140 and stops the least work; suspending the 30-frame one gives 125. Suspending the 60-frame one gives 95 but idles memory. The suspended process is swapped out and resumes when memory frees.</p></div></details></section>
+<section class="exercise" id="ex-20" data-level="warm-up"><header><span class="ex-n">Exercise 16.20</span><span class="lvl lvl-warmup">warm-up</span><h4>20. Access time of a disk</h4></header><div class="ex-q"><p>A 10,000 RPM disk has an average seek time of 4 ms and a transfer rate of 200 MB/s (1 MB = 10⁶ bytes). Compute the average time for a random 4 KiB read, the number of such reads per second, and the random-read throughput in MB/s.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Rotational latency = (60 / 10,000) / 2 = 3 ms. Transfer = 4096 / 200,000,000 s = 0.02048 ms. Access time = 4 + 3 + 0.02048 = 7.02 ms.</p>
+<p>Reads per second = 1 / 0.00702 = about 142. Throughput = 142 × 4096 B = about 0.58 MB/s, roughly 340 times slower than the sequential rate of 200 MB/s. Positioning dominates (99.7% of the time).</p></div></details></section>
+<section class="exercise" id="ex-21" data-level="core"><header><span class="ex-n">Exercise 16.21</span><span class="lvl lvl-core">core</span><h4>21. Disk scheduling</h4></header><div class="ex-q"><p>A disk has cylinders 0 to 199. The head is at 50 and moving toward higher cylinders. The queue is 82, 170, 43, 140, 24, 16, 190. Compute the total head movement under FCFS, SSTF, SCAN, C-SCAN and LOOK. In SCAN and C-SCAN the head goes to the disk end; in C-SCAN the return jump to cylinder 0 is counted.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>FCFS: 32 + 88 + 127 + 97 + 116 + 8 + 174 = 642.
+SSTF: order 43, 24, 16, 82, 140, 170, 190: 7 + 19 + 8 + 66 + 58 + 30 + 20 = 208.
+SCAN: up to 199 (149), back to 16 (183) = 332.
+C-SCAN: up to 199 (149), jump to 0 (199), up to 43 (43) = 391.
+LOOK: up to 190 (140), back to 16 (174) = 314.</p>
+<p>SSTF moves least but can starve distant requests; SCAN and LOOK bound the waiting, and LOOK avoids travelling to an end with nothing to serve.</p></div></details></section>
+<section class="exercise" id="ex-22" data-level="core"><header><span class="ex-n">Exercise 16.22</span><span class="lvl lvl-core">core</span><h4>22. RAID capacity and parity</h4></header><div class="ex-q"><p>Eight disks of 4 TB each, each doing 150 random IOPS. (a) Give the usable capacity of RAID 0, 5, 6 and 10. (b) Give the maximum random small-write IOPS for RAID 5, 6 and 10. (c) Three data blocks hold 0xA5, 0x3C and 0x0F, and the parity block is their XOR. Compute the parity, then recover the block 0x3C if its disk fails.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) RAID 0: 8 × 4 = 32 TB. RAID 5: 7 × 4 = 28 TB. RAID 6: 6 × 4 = 24 TB. RAID 10: 4 × 4 = 16 TB.</p>
+<p>(b) Total raw IOPS is 8 × 150 = 1200. A small write costs 4 I/Os on RAID 5 (read data, read parity, write data, write parity), 6 on RAID 6 and 2 on RAID 10. IOPS = 1200 / 4 = 300 (RAID 5), 1200 / 6 = 200 (RAID 6), 1200 / 2 = 600 (RAID 10).</p>
+<p>(c) 0xA5 XOR 0x3C = 0x99; 0x99 XOR 0x0F = 0x96. Parity = 0x96. To recover 0x3C: 0x96 XOR 0xA5 XOR 0x0F = 0x3C. A lost block equals the XOR of all the remaining blocks, including parity.</p></div></details></section>
+<section class="exercise" id="ex-23" data-level="core"><header><span class="ex-n">Exercise 16.23</span><span class="lvl lvl-core">core</span><h4>23. Inode limits and offsets</h4></header><div class="ex-q"><p>A file system has 1 KiB blocks and 4-byte block pointers. Each inode has 10 direct pointers and one single, one double and one triple indirect pointer. (a) What is the maximum file size? (b) For byte offset 300,000, which pointer path leads to its data block?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) A pointer block holds 1024 / 4 = 256 pointers. Blocks: 10 + 256 + 256² + 256³ = 10 + 256 + 65,536 + 16,777,216 = 16,843,018. Size = 16,843,018 × 1024 = 17,247,250,432 bytes, about 16.06 GiB.</p>
+<p>(b) Block = 300,000 div 1024 = 292. 292 − 10 = 282, and 282 − 256 = 26, so it lies in the double-indirect region at index 26: <code>double[0]</code> (26 div 256 = 0), then <code>block[26]</code>.</p></div></details></section>
+<section class="exercise" id="ex-24" data-level="core"><header><span class="ex-n">Exercise 16.24</span><span class="lvl lvl-core">core</span><h4>24. Journal writes</h4></header><div class="ex-q"><p>A file append adds 4 data blocks and updates one inode block and one bitmap block. Count the block writes (journal plus home locations) with data journaling and with ordered mode, and explain why ordered mode writes the data first.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Data journaling: journal TxB + I + B + 4 data + TxE = 8, checkpoint I + B + 4 data = 6: total 14. Ordered mode: 4 data, journal TxB + I + B + TxE = 4, checkpoint 2: total 10. Ordered mode saves k = 4 writes because each data block is written once, not twice.</p>
+<p>It writes data first so that committed metadata never point at a block that still holds stale garbage (the writeback-mode hazard).</p></div></details></section>
+<section class="exercise" id="ex-25" data-level="core"><header><span class="ex-n">Exercise 16.25</span><span class="lvl lvl-core">core</span><h4>25. Permissions</h4></header><div class="ex-q"><p>(a) A process with umask 027 creates a file requesting mode 0666 and a directory requesting 0777. What modes result? (b) A file has mode 0640, owner alice, group staff. Bob is in staff, Carol is not. What can each do? (c) Write 4755 in symbolic form and say what the leading 4 does.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Mode AND NOT umask. File: 0666 with the bits 027 cleared = 0640 (rw-r-----). Directory: 0777 with 027 cleared = 0750 (rwxr-x---).</p>
+<p>(b) Alice (owner): read and write (6). Bob (group): read only (4). Carol (other): nothing (0). The first matching class decides, so a user who is the owner is judged only by the owner bits, even if the group bits are more generous.</p>
+<p>(c) 4755 = <code>rwsr-xr-x</code>. The 4 is the setuid bit: when any user runs the file, the process gets the file owner's effective user ID, so the program must be written very carefully (least privilege).</p></div></details></section>
+<section class="exercise" id="ex-26" data-level="core"><header><span class="ex-n">Exercise 16.26</span><span class="lvl lvl-core">core</span><h4>26. Nested paging and container limits</h4></header><div class="ex-q"><p>(a) How many memory references does a TLB miss need in a virtual machine when both guest and host use 4-level page tables, and when both use 3 levels? (b) A cgroup has <code>cpu.max = 200000 100000</code> and runs 4 CPU-bound threads on an idle 8-core machine. What do the threads get? (c) Two busy tasks, nice 0 (weight 1024) and nice 5 (weight 335), share one core under CFS. What shares do they get?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) (n + 1)(m + 1) − 1: 5 × 5 − 1 = 24 for 4 and 4 levels; 4 × 4 − 1 = 15 for 3 and 3.</p>
+<p>(b) The quota is 200,000 µs per 100,000 µs period: 2 CPUs. Four busy threads would use 4, so after 50 ms of each period they are throttled until the next one. Together 2 CPUs, each thread 0.5 CPU on average.</p>
+<p>(c) 1024 / 1359 = 75.3% and 335 / 1359 = 24.7%, about 3 to 1.</p></div></details></section>
+<section class="exercise" id="ex-27" data-level="challenging"><header><span class="ex-n">Exercise 16.27</span><span class="lvl lvl-challenging">challenging</span><h4>27. Predict the lab program</h4></header><div class="ex-q"><p>Consider the review lab program below. For each change, predict what happens and name the concept: (a) the parent does not call <code>close(fd[1])</code>; (b) <code>waitpid</code> is removed and the parent then sleeps 30 s before exiting; (c) the mmap flag <code>MAP_SHARED</code> is changed to <code>MAP_PRIVATE</code>; (d) the mutex around <code>total += s</code> is removed.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) It still finishes, because one <code>read</code> of a fixed 8-byte record returns once the data are in the pipe. But a loop reading until EOF would hang forever (Exercise 5).</p>
+<p>(b) The child is never reaped: <code>ps</code> shows it as <code>Z</code> (defunct) for the 30 seconds, until the parent exits and PID 1 adopts it.</p>
+<p>(c) <code>MAP_PRIVATE</code> makes the mapping copy-on-write, so the child's write goes to a private copy; the parent sees flag 0. The sums are unchanged because both processes only read the array.</p>
+<p>(d) <code>total += s</code> becomes an unprotected read-modify-write: a data race. It usually still prints 375,250 because each thread does it once, but it can lose a contribution and print 156,375 or 218,875. ThreadSanitizer reports it every time.</p></div></details></section>
+<section class="exercise" id="ex-28" data-level="warm-up"><header><span class="ex-n">Exercise 16.28</span><span class="lvl lvl-warmup">warm-up</span><h4>28. Is it durable?</h4></header><div class="ex-q"><p>A program creates a new file, writes 4 KiB with <code>write</code>, calls <code>close</code>, and the machine loses power one second later. Is the data safe? What must the program do for a durable create?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Not necessarily. <code>write</code> only copies the bytes into the page cache (write-back caching), and <code>close</code> does not force them to disk. For durability the program must call <code>fsync</code> on the file, and, because creating the file also changed the directory, <code>fsync</code> the containing directory as well. To replace an existing file atomically, write a temporary file in the same directory, <code>fsync</code> it, <code>rename</code> it over the old name and <code>fsync</code> the directory.</p></div></details></section>
+<h2 id="lab">Lab</h2>
+<p>This lab combines four earlier ideas in one small program: <code>fork</code> and <code>wait</code> (Week 2), a pipe and a thread pair with a mutex (Weeks 3 and 5), and an anonymous shared <code>mmap</code> (Week 9). The parent fills an array of 1000 integers with 1 to 1000 in shared memory. The child sums the first half and sends the result back through a pipe. Two threads in the parent sum the second half in two quarters, adding their results to one total under a mutex. A shared flag proves the mapping is really shared, and a private global proves <code>fork</code> copies ordinary memory.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">        parent process                              child process
+   +-------------------------+   fork()     +-------------------------+
+   | main thread             | -----------&gt; | sums shared[0..499]     |
+   |   fills shared[0..999]  |              | sets shared[1000] = 1   |
+   |   close(fd[1])          |              | sets private_var = 99   |
+   |   spawns 2 threads      |    pipe      | write(fd[1], sum)       |
+   |   read(fd[0]) &lt;---------+--------------+                         |
+   |   waitpid(child)        |              | _exit(7)                |
+   | thread 1: [500..749]    |              +-------------------------+
+   | thread 2: [750..999]    |   both processes map the same page of
+   |   lock; total += s;     |   MAP_SHARED memory: shared[0..1000]
+   +-------------------------+
+</pre></div><figcaption><b>Figure 16.5..</b> Ownership in the review lab. The mapping is shared, the global variable is copied, the pipe carries one number.</figcaption></figure>
+<p>An <strong>anonymous mapping</strong> is a <code>mmap</code> region with no file behind it (<code>MAP_ANONYMOUS</code>), filled with zeros on first use; with <code>MAP_SHARED</code> the same pages stay shared with children created by <code>fork</code>, while with <code>MAP_PRIVATE</code> they become copy-on-write.</p>
+<p>Save as <code>review_lab.c</code>.</p>
+<pre><code class="language-c">#define _GNU_SOURCE
+#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+#define N 1000
+
+static int *shared;                 /* MAP_SHARED: visible to parent and child */
+static int private_var = 1;         /* ordinary global: copied by fork */
+static long total = 0;              /* guarded by lock */
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+struct range { int lo, hi; };       /* half-open [lo, hi) */
+
+static long sum_range(int lo, int hi) {
+    long s = 0;
+    for (int i = lo; i &lt; hi; i++) s += shared[i];
+    return s;
+}
+
+static void *worker(void *arg) {
+    struct range *r = arg;
+    long s = sum_range(r-&gt;lo, r-&gt;hi);
+    pthread_mutex_lock(&amp;lock);      /* critical section: one update to total */
+    total += s;
+    pthread_mutex_unlock(&amp;lock);
+    return NULL;
+}
+
+int main(void) {
+    /* 1. mmap: one anonymous shared page holding the array plus a flag */
+    shared = mmap(NULL, (N + 1) * sizeof(int), PROT_READ | PROT_WRITE,
+                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (shared == MAP_FAILED) { perror(&quot;mmap&quot;); return 1; }
+    for (int i = 0; i &lt; N; i++) shared[i] = i + 1;
+    shared[N] = 0;                  /* flag the child will set */
+
+    int fd[2];
+    if (pipe(fd) &lt; 0) { perror(&quot;pipe&quot;); return 1; }
+
+    pid_t pid = fork();
+    if (pid &lt; 0) { perror(&quot;fork&quot;); return 1; }
+    if (pid == 0) {                 /* child: sum first half, report via pipe */
+        close(fd[0]);               /* close the unused read end */
+        long s = sum_range(0, N / 2);
+        private_var = 99;           /* changes the child's private copy only */
+        shared[N] = 1;              /* visible to the parent */
+        if (write(fd[1], &amp;s, sizeof s) != sizeof s) _exit(2);
+        close(fd[1]);
+        _exit(7);
+    }
+    close(fd[1]);                   /* parent closes the write end, or read never sees EOF */
+
+    /* 2. two threads sum the second half while the child works */
+    pthread_t t[2];
+    struct range r[2] = { { N / 2, 3 * N / 4 }, { 3 * N / 4, N } };
+    for (int i = 0; i &lt; 2; i++) pthread_create(&amp;t[i], NULL, worker, &amp;r[i]);
+    for (int i = 0; i &lt; 2; i++) pthread_join(t[i], NULL);
+
+    long from_child = 0;
+    if (read(fd[0], &amp;from_child, sizeof from_child) != sizeof from_child) {
+        perror(&quot;read&quot;); return 1;
+    }
+    close(fd[0]);
+    int status;
+    waitpid(pid, &amp;status, 0);       /* reap the child: no zombie */
+
+    printf(&quot;threads summed second half : %ld\n&quot;, total);
+    printf(&quot;child summed first half    : %ld (via pipe)\n&quot;, from_child);
+    printf(&quot;grand total                : %ld\n&quot;, total + from_child);
+    printf(&quot;child exit status          : %d\n&quot;, WEXITSTATUS(status));
+    printf(&quot;shared flag set by child   : %d (shared mapping)\n&quot;, shared[N]);
+    printf(&quot;private_var in parent      : %d (child's change was private)\n&quot;, private_var);
+    munmap(shared, (N + 1) * sizeof(int));
+    return 0;
+}
+</code></pre>
+<p>Build and run it:</p>
+<pre><code class="language-bash">gcc -Wall -pthread -o review_lab review_lab.c
+./review_lab
+</code></pre>
+<p>The program compiles without warnings and prints the same lines on every run:</p>
+<pre><code class="language-text">threads summed second half : 375250
+child summed first half    : 125250 (via pipe)
+grand total                : 500500
+child exit status          : 7
+shared flag set by child   : 1 (shared mapping)
+private_var in parent      : 1 (child's change was private)
+</code></pre>
+<p>Check the numbers by hand: 1 + 2 + … + 1000 = 1000 × 1001 / 2 = 500,500; the first half sums to 500 × 501 / 2 = 125,250, so the second half is 375,250 (156,375 from the first thread plus 218,875 from the second). The threads and the child run concurrently, yet the output is deterministic, because each piece of shared state has exactly one writer or is guarded by the mutex, and the parent waits for everyone before printing.</p>
+<p>Now use the debugging tools from this chapter. Build with sanitizers and run again; all three tools report nothing for this program:</p>
+<pre><code class="language-bash">gcc -Wall -pthread -g -fsanitize=thread  -o lab_tsan review_lab.c &amp;&amp; ./lab_tsan
+gcc -Wall -pthread -g -fsanitize=address -o lab_asan review_lab.c &amp;&amp; ./lab_asan
+valgrind --leak-check=full ./review_lab
+</code></pre>
+<p>Then make the experiments of Exercise 27 for real: remove the mutex and watch ThreadSanitizer report a data race; delete the <code>close(fd[1])</code> and read in a loop until EOF to see the hang; delete <code>waitpid</code> and add <code>sleep(30)</code> before the end, and run <code>ps -o pid,ppid,stat,cmd --ppid $$</code> from another terminal to see the <code>Z</code> state.</p>
+<h3 id="extensions">Extensions</h3>
+<ol>
+<li>Replace the pipe with a second <code>MAP_SHARED</code> slot protected by a process-shared semaphore (<code>sem_init</code> with <code>pshared = 1</code>, kept in the shared mapping), so the child's result arrives without a system call. Compare the code size and the cost.</li>
+<li>Generalize to <code>K</code> child processes, each summing a slice and writing a fixed-size record to one shared pipe, and <code>T</code> threads in the parent. Measure the elapsed time for a large array (10⁸ elements) for several <code>K</code> and <code>T</code> and compare with Amdahl's law (Week 3), estimating the serial fraction from your data.</li>
+<li>Make the child count page faults with <code>getrusage</code> before and after touching a freshly mapped region, and use the result as <code>S</code> in the effective access time formula of Week 9 to find the largest tolerable fault rate on your machine.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Numeric answer off by a factor of 1000</td>
+<td>Mixed ms and ns, or MB and MiB</td>
+<td>Convert to one unit first; write the unit beside each number</td>
+</tr>
+<tr>
+<td>Page number or block number off by one</td>
+<td>Counted from 1 instead of 0</td>
+<td>Use <code>div</code> and <code>mod</code>; the first page is page 0</td>
+</tr>
+<tr>
+<td>SCAN total differs from the answer key</td>
+<td>Forgot to go to the disk end, or did not count the C-SCAN jump</td>
+<td>State the convention you use and follow the chapter's</td>
+</tr>
+<tr>
+<td>Banker's algorithm says "unsafe" for a safe state</td>
+<td>Used Max instead of Need, or forgot to add the finished process's Allocation to Work</td>
+<td>Recompute Need = Max − Allocation and update Work after each step</td>
+</tr>
+<tr>
+<td>FIFO fault count is wrong</td>
+<td>Updated the queue order on a hit</td>
+<td>FIFO changes order only on a fault; LRU updates on every reference</td>
+</tr>
+<tr>
+<td>EAT answer is huge or tiny</td>
+<td>Applied <code>p</code> to the wrong term, or forgot <code>(1 − p)</code></td>
+<td>Write <code>(1 − p) × ma + p × S</code> and convert S to ns</td>
+</tr>
+<tr>
+<td>Program hangs after <code>fork</code> and pipe</td>
+<td>A write end still open somewhere</td>
+<td>Close every unused pipe end in both processes</td>
+</tr>
+<tr>
+<td>Result differs run to run</td>
+<td>Data race or reading an uninitialized value</td>
+<td>ThreadSanitizer, then Valgrind; protect or remove the sharing</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>An operating system has two jobs, managing resources and providing abstractions, and every chapter of this course was one of them seen in detail: CPU, memory, storage and protection.</li>
+<li>The same few ideas recur: indirection (page tables, inodes, file descriptors), caching (TLB, page cache), locality, policy versus mechanism, and reducing cost by batching (larger reads, group commit, DMA).</li>
+<li>Quantitative reasoning is part of the subject: the cheat sheet formulas for scheduling, Banker's, address splitting, EAT, page replacement, disk time, RAID and inodes are all short and should be derived, not memorized.</li>
+<li>Most bugs fall into a few classes (races, deadlocks, leaks, descriptor leaks, zombies, permissions); match the tool to the class, reproduce first and then fix, and write a regression test.</li>
+<li>A good final project has one mechanism, a reproducible workload, measurements with units and an honest list of limits.</li>
+<li>Read real kernels with a question in mind. xv6 is the best first kernel; Linux is organized along the lines of this course.</li>
+<li>The exam rewards tables, units and formulas written out; practice by redoing traces on blank paper and by explaining answers aloud.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Arpaci-Dusseau and Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em> (OSTEP), the introduction and the three closing dialogues (virtualization, concurrency, persistence).</li>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, chapter 1 and the chapter summaries; use them as a revision outline.</li>
+<li><strong>Essential.</strong> Cox, Kaashoek and Morris, <em>xv6: a simple, Unix-like teaching operating system</em> (the MIT xv6 book).</li>
+<li>Lions, <em>Commentary on UNIX 6th Edition, with Source Code</em>.</li>
+<li>Ritchie and Thompson, "The UNIX Time-Sharing System", Communications of the ACM, 1974.</li>
+<li>Dijkstra, "The Structure of the 'THE' Multiprogramming System", Communications of the ACM, 1968.</li>
+<li>Saltzer and Schroeder, "The Protection of Information in Computer Systems", Proceedings of the IEEE, 1975.</li>
+<li>Lampson, "Hints for Computer System Design", ACM SOSP, 1983.</li>
+<li>Kerrisk, <em>The Linux Programming Interface</em>; Stevens and Rago, <em>Advanced Programming in the UNIX Environment</em>.</li>
+<li>Love, <em>Linux Kernel Development</em>; Bovet and Cesati, <em>Understanding the Linux Kernel</em>.</li>
+<li>Tanenbaum and Bos, <em>Modern Operating Systems</em>, chapter 1 and the case-study chapters.</li>
+<li>Manual pages: <code>gdb(1)</code>, <code>valgrind(1)</code>, <code>strace(1)</code>, <code>ps(1)</code>, <code>lsof(8)</code>, <code>namei(1)</code>, <code>core(5)</code>, <code>getrlimit(2)</code>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="16">Mark Week 16 as complete</button></div><div class="pager"><a class="pn prev" href="week-15.html"><small>Previous</small>Week 15: Virtualization, Containers and Case Studies: Linux and Windows</a><a class="pn next" href="syllabus.html"><small>Done</small>Back to the syllabus</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#where-we-have-been-a-review-map">Where we have been: a review map</a></li><li><a href="#the-cheat-sheet-equations-and-algorithms">The cheat sheet: equations and algorithms</a></li><li><a href="#debugging-checklist">Debugging checklist</a></li><li><a href="#final-project-and-final-exam">Final project and final exam</a></li><li><a href="#next-steps">Next steps</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab">Lab</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

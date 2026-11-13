@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 3: Threads and Interprocess Communication · Operating Systems for Dummies</title>
+<meta name="description" content="Why a process may contain several threads, how threads are implemented and programmed with POSIX threads, what limits their speedup, and how separate processes exchange data through pipes, shared memory and signals.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="1"><article class="week" data-week="3"><header class="week-head" data-num="03"><p class="kicker">Week 3 · Phase 1: Foundations</p><h1>Threads and Interprocess Communication</h1><p class="abstract">Why a process may contain several threads, how threads are implemented and programmed with POSIX threads, what limits their speedup, and how separate processes exchange data through pipes, shared memory and signals.</p><ul class="chips"><li><b>27</b> min read</li><li><b>2</b> demos</li><li><b>4</b> figures</li><li><b>14</b> code blocks</li><li><b>7</b> exercises</li></ul><p class="lab-line"><b>Lab.</b> Parallelize an array sum with pthreads, measure the speedup on your machine and compare it with Amdahl&#x27;s law.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>List which resources threads of one process share and which each thread owns privately</li><li>Create, join and pass data to POSIX threads without the loop-variable address bug</li><li>Compare user-level, kernel-level and hybrid thread models and state what a blocking call does in each</li><li>Apply Amdahl&#x27;s law to compute the speedup and the upper limit for a program with a serial fraction</li><li>Contrast shared memory with message passing and choose one for a given situation</li><li>Write C programs that communicate through a pipe, a shared mapping and a signal handler</li><li>Compute how many processes a fork loop creates and draw the resulting process tree</li></ul></section><div class="prose"><p>In <a href="week-02.html">Week 2</a> a process was a self-contained unit: one address space and one flow of control. That design is safe, because processes cannot touch each other's memory, but it is also heavy. Creating a process means building a new address space, and getting two processes to cooperate on one job means sending data between them through the kernel. This week we look at the two answers to those costs. <strong>Threads</strong> put several flows of control inside one process so that they share memory directly. <strong>Interprocess communication (IPC)</strong> gives separate processes controlled ways to exchange data.</p>
+<p>The chapter then ends by revisiting <code>fork</code> to see how repeated forking builds a tree of processes. One warning before we start: sharing memory is exactly what makes threads fast, and exactly what makes them dangerous. This chapter only shows how to create and use threads. The question of what goes wrong when two threads update the same variable, and the tools that prevent it, is the whole of <a href="week-05.html">Week 5</a>, and the scheduler that decides which thread runs is <a href="week-04.html">Week 4</a>.</p>
+<h2 id="why-threads">Why threads?</h2>
+<h3 id="many-flows-of-control-in-one-process">Many flows of control in one process</h3>
+<p>A <strong>thread</strong> is a single flow of control inside a process: its own program counter, registers and stack, but running in the address space of the process that contains it. A traditional process has one thread; a <strong>multithreaded</strong> process has several.</p>
+<div class="admonition intuition">
+<p class="admonition-title">One kitchen, several cooks</p>
+<p>In <a href="week-02.html">Week 2</a> a process was a cook in a private kitchen. A multithreaded process is a kitchen with several cooks. They share the same pantry (heap), the same recipe book (code) and the same list of orders pinned on the wall (global variables), but each cook has their own cutting board and a bookmark in their own recipe step (stack and registers). Cooperating is easy because everything is within reach. The danger is two cooks reaching for the last egg at the same time.</p>
+</div>
+<div class="admonition definition">
+<p class="admonition-title">Thread</p>
+<p>A <strong>thread</strong> is the basic unit of CPU scheduling. It has a thread ID, a program counter, a set of registers and a stack. The threads of one process share the code, the global data, the heap, the open files and the signal handlers. The kernel records per-thread state in a thread control block, which is smaller than a PCB.</p>
+</div>
+<figure class="figure"><div class="scroll"><pre class="diagram">        one process, three threads
+ +--------------------------------------------------+
+ |  SHARED by all threads                           |
+ |   code (text)   globals (data, bss)   heap       |
+ |   open files    signal handlers       PID        |
+ |                                                  |
+ |  +-------------+ +-------------+ +-------------+ |
+ |  | thread 1    | | thread 2    | | thread 3    | |
+ |  | PC, regs    | | PC, regs    | | PC, regs    | |
+ |  | own stack   | | own stack   | | own stack   | |
+ |  | own errno   | | own errno   | | own errno   | |
+ |  +-------------+ +-------------+ +-------------+ |
+ +--------------------------------------------------+
+</pre></div><figcaption><b>Figure 3.1..</b> Threads share the process's memory and files but each has its own registers and stack.</figcaption></figure>
+<h3 id="why-use-them">Why use them</h3>
+<p>There are four standard reasons:</p>
+<ul>
+<li><strong>Responsiveness.</strong> A program with a user interface can keep responding to the user while another thread performs a long computation or waits for the network.</li>
+<li><strong>Resource sharing.</strong> Threads share memory by default. There is no copying and no kernel call needed to pass data between them.</li>
+<li><strong>Economy.</strong> Creating a thread is much cheaper than creating a process, and a switch between threads of the same process avoids changing the address space, so it is cheaper than a full process switch (<a href="week-02.html">Week 2</a>).</li>
+<li><strong>Scalability.</strong> A single-threaded process runs on only one core at a time. A process with many threads can use all the cores of a multicore machine.</li>
+</ul>
+<p>The price is exactly the sharing. A bug in one thread (a wild pointer, a stack overflow) can corrupt the whole process, and any unprotected access to shared data can produce results that depend on timing.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Process</th>
+<th>Thread (in the same process)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Address space</td>
+<td>Private</td>
+<td>Shared with the other threads</td>
+</tr>
+<tr>
+<td>Global variables and heap</td>
+<td>Private</td>
+<td>Shared</td>
+</tr>
+<tr>
+<td>Stack and registers</td>
+<td>Private</td>
+<td>Private per thread</td>
+</tr>
+<tr>
+<td>Open files</td>
+<td>Own table (copied by fork)</td>
+<td>Shared</td>
+</tr>
+<tr>
+<td>Creation cost</td>
+<td>High</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Communication</td>
+<td>Needs IPC through the kernel</td>
+<td>Reads and writes shared memory</td>
+</tr>
+<tr>
+<td>Effect of a crash</td>
+<td>Only that process dies</td>
+<td>The entire process dies</td>
+</tr>
+</tbody>
+</table>
+<h2 id="programming-with-posix-threads">Programming with POSIX threads</h2>
+<p>The standard C interface for threads on Unix is <strong>POSIX threads</strong>, or <strong>pthreads</strong>. You compile with <code>gcc -pthread</code>. The two basic calls are:</p>
+<ul>
+<li><code>pthread_create(&amp;tid, NULL, function, arg)</code> starts a new thread running <code>function(arg)</code>. The function takes and returns a <code>void *</code>, which lets you pass or return a pointer to anything.</li>
+<li><code>pthread_join(tid, &amp;result)</code> waits for the thread to finish, in the same way that <code>waitpid</code> waits for a child process, and can retrieve the value it returned.</li>
+</ul>
+<p>The following program starts three threads, each working on its own <code>struct job</code>, and collects the results.</p>
+<pre><code class="language-c">#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+
+int shared = 10;                       /* one copy, visible to all threads */
+
+struct job { int id; int result; };
+
+static void *work(void *arg) {
+    struct job *j = arg;
+    int local = j-&gt;id * 100;           /* each thread has its own stack */
+    j-&gt;result = local + shared;
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t[3];
+    struct job jobs[3];
+    for (int i = 0; i &lt; 3; i++) {
+        jobs[i].id = i + 1;
+        pthread_create(&amp;t[i], NULL, work, &amp;jobs[i]);
+    }
+    for (int i = 0; i &lt; 3; i++) {
+        pthread_join(t[i], NULL);
+        printf(&quot;thread %d returned %d\n&quot;, jobs[i].id, jobs[i].result);
+    }
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">thread 1 returned 110
+thread 2 returned 210
+thread 3 returned 310
+</code></pre>
+<p>Each thread has its own <code>local</code> (a different stack variable per thread), but all of them read the same <code>shared</code>. Every thread writes only its own <code>jobs[i]</code>, so there is no conflict even though the array is shared. The output order is fixed here only because <code>main</code> joins the threads in order; the threads themselves may have run in any order.</p>
+<div class="admonition warning">
+<p class="admonition-title">Never pass the address of a loop variable</p>
+<p>A very common bug is <code>pthread_create(&amp;t[i], NULL, f, &amp;i)</code> inside a <code>for (int i ...)</code> loop. The thread receives a pointer to <code>i</code>, which the loop keeps changing, so by the time the thread dereferences it, it may see a later value, or the variable may no longer exist when the loop ends. Pass a pointer to a separate element (<code>&amp;ids[i]</code> or <code>&amp;jobs[i]</code>, as above), or pass the number itself cast to <code>void *</code>, and make sure the pointed-to data outlives the thread.</p>
+</div>
+<h3 id="thread-local-storage">Thread-local storage</h3>
+<p>Sometimes a global-looking variable should have a separate copy for each thread. The classic example is <code>errno</code>, which every thread must see for its own failed calls. C provides this with <strong>thread-local storage</strong>: <code>__thread</code> (GCC) or <code>_Thread_local</code> (C11).</p>
+<pre><code class="language-c">#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+
+static __thread int tls = 0;           /* one private copy per thread */
+static int shared = 0;
+
+static void *bump(void *arg) {
+    long id = (long)arg;
+    for (int i = 0; i &lt; 1000; i++) tls++;
+    printf(&quot;thread %ld: tls=%d\n&quot;, id, tls);
+    shared = 1;
+    return NULL;
+}
+
+int main(void) {
+    pthread_t a, b;
+    pthread_create(&amp;a, NULL, bump, (void *)1L);
+    pthread_join(a, NULL);
+    pthread_create(&amp;b, NULL, bump, (void *)2L);
+    pthread_join(b, NULL);
+    printf(&quot;main: tls=%d shared=%d\n&quot;, tls, shared);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">thread 1: tls=1000
+thread 2: tls=1000
+main: tls=0 shared=1
+</code></pre>
+<p>Each thread incremented its own <code>tls</code> from 0 to 1000, and <code>main</code>'s copy is untouched, while the ordinary global <code>shared</code> was written by a thread and is visible to <code>main</code>. (The threads were joined one at a time here only to keep the output deterministic.)</p>
+<h2 id="how-threads-are-implemented">How threads are implemented</h2>
+<p>Who knows about a thread, the library or the kernel? That question gives two kinds.</p>
+<p><strong>User-level threads</strong> are created and scheduled by a library inside the process. The kernel sees one process and knows nothing about the threads. Switching among them needs no system call and is very fast. But because the kernel sees a single schedulable entity, a user-level thread that makes a blocking system call (say, <code>read</code> on a slow disk) blocks the entire process, and the threads cannot run on several cores at once.</p>
+<p><strong>Kernel-level threads</strong> are created and scheduled by the operating system. A blocking call stops only the calling thread, and different threads can run on different cores. The cost is that creation and switching go through the kernel.</p>
+<p>A <strong>multithreading model</strong> says how user threads map onto kernel threads:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Mapping</th>
+<th>Strengths</th>
+<th>Weaknesses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Many-to-one</td>
+<td>Many user threads to 1 kernel thread</td>
+<td>Cheap, no kernel involvement</td>
+<td>One blocking call blocks all; no parallelism</td>
+</tr>
+<tr>
+<td>One-to-one</td>
+<td>Each user thread to its own kernel thread</td>
+<td>True parallelism; blocking is local</td>
+<td>Each thread costs kernel resources</td>
+</tr>
+<tr>
+<td>Many-to-many</td>
+<td>M user threads multiplexed over N kernel threads</td>
+<td>Many threads, parallelism</td>
+<td>Complex to build and tune</td>
+</tr>
+</tbody>
+</table>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Many-to-one            One-to-one             Many-to-many
+ u1 u2 u3 u4            u1  u2  u3  u4         u1 u2 u3 u4 u5
+   \ | | /               |   |   |   |           \ | | | /
+    \|_|/                |   |   |   |            \|_|_|/
+     k1                  k1  k2  k3  k4          k1   k2
+ (kernel sees 1)       (kernel sees 4)         (kernel sees 2)
+</pre></div><figcaption><b>Figure 3.2..</b> Three ways to map user threads (u) onto kernel threads (k).</figcaption></figure>
+<p>Linux, Windows and macOS use the one-to-one model for ordinary threads. In Linux a thread is simply a task created by the <code>clone()</code> system call with flags that say "share the address space, the open files and the signal handlers with the creator". A <code>fork</code> is the same system call with sharing turned off. That is why <code>pthread_create</code> and <code>fork</code> feel like siblings. Modern languages revive many-to-many: Go multiplexes many cheap goroutines over a few kernel threads, and runtimes with async tasks do something similar.</p>
+<div class="admonition warning">
+<p class="admonition-title">Threads and fork do not mix casually</p>
+<p>If a multithreaded process calls <code>fork</code>, the child receives only a copy of the calling thread. Locks held by other threads at that instant stay locked forever in the child, and the other threads simply do not exist there. POSIX therefore advises that in a multithreaded program the child may safely do little more than call <code>exec</code>.</p>
+</div>
+<div class="demo reveal" data-demo="threads-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">See what threads share and what each one keeps for itself</span></div><div class="demo-body"></div></div>
+<h2 id="parallelism-concurrency-and-amdahls-law">Parallelism, concurrency and Amdahl's law</h2>
+<p>Two words are often confused. <strong>Concurrency</strong> means several tasks are in progress during overlapping time periods, even on a single core where the OS switches among them. <strong>Parallelism</strong> means several tasks are literally executing at the same instant on different cores. Concurrency is a property of the program's structure; parallelism is a property of the hardware and the schedule. A multithreaded program on one core is concurrent but not parallel.</p>
+<p>If you convert a program to use <code>N</code> cores, how much faster can it get? Not <code>N</code> times, unless every part of it can be split. Suppose a fraction <code>S</code> of the running time is inherently serial (reading input, a final merge) and the remaining <code>1 - S</code> parallelizes perfectly.</p>
+<div class="admonition definition">
+<p class="admonition-title">Amdahl's law</p>
+<p>The speedup on <code>N</code> cores is <code>speedup(N) = 1 / (S + (1 - S) / N)</code>, where <code>S</code> is the serial fraction of the original execution time (0 ≤ S ≤ 1). As <code>N</code> grows without limit the speedup approaches <code>1 / S</code>, so the serial part sets an upper bound.</p>
+</div>
+<p>For example, with <code>S = 0.25</code> and <code>N = 4</code> cores, <code>speedup = 1 / (0.25 + 0.75/4) = 1 / 0.4375 = 2.29</code>. No matter how many cores you add, the speedup can never exceed <code>1 / 0.25 = 4</code>. The lesson is that finding and shrinking the serial part often matters more than adding cores. Real programs usually do worse than the formula predicts because it ignores the cost of creating threads, of communication, and of contention for memory bandwidth, which the lab will show you.</p>
+<h2 id="interprocess-communication">Interprocess communication</h2>
+<p>Processes are isolated on purpose, so cooperation needs help from the OS. There are two fundamental models.</p>
+<p>In <strong>shared memory</strong>, the kernel sets up a region that appears in the address spaces of two or more processes. After the setup, they read and write it as ordinary memory with no system calls, which makes it the fastest IPC. The processes themselves must coordinate access (<a href="week-05.html">Week 5</a>).</p>
+<p>In <strong>message passing</strong>, processes exchange discrete messages through the kernel with operations such as <code>send</code> and <code>receive</code>. It is easier to use correctly, since the kernel does the synchronization, and it works across machines (sockets), but each message costs system calls and copies.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   Shared memory                          Message passing
+ +-----------+   +-----------+          +-----------+   +-----------+
+ | process A |   | process B |          | process A |   | process B |
+ |           |   |           |          |           |   |           |
+ |  [shared]&lt;-----&gt; [shared] |          |  send(m)  |   | receive() |
+ +-----------+   +-----------+          +-----+-----+   +-----^-----+
+       ^               ^                      |               |
+       |   one region  |                      v               |
+       +---- of RAM ---+                +-----+---------------+-----+
+        (kernel only sets it up)        |   kernel message buffer   |
+                                        +---------------------------+
+</pre></div><figcaption><b>Figure 3.3..</b> In shared memory the kernel only sets up the mapping; in message passing every message travels through the kernel.</figcaption></figure>
+<p>Message passing comes in several flavours. Communication may be <strong>direct</strong> (name the other process) or <strong>indirect</strong> (use a mailbox or port that several processes can share). It may be <strong>synchronous</strong> (blocking: <code>send</code> waits until the message is received) or <strong>asynchronous</strong>, and the buffer may be unbounded or limited. A limited buffer makes the sender wait when it is full, which is a very useful throttle.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Shared memory</th>
+<th>Message passing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Speed for large data</td>
+<td>Fastest, no copies</td>
+<td>Slower, copies through the kernel</td>
+</tr>
+<tr>
+<td>Synchronization</td>
+<td>Programmer's job</td>
+<td>Provided by the kernel</td>
+</tr>
+<tr>
+<td>Across machines</td>
+<td>No</td>
+<td>Yes (sockets)</td>
+</tr>
+<tr>
+<td>Typical Unix tools</td>
+<td><code>mmap</code>, <code>shm_open</code></td>
+<td>pipes, sockets, message queues</td>
+</tr>
+</tbody>
+</table>
+<h2 id="pipes-shared-memory-and-signals">Pipes, shared memory and signals</h2>
+<h3 id="pipes">Pipes</h3>
+<p>An <strong>ordinary pipe</strong> is a one-way byte channel with a <strong>write end</strong> and a <strong>read end</strong>. The <code>pipe</code> call returns two file descriptors, and the usual pattern is to create the pipe, fork, and have each side close the end it does not use. This is how the shell builds <code>ls | wc -l</code>.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void) {
+    int fd[2];                         /* fd[0] = read end, fd[1] = write end */
+    if (pipe(fd) &lt; 0) { perror(&quot;pipe&quot;); return 1; }
+
+    pid_t pid = fork();
+    if (pid == 0) {                    /* child: the reader */
+        close(fd[1]);                  /* close unused write end */
+        char buf[64];
+        ssize_t n;
+        while ((n = read(fd[0], buf, sizeof buf - 1)) &gt; 0) {
+            buf[n] = '\0';
+            printf(&quot;child read %zd bytes: %s&quot;, n, buf);
+        }
+        printf(&quot;child saw end-of-file\n&quot;);
+        close(fd[0]);
+        return 0;
+    }
+    close(fd[0]);                      /* parent: the writer */
+    const char *msgs[] = { &quot;first message\n&quot;, &quot;second message\n&quot; };
+    for (int i = 0; i &lt; 2; i++)
+        if (write(fd[1], msgs[i], strlen(msgs[i])) &lt; 0) perror(&quot;write&quot;);
+    close(fd[1]);                      /* without this the child never sees EOF */
+    waitpid(pid, NULL, 0);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">child read 29 bytes: first message
+second message
+child saw end-of-file
+</code></pre>
+<p>Two points stand out in this real output. First, the child's single <code>read</code> returned both messages together, 29 bytes: a pipe is a <strong>byte stream</strong> with no message boundaries, so if you need boundaries you must add your own (a length prefix or a newline). Second, the child only sees end-of-file when <em>every</em> copy of the write end is closed, which is why both the child (its unused copy) and the parent (after writing) close <code>fd[1]</code>. If one forgot, the reader would block forever. A pipe also has a finite kernel buffer (64 KiB by default on Linux): a writer blocks when it is full and a reader blocks when it is empty, giving natural flow control. Ordinary pipes need a common ancestor to share the descriptors. <strong>Named pipes</strong> (FIFOs, made with <code>mkfifo</code>) have a name in the file system, so unrelated processes can use them.</p>
+<h3 id="shared-memory">Shared memory</h3>
+<p>The kernel can also map the same physical pages into two processes. The simplest way between related processes is an anonymous shared mapping made with <code>mmap</code> before <code>fork</code>; unrelated processes use <code>shm_open</code> to name a region.</p>
+<pre><code class="language-c">#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void) {
+    /* Anonymous shared mapping: survives fork and is shared, not copied. */
+    int *counter = mmap(NULL, sizeof *counter, PROT_READ | PROT_WRITE,
+                        MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (counter == MAP_FAILED) { perror(&quot;mmap&quot;); return 1; }
+    int plain = 0;                     /* ordinary memory: copied on fork */
+    *counter = 0;
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        plain = 99;
+        *counter = 99;
+        return 0;
+    }
+    waitpid(pid, NULL, 0);
+    printf(&quot;plain variable  : %d (child's write was private)\n&quot;, plain);
+    printf(&quot;shared mapping  : %d (child's write is visible)\n&quot;, *counter);
+    munmap(counter, sizeof *counter);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">plain variable  : 0 (child's write was private)
+shared mapping  : 99 (child's write is visible)
+</code></pre>
+<p>This contrasts with the copy-on-write behaviour of ordinary memory after <code>fork</code>. With <code>MAP_SHARED</code>, a write by either process goes to the same physical page, so the other sees it immediately. Here <code>waitpid</code> guarantees the child finished before the parent reads. With real concurrent access you would need the locks of <a href="week-05.html">Week 5</a>.</p>
+<h3 id="signals">Signals</h3>
+<p>A <strong>signal</strong> is a small asynchronous notification delivered to a process, like a software interrupt. Examples: <code>SIGINT</code> (Ctrl-C), <code>SIGTERM</code> (polite request to terminate), <code>SIGKILL</code> (cannot be caught or ignored), <code>SIGCHLD</code> (a child ended) and <code>SIGUSR1</code> (free for the application). A process may let the default action happen, ignore the signal, or install a <strong>handler</strong> function with <code>sigaction</code>.</p>
+<pre><code class="language-c">#include &lt;signal.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+static volatile sig_atomic_t got = 0;
+
+static void on_usr1(int sig) {
+    (void)sig;
+    got = 1;                           /* do the minimum inside a handler */
+}
+
+int main(void) {
+    struct sigaction sa;
+    memset(&amp;sa, 0, sizeof sa);
+    sa.sa_handler = on_usr1;
+    sigemptyset(&amp;sa.sa_mask);
+    sigaction(SIGUSR1, &amp;sa, NULL);
+
+    printf(&quot;pid %d waiting for SIGUSR1\n&quot;, (int)getpid());
+    kill(getpid(), SIGUSR1);           /* send the signal to ourselves */
+    while (!got) pause();
+    printf(&quot;handler ran, got=%d\n&quot;, got);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">pid 292 waiting for SIGUSR1
+handler ran, got=1
+</code></pre>
+<p>A handler can interrupt the program between any two instructions, so it must do very little: set a flag of type <code>volatile sig_atomic_t</code> and return, and let the main code act on the flag. Most library functions, including <code>printf</code> and <code>malloc</code>, are not safe to call from a handler. Signals carry almost no information (just the number), so they are good for events ("stop", "reload your configuration", "a child ended") but not for data.</p>
+<h2 id="process-trees-and-fork-loops">Process trees and fork loops</h2>
+<p>Because every <code>fork</code> clones the caller, calling <code>fork</code> in a loop does not create <code>n</code> processes. Each child continues the loop too, so it forks as well. After the loop <code>for (i = 0; i &lt; n; i++) fork();</code> there are <code>2ⁿ</code> processes: every pass doubles the number of live processes.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void) {
+    for (int i = 0; i &lt; 3; i++)
+        fork();                        /* every process forks on every pass */
+    printf(&quot;pid %d\n&quot;, (int)getpid());
+    fflush(stdout);
+    while (wait(NULL) &gt; 0) ;           /* reap all children */
+    return 0;
+}
+</code></pre>
+<p>This prints eight lines (<code>pid ...</code>), with different PIDs and in an unpredictable order, since <code>2³ = 8</code>. Which process is the parent of which? A process created during pass <code>k</code> (counting from 0) inherits the loop counter <code>k</code>, so it goes on to fork during passes <code>k + 1</code>, <code>k + 2</code> and so on.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> P  (original)
+ |-- A  (born in pass 0)
+ |    |-- AA  (born in pass 1)
+ |    |     `-- AAA  (born in pass 2)
+ |    `-- AB  (born in pass 2)
+ |-- B  (born in pass 1)
+ |    `-- BA  (born in pass 2)
+ `-- C  (born in pass 2)
+
+ 8 processes = 2^3.  P has 3 children, A has 2, B has 1, C has none.
+</pre></div><figcaption><b>Figure 3.4..</b> The process tree of the three-pass fork loop. A child born in pass k forks in the remaining passes.</figcaption></figure>
+<p>The demo below builds such trees for you. Enter a loop count and watch the tree grow, then try variants in which the child breaks out of the loop (the usual way to create exactly <code>n</code> children) and variants that combine <code>fork</code> with an <code>if</code> on its return value. Before you press the button, predict the number of processes, and use the tree to see why your prediction was right or wrong.</p>
+<div class="demo" data-demo="fork-tree"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Predict the process tree and output of a fork() program</span></div><div class="demo-body"></div></div>
+<div class="admonition tip">
+<p class="admonition-title">A fork bomb is this loop without a bound</p>
+<p><code>while (1) fork();</code> doubles the process count until the machine runs out of process slots or memory. Systems defend themselves with per-user process limits (<code>ulimit -u</code>), which is one of the reasons <code>fork</code> can legitimately return -1.</p>
+</div>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 3.1</span><span class="lvl lvl-warmup">warm-up</span><h4>Shared or private?</h4></header><div class="ex-q"><p>For two threads of the same process, say whether each item is shared or private to each thread: (a) a global variable, (b) a local variable in a function, (c) memory from <code>malloc</code> whose pointer is stored in a global, (d) the program counter, (e) an open file descriptor, (f) <code>errno</code>.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Shared. (b) Private, it lives on the thread's own stack. (c) The heap block is shared, and any thread that has the pointer can use it. (d) Private; each thread is at a different point in the code. (e) Shared, the descriptor table belongs to the process. (f) Private (thread-local), so one thread's failed system call does not overwrite another thread's error code.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 3.2</span><span class="lvl lvl-core">core</span><h4>Amdahl&#x27;s law by hand</h4></header><div class="ex-q"><p>A program spends 20 percent of its time in serial code and 80 percent in code that parallelizes perfectly. Compute the speedup on 8 cores, then the maximum possible speedup. If the 8-core machine were replaced by a 64-core one, would the speedup double?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>S = 0.2. On 8 cores: speedup = 1 / (0.2 + 0.8/8) = 1 / (0.2 + 0.1) = 1 / 0.3 = 3.33. The maximum, with unlimited cores, is 1 / S = 1 / 0.2 = 5. On 64 cores: 1 / (0.2 + 0.8/64) = 1 / (0.2 + 0.0125) = 1 / 0.2125 = 4.71. Going from 8 to 64 cores (8 times the hardware) improves the speedup only from 3.33 to 4.71, a factor of 1.41, far from double. The serial 20 percent dominates.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 3.3</span><span class="lvl lvl-core">core</span><h4>Count processes in fork loops</h4></header><div class="ex-q"><p>How many processes exist (including the original) after each fragment? (a) <code>for (int i = 0; i &lt; 4; i++) fork();</code> (b) <code>for (int i = 0; i &lt; 3; i++) { if (fork() == 0) break; }</code></p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Each pass doubles the process count: 2⁴ = 16 processes. (b) In each pass, only the process that received a non-zero value (the parent) continues the loop; the child breaks out. Hence only the original process ever forks, and it forks three times, giving 1 + 3 = 4 processes. Variant (b) is the standard idiom for creating exactly <code>n</code> children.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 3.4</span><span class="lvl lvl-core">core</span><h4>Why does the reader hang?</h4></header><div class="ex-q"><p>In the pipe example, suppose the parent forgets <code>close(fd[1])</code> after writing but still calls <code>waitpid</code>. What happens, and why? What if the child forgets <code>close(fd[1])</code> but the parent closes its own copy?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>In the first case the write end is still open in the parent, so the pipe is never at end-of-file. The child reads the two messages and then blocks in <code>read</code>, waiting for more data that could still arrive. The parent is blocked in <code>waitpid</code> waiting for the child. Neither can proceed: a deadlock. In the second case, the child itself holds an open write end, so the kernel again sees a possible writer, and the child's own <code>read</code> never returns 0. The rule is that EOF appears only when all copies of the write end, in every process, are closed. This is why each side closes the pipe end it does not use immediately after the fork.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 3.5</span><span class="lvl lvl-core">core</span><h4>The loop variable bug</h4></header><div class="ex-q"><p>A student writes <code>for (int i = 0; i &lt; 4; i++) pthread_create(&amp;t[i], NULL, worker, &amp;i);</code> where <code>worker</code> prints <code>*(int *)arg</code>. The output on one run is <code>4 4 4 4</code>, on another <code>1 3 3 4</code>. Explain how each can happen and give two ways to fix the code.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>All four threads receive the same address, that of the single variable <code>i</code> in <code>main</code>. The value they print is whatever <code>i</code> holds at the moment each thread executes its dereference. The loop continues to increment <code>i</code> while the threads start, so a thread that starts late sees a later value. After the final increment <code>i</code> is 4, which gives <code>4 4 4 4</code> when all threads were slow to start. Different runs produce different timing and so different mixes. Fixes: (1) keep an array <code>int ids[4]</code> filled with 0 to 3 and pass <code>&amp;ids[i]</code>, so each thread has a separate location that does not change; (2) pass the value itself, <code>(void *)(long)i</code>, and in <code>worker</code> convert back with <code>(int)(long)arg</code>. (Allocating a small struct with <code>malloc</code> per thread and freeing it in the thread also works.)</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="challenging"><header><span class="ex-n">Exercise 3.6</span><span class="lvl lvl-challenging">challenging</span><h4>Copies versus mapping</h4></header><div class="ex-q"><p>A producer must deliver 1000 messages of 1 MiB each to a consumer process. Through a pipe, each message is copied from the producer's memory into the kernel buffer and then from the kernel buffer into the consumer's memory. Assume memory copies run at 10 GiB/s and ignore all other costs. How much data is copied and how long do the copies take for the pipe design? How does a shared-memory design change this, and what does it cost the programmer?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Data size: 1000 × 1 MiB = 1000 MiB per copy direction. Through the pipe there are two copies per message, so 2000 MiB are copied. Time at 10 GiB/s = 10,240 MiB/s: 2000 / 10,240 = 0.195 s, roughly 0.2 seconds, plus the cost of the system calls. With shared memory the producer writes the message directly into the shared region and the consumer reads it in place, so the kernel copies nothing: at most the producer's single write into the buffer remains (1000 MiB, 0.098 s) and the consumer reads the data where it is. The cost to the programmer is that processes must now synchronize themselves (when is the buffer full or empty, who may write) using the tools of <a href="week-05.html">Week 5</a> and <a href="week-06.html">Week 6</a>, and must define their own message format and framing.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 3.7</span><span class="lvl lvl-challenging">challenging</span><h4>Blocking in the three thread models</h4></header><div class="ex-q"><p>A program has four threads that each need to read from a slow disk and then compute. On a four-core machine, describe what happens when thread 1 calls a blocking <code>read</code> under (a) the many-to-one model, (b) the one-to-one model. Which model can finish the computation of the other three threads while thread 1 is waiting?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) With many-to-one, all four user threads sit on one kernel thread. The kernel sees only one schedulable entity, so when thread 1 blocks in <code>read</code>, the whole process is blocked, and threads 2, 3 and 4 cannot run even though three cores are idle. Even without blocking, the four threads could use only one core. (b) With one-to-one, each user thread is its own kernel thread. The kernel marks only thread 1 as Waiting; threads 2 to 4 stay Ready or Running and can compute on the other cores while the disk works. So one-to-one (and many-to-many with enough kernel threads) can finish the others' computation while thread 1 waits. Many-to-one cannot.</p></div></details></section>
+<h2 id="lab-speedup-of-a-parallel-sum">Lab: speedup of a parallel sum</h2>
+<p>You will sum an array of 80 million integers with 1, 2, 4 and 8 threads, split into equal ranges, and compare the measured speedup with Amdahl's law. Each thread writes its partial sum to its own slot, so threads never write to the same variable and no locks are needed. The main thread adds up the partial sums. Save the program as <code>psum.c</code>.</p>
+<pre><code class="language-c">#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+#define N 80000000L
+
+static int *data;
+static long partial[8];
+struct range { int id; long lo, hi; };
+
+static void *sum_part(void *arg) {
+    struct range *r = arg;
+    long s = 0;
+    for (long i = r-&gt;lo; i &lt; r-&gt;hi; i++) s += data[i];
+    partial[r-&gt;id] = s;                /* each thread writes its own slot */
+    return NULL;
+}
+
+static double now(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &amp;t);
+    return t.tv_sec + t.tv_nsec / 1e9;
+}
+
+int main(int argc, char **argv) {
+    int nthreads = argc &gt; 1 ? atoi(argv[1]) : 2;
+    if (nthreads &lt; 1 || nthreads &gt; 8) nthreads = 2;
+    data = malloc(N * sizeof *data);
+    for (long i = 0; i &lt; N; i++) data[i] = (int)(i % 10);
+
+    pthread_t t[8];
+    struct range r[8];
+    double start = now();
+    for (int k = 0; k &lt; nthreads; k++) {
+        r[k].id = k;
+        r[k].lo = N / nthreads * k;
+        r[k].hi = (k == nthreads - 1) ? N : N / nthreads * (k + 1);
+        pthread_create(&amp;t[k], NULL, sum_part, &amp;r[k]);
+    }
+    long total = 0;
+    for (int k = 0; k &lt; nthreads; k++) {
+        pthread_join(t[k], NULL);
+        total += partial[k];
+    }
+    printf(&quot;threads=%d sum=%ld time=%.3fs\n&quot;, nthreads, total, now() - start);
+    free(data);
+    return 0;
+}
+</code></pre>
+<p>Build and run:</p>
+<pre><code class="language-bash">gcc -Wall -pthread psum.c -o psum
+for n in 1 2 4 8; do ./psum $n; done
+taskset -c 0 ./psum 4
+</code></pre>
+<p><strong>What to observe.</strong> On a machine with two cores the real output was:</p>
+<pre><code class="language-text">threads=1 sum=360000000 time=0.220s
+threads=2 sum=360000000 time=0.116s
+threads=4 sum=360000000 time=0.118s
+threads=8 sum=360000000 time=0.113s
+threads=4 sum=360000000 time=0.217s
+</code></pre>
+<p>The sum is always 360,000,000 (80 million values averaging 4.5), so the parallel version is correct. Two threads run 0.220 / 0.116 = 1.9 times faster, close to the ideal 2. Four and eight threads are no faster, because only two cores exist: extra threads only add scheduling work. The last line pins the whole process to core 0 with <code>taskset</code>, and four threads then take as long as one, confirming that threads give a speedup only when cores are available. The time measured here excludes filling the array, which is the serial part we chose not to count. On your machine, estimate the serial fraction <code>S</code> that Amdahl's law implies from your measured 2-thread and 4-thread speedups.</p>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Make all threads add into one shared <code>long total</code> with <code>total += data[i]</code> and compare the answer and time with the version above. Explain the wrong results using the load, add and store view from <a href="week-05.html">Week 5</a>.</li>
+<li>Pad <code>partial</code> so that each slot occupies its own 64-byte cache line (for example <code>struct { long v; char pad[56]; }</code>). Measure whether anything changes, and research the term <em>false sharing</em>.</li>
+<li>Replace the threads by processes: <code>fork</code> N children, have each send its partial sum to the parent through a pipe, and compare the running time and the code complexity with the thread version.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Threads print the same or a wrong argument value</td>
+<td>Passed the address of a loop variable</td>
+<td>Give each thread its own argument storage, or pass the value</td>
+</tr>
+<tr>
+<td>Program exits and threads never finish their work</td>
+<td><code>main</code> returned without <code>pthread_join</code> (returning from <code>main</code> ends all threads)</td>
+<td>Join every thread, or call <code>pthread_exit</code> in <code>main</code></td>
+</tr>
+<tr>
+<td>Link error: undefined reference to <code>pthread_create</code></td>
+<td>Missing <code>-pthread</code> flag</td>
+<td>Compile and link with <code>gcc -pthread</code></td>
+</tr>
+<tr>
+<td>Totals differ from run to run</td>
+<td>Several threads update shared data without protection</td>
+<td>Give each thread private data, or use the locks of <a href="week-05.html">Week 5</a></td>
+</tr>
+<tr>
+<td>Reader on a pipe never returns</td>
+<td>Some process still holds the write end open</td>
+<td>Close every unused end right after <code>fork</code></td>
+</tr>
+<tr>
+<td>Child of a pipe sees broken pipe (<code>SIGPIPE</code>) when writing</td>
+<td>The read end was closed in every process</td>
+<td>Keep a reader open, or handle <code>SIGPIPE</code></td>
+</tr>
+<tr>
+<td>Speedup far below the number of threads</td>
+<td>Serial fraction, too few cores, or memory bandwidth limits</td>
+<td>Measure the serial part and compare with Amdahl's law; check <code>nproc</code></td>
+</tr>
+<tr>
+<td>Strange crash in a handler that calls <code>printf</code></td>
+<td>Calling a function that is not async-signal-safe</td>
+<td>Only set a <code>sig_atomic_t</code> flag in the handler</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>Threads of one process share code, globals, heap and open files but have private stacks and registers, which makes them cheap and also makes sharing bugs possible.</li>
+<li>Use <code>pthread_create</code> and <code>pthread_join</code>; never pass the address of a changing loop variable; compile with <code>-pthread</code>.</li>
+<li>Linux, Windows and macOS use one-to-one threads, so a blocking call stops only one thread and threads can run in parallel on several cores.</li>
+<li>Amdahl's law, <code>speedup = 1 / (S + (1 - S) / N)</code>, shows that the serial fraction <code>S</code> caps the benefit of more cores at <code>1 / S</code>.</li>
+<li>IPC is either shared memory (fast, you synchronize) or message passing (the kernel copies and synchronizes). Pipes are byte streams that need their unused ends closed to deliver EOF.</li>
+<li>Signals carry events, not data; handlers must do almost nothing. A fork loop of <code>n</code> passes produces <code>2ⁿ</code> processes.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 4 (Threads and Concurrency), and Chapter 3 sections on interprocess communication, shared memory, message passing, pipes.</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapters "Concurrency: An Introduction" and "Interlude: Thread API".</li>
+<li><strong>Essential.</strong> Tanenbaum and Bos, <em>Modern Operating Systems</em>, Section 2.2 (Threads), including user-space versus kernel implementations, and Section 2.3.1 on race conditions.</li>
+<li>G. M. Amdahl, "Validity of the Single Processor Approach to Achieving Large Scale Computing Capabilities", AFIPS Spring Joint Computer Conference, 1967.</li>
+<li>M. D. Hill and M. R. Marty, "Amdahl's Law in the Multicore Era", <em>IEEE Computer</em> 41(7), 2008.</li>
+<li>W. R. Stevens and S. A. Rago, <em>Advanced Programming in the UNIX Environment</em>, chapters on interprocess communication, signals and threads.</li>
+<li>Manual pages: <code>pthreads(7)</code>, <code>pthread_create(3)</code>, <code>pipe(2)</code>, <code>mmap(2)</code>, <code>shm_overview(7)</code>, <code>signal(7)</code>, <code>sigaction(2)</code>, <code>clone(2)</code>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="3">Mark Week 3 as complete</button></div><div class="pager"><a class="pn prev" href="week-02.html"><small>Previous</small>Week 2: Processes</a><a class="pn next" href="week-04.html"><small>Next</small>Week 4: CPU Scheduling</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#why-threads">Why threads?</a></li><li><a href="#programming-with-posix-threads">Programming with POSIX threads</a></li><li><a href="#how-threads-are-implemented">How threads are implemented</a></li><li><a href="#parallelism-concurrency-and-amdahls-law">Parallelism, concurrency and Amdahl's law</a></li><li><a href="#interprocess-communication">Interprocess communication</a></li><li><a href="#pipes-shared-memory-and-signals">Pipes, shared memory and signals</a></li><li><a href="#process-trees-and-fork-loops">Process trees and fork loops</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab-speedup-of-a-parallel-sum">Lab: speedup of a parallel sum</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

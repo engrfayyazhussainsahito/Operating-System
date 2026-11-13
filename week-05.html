@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 5: Synchronization I · Operating Systems for Dummies</title>
+<meta name="description" content="Why concurrent updates to shared data go wrong, how the critical section problem is defined, and the tools that solve it: atomic instructions, spinlocks, mutexes, semaphores and condition variables.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk on" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="2"><article class="week" data-week="5"><header class="week-head" data-num="05"><p class="kicker">Week 5 · Phase 2: Concurrency and Deadlocks</p><h1>Synchronization I</h1><p class="abstract">Why concurrent updates to shared data go wrong, how the critical section problem is defined, and the tools that solve it: atomic instructions, spinlocks, mutexes, semaphores and condition variables.</p><ul class="chips"><li><b>30</b> min read</li><li><b>2</b> demos</li><li><b>4</b> figures</li><li><b>15</b> code blocks</li><li><b>9</b> exercises</li></ul><p class="lab-line"><b>Lab.</b> Fix a racy shared counter in C three ways (mutex, atomic spinlock, semaphore) and time each version.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Trace an interleaving of load, add and store instructions and compute the final value of a shared counter</li><li>State the three requirements of a critical section solution and decide which one a given protocol violates</li><li>Explain why Peterson&#x27;s algorithm needs memory barriers on modern processors</li><li>Implement a spinlock with an atomic test-and-set or compare-and-swap operation and explain when spinning is the wrong choice</li><li>Describe how a semaphore works internally without busy waiting and use counting and binary semaphores correctly</li><li>Write correct POSIX code with mutexes, semaphores and condition variables, including the while-loop rule</li></ul></section><div class="prose"><p>In <a href="week-03.html">Week 3</a> you met threads: several flows of control inside one process that share the same heap, globals and open files. That sharing is what makes threads cheap to communicate, and it is also what makes them dangerous. In <a href="week-04.html">Week 4</a> the scheduler could pause any thread at almost any instruction and run another one. Put those two facts together and you get this week's topic: when the scheduler interrupts a thread in the middle of updating shared data, the next thread sees half-finished work.</p>
+<p>This chapter builds the toolbox in layers. First we see the bug (a race condition) and name the problem it creates (the critical section problem). Then we look at the lowest-level solutions, atomic hardware instructions, and build locks from them. Finally we climb to the tools you will actually use every day: mutexes, semaphores and condition variables. <a href="week-06.html">Week 6</a> uses these tools to solve the classic problems, and <a href="week-07.html">Week 7</a> shows what happens when the tools themselves are used badly (deadlock).</p>
+<h2 id="races-and-the-critical-section-problem">Races and the critical section problem</h2>
+<h3 id="why-a-single-line-of-c-is-not-a-single-step">Why a single line of C is not a single step</h3>
+<p>Consider two threads that each execute <code>counter++</code> on a shared integer that starts at 5. You expect 7. Sometimes you get 6. The reason is that <code>counter++</code> is not one machine step. A compiler turns it into three:</p>
+<pre><code class="language-text">load  r1 &lt;- counter      ; copy the value from memory into a register
+add   r1 &lt;- r1 + 1       ; increment the register
+store counter &lt;- r1      ; write the register back to memory
+</code></pre>
+<p>Registers belong to each thread (they are saved and restored on a context switch, see <a href="week-02.html">Week 2</a>), but <code>counter</code> lives in shared memory. If thread T1 is interrupted after its <code>load</code>, thread T2 can load the same old value, and both then write back 6.</p>
+<div class="admonition intuition">
+<p class="admonition-title">The shared whiteboard</p>
+<p>Two clerks share a whiteboard showing the number of tickets left. Each clerk reads the number, walks to a desk, subtracts one, and walks back to write the new number. If both read "5" before either writes, both write "4" and a ticket has silently vanished. The bug is not in either clerk. It is in the gap between reading and writing.</p>
+</div>
+<p>Here is one bad interleaving, traced step by step.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Thread</th>
+<th>Instruction</th>
+<th>r1 (T1)</th>
+<th>r2 (T2)</th>
+<th>counter in memory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td></td>
+<td>initial state</td>
+<td></td>
+<td></td>
+<td>5</td>
+</tr>
+<tr>
+<td>1</td>
+<td>T1</td>
+<td>load r1 &lt;- counter</td>
+<td>5</td>
+<td></td>
+<td>5</td>
+</tr>
+<tr>
+<td>2</td>
+<td>T2</td>
+<td>load r2 &lt;- counter</td>
+<td>5</td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>3</td>
+<td>T1</td>
+<td>add r1 &lt;- r1 + 1</td>
+<td>6</td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>4</td>
+<td>T2</td>
+<td>add r2 &lt;- r2 + 1</td>
+<td>6</td>
+<td>6</td>
+<td>5</td>
+</tr>
+<tr>
+<td>5</td>
+<td>T1</td>
+<td>store counter &lt;- r1</td>
+<td>6</td>
+<td>6</td>
+<td>6</td>
+</tr>
+<tr>
+<td>6</td>
+<td>T2</td>
+<td>store counter &lt;- r2</td>
+<td>6</td>
+<td>6</td>
+<td>6</td>
+</tr>
+</tbody>
+</table>
+<p>Two increments ran, the counter moved by one. This is a <strong>lost update</strong>.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> time -&gt;
+ T1:  [load 5] [add 6]            [store 6]
+ T2:           [load 5] [add 6]             [store 6]
+                                                   |
+ memory: 5 ----------------------&gt; 6 --------------&gt; 6   (should be 7)
+
+ T1 and T2 both read 5 before either wrote. The window between a thread's
+ load and its store is the critical window.
+</pre></div><figcaption><b>Figure 5.1..</b> Overlapping read-modify-write sequences lose an update.</figcaption></figure>
+<p>If you want to feel this, the demo below steps two threads through exactly this sequence. Try the interleaving buttons to reach a result of 6, then switch the lock on and see that every interleaving now gives 7.</p>
+<div class="demo" data-demo="race-condition"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Interleave two threads and watch an update get lost</span></div><div class="demo-body"></div></div>
+<div class="admonition definition">
+<p class="admonition-title">Race condition</p>
+<p>A <strong>race condition</strong> exists when the result of a computation depends on the relative timing or interleaving of operations by two or more threads, and at least one of them writes the shared data. In the C and C++ memory models an unsynchronized conflicting access is a <strong>data race</strong>, and a program containing one has undefined behaviour, not just an unlucky result.</p>
+</div>
+<p>Races are nasty because they are rare. With only two threads and a window of three instructions, most runs happen to interleave harmlessly, so tests pass and the bug ships. Of the 20 possible interleavings of two three-instruction sequences, only 2 (all of T1 before T2, or all of T2 before T1) give the right answer; the other 18 lose an update. The real machine is just very likely to pick one of the two good ones when the threads are short, and much less likely when they are long or run on different cores.</p>
+<h3 id="the-critical-section-problem">The critical section problem</h3>
+<p>The fix is to make the dangerous window <strong>indivisible</strong> with respect to other threads. We call a stretch of code that accesses shared data and must not be run by two threads at once a <strong>critical section</strong>. Every thread using shared data is structured like this:</p>
+<pre><code class="language-text">do {
+    entry section        // ask permission to enter
+        critical section // touch shared data
+    exit section         // announce that we are done
+        remainder section // everything else
+} while (true);
+</code></pre>
+<p><em>Figure 5.2 (listing). The general structure of a thread with a critical section.</em></p>
+<p>A correct solution must satisfy three requirements.</p>
+<div class="admonition definition">
+<p class="admonition-title">The three requirements</p>
+<p><strong>Mutual exclusion:</strong> if one thread is executing in its critical section, no other thread may be executing in its critical section.
+<strong>Progress:</strong> if no thread is in its critical section and some threads want to enter, then only threads not in their remainder sections take part in deciding who goes next, and that decision cannot be postponed forever.
+<strong>Bounded waiting:</strong> there is a bound on the number of times other threads may enter their critical sections after a thread has asked to enter and before that request is granted. Nobody starves.</p>
+</div>
+<p>A solution must also make no assumption about relative speeds or the number of processors. Mutual exclusion is the one everybody remembers, but progress and bounded waiting are what separate a real lock from a trick. The simplest "obvious" scheme shows why. Suppose two threads share a variable <code>turn</code> and each waits for its own turn:</p>
+<pre><code class="language-c">/* Thread 0 */                    /* Thread 1 */
+while (turn != 0) ;               while (turn != 1) ;
+/* critical section */            /* critical section */
+turn = 1;                         turn = 0;
+</code></pre>
+<p>This guarantees mutual exclusion, but it forces <strong>strict alternation</strong>: if thread 0 finishes and then spends an hour in its remainder section, thread 1 cannot enter twice in a row. A thread in its remainder section is blocking a thread that wants in, which violates progress.</p>
+<h3 id="petersons-algorithm">Peterson's algorithm</h3>
+<p>In 1981 Gary Peterson published a software-only solution for two threads (numbered 0 and 1) that satisfies all three requirements. Each thread announces its interest in a flag and then politely gives the other thread priority via <code>turn</code>.</p>
+<pre><code class="language-c">#include &lt;pthread.h&gt;
+#include &lt;stdatomic.h&gt;
+#include &lt;stdio.h&gt;
+
+static atomic_int flag[2];   /* flag[i] = 1 means thread i wants to enter */
+static atomic_int turn;      /* whose turn it is to wait */
+static long counter = 0;
+
+static void lock(int me) {
+    int other = 1 - me;
+    atomic_store(&amp;flag[me], 1);      /* I want in */
+    atomic_store(&amp;turn, other);      /* but you go first if we collide */
+    while (atomic_load(&amp;flag[other]) &amp;&amp; atomic_load(&amp;turn) == other)
+        ;                            /* wait */
+}
+static void unlock(int me) { atomic_store(&amp;flag[me], 0); }
+
+static void *worker(void *arg) {
+    int me = (int)(long)arg;
+    for (int i = 0; i &lt; 200000; i++) {
+        lock(me);
+        counter++;
+        unlock(me);
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t a, b;
+    pthread_create(&amp;a, NULL, worker, (void *)0L);
+    pthread_create(&amp;b, NULL, worker, (void *)1L);
+    pthread_join(a, NULL);
+    pthread_join(b, NULL);
+    printf(&quot;counter = %ld (expected 400000)\n&quot;, counter);
+    return 0;
+}
+</code></pre>
+<p>Compile with <code>gcc -O2 -pthread peterson.c</code>. If both threads set their flags at the same time, whichever thread writes <code>turn</code> last loses and waits. If only one thread is interested, the other's flag is 0 and the loop exits immediately, which is why progress holds. Because a waiting thread must see the other leave before it can enter, and the other will give the turn away on re-entry, bounded waiting holds with a bound of one.</p>
+<p>Notice the declarations: the shared variables are <code>atomic_int</code>, and the stores and loads use the default sequentially consistent ordering. That is not decoration. If you rewrite this with plain <code>int</code> variables, the program is broken on modern hardware, for two reasons. First, the compiler is allowed to reorder or even delete the plain stores and loads, since in a single-threaded view they look independent. Second, even if the compiler behaves, the processor does not execute memory operations in program order. Almost every modern CPU has a <strong>store buffer</strong>: a store is parked in a queue and becomes visible to other cores a little later, while a later load can overtake it. In Peterson's algorithm, a thread stores <code>flag[me]</code> and then loads <code>flag[other]</code>. If the store sits in the buffer while the load runs, both threads can read the other's flag as 0 and both enter the critical section. On x86 this store-then-load reordering is exactly the one reordering the hardware allows; on ARM and POWER many more are allowed. The cure is a <strong>memory barrier</strong> (fence) between the stores and the loads, which is what <code>memory_order_seq_cst</code> inserts for you.</p>
+<div class="admonition history">
+<p class="admonition-title">Where mutual exclusion came from</p>
+<p>Edsger Dijkstra published the first correct software solution for N threads in 1965, and Donald Knuth and others refined it. Leslie Lamport's 1974 bakery algorithm lets threads take numbered tickets like customers in a bakery. Peterson's 1981 paper is famous because it showed that two-thread mutual exclusion needs only a few lines. All of these assume memory behaves sequentially, an assumption real hardware stopped granting long ago.</p>
+</div>
+<div class="demo reveal" data-demo="lock-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">Run four threads through a critical section with and without a lock</span></div><div class="demo-body"></div></div>
+<h2 id="hardware-support-atomics-barriers-and-spinlocks">Hardware support: atomics, barriers and spinlocks</h2>
+<h3 id="atomic-instructions">Atomic instructions</h3>
+<p>Since software-only solutions are fragile and slow, processors provide <strong>atomic read-modify-write</strong> instructions: the processor performs a read and a write of one memory word as a single indivisible step with respect to every other core. Two classic primitives are enough to build any lock.</p>
+<p><strong>Test-and-set</strong> atomically writes 1 into a word and returns the old value. Its semantics, written as ordinary code (the hardware executes it all at once), are:</p>
+<pre><code class="language-c">int test_and_set(int *target) {
+    int old = *target;
+    *target = 1;
+    return old;
+}
+</code></pre>
+<p><strong>Compare-and-swap (CAS)</strong> atomically compares a word with an expected value and replaces it only if they match:</p>
+<pre><code class="language-c">bool compare_and_swap(int *value, int expected, int new_value) {
+    if (*value == expected) { *value = new_value; return true; }
+    return false;
+}
+</code></pre>
+<p>On x86-64 these are <code>xchg</code> and <code>lock cmpxchg</code>; on ARM they are load-linked/store-conditional pairs (<code>ldxr</code>/<code>stxr</code>) or, on newer chips, a single <code>cas</code> instruction. In portable C you use <code>&lt;stdatomic.h&gt;</code>: <code>atomic_flag_test_and_set</code>, <code>atomic_compare_exchange_strong</code>, <code>atomic_fetch_add</code>, and friends. A lock built on test-and-set is only a few lines:</p>
+<pre><code class="language-c">atomic_flag lock_word = ATOMIC_FLAG_INIT;
+
+void spin_lock(void) {
+    while (atomic_flag_test_and_set_explicit(&amp;lock_word, memory_order_acquire))
+        ;   /* the old value was 1: someone else holds it, try again */
+}
+void spin_unlock(void) {
+    atomic_flag_clear_explicit(&amp;lock_word, memory_order_release);
+}
+</code></pre>
+<p>The first thread to run the test-and-set sees 0 and now owns the lock; every later one sees 1 and spins. The <code>acquire</code> and <code>release</code> orderings are the minimum <strong>memory barriers</strong> needed: nothing inside the critical section may drift above the acquire or below the release.</p>
+<div class="admonition warning">
+<p class="admonition-title">Atomic is not the same as ordered</p>
+<p>An atomic instruction guarantees that one read-modify-write cannot be torn. It does not by itself guarantee that your other loads and stores appear in program order. Locks work because acquire and release operations also act as one-way barriers. When you write lock-free code, you must reason about both atomicity and ordering.</p>
+</div>
+<p>Atomic instructions also make some jobs lock-free outright. A shared counter does not need a lock at all: <code>atomic_fetch_add(&amp;c, 1)</code> is a hardware-supported increment, and in the lab it is the fastest of all the correct versions.</p>
+<h3 id="spinlocks-versus-mutexes">Spinlocks versus mutexes</h3>
+<p>A lock that loops on an atomic instruction is a <strong>spinlock</strong>. The waiting thread does <strong>busy waiting</strong>: it burns CPU cycles asking "is it free yet?" A <strong>mutex</strong> (mutual exclusion lock), in contrast, puts the waiting thread to sleep. The kernel removes it from the run queue, runs someone else, and wakes it when the lock is released.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   Spinlock waiter                      Mutex waiter
+   ---------------                      ------------
+   core 1: holder in CS                 core 1: holder in CS
+   core 2: test-and-set -&gt; 1            core 2: try lock -&gt; busy
+           test-and-set -&gt; 1                    syscall: sleep on lock
+           test-and-set -&gt; 1  (CPU 100%)        [thread blocked, core 2 runs
+           ... holder releases ...               another thread]
+           test-and-set -&gt; 0  acquired          ... holder releases, wakes it
+                                                context switch back in
+   cost: wasted cycles while waiting     cost: two context switches + syscall
+   good if wait is shorter than that     good if wait is long
+</pre></div><figcaption><b>Figure 5.3..</b> A spinlock waiter spins on its core; a mutex waiter sleeps and costs two context switches.</figcaption></figure>
+<p>Which is better depends on how long the lock is held compared with the cost of a context switch, which is on the order of a microsecond or a few. Spinning is right when the critical section is extremely short and the lock holder is running on another core. It is wrong on a single core (the holder cannot run while you spin, so you waste your entire time slice) and wrong when the holder may be descheduled while holding the lock. Real systems therefore use hybrids: Linux's pthread mutex first tries an atomic compare-and-swap in user space with no system call at all (the uncontended fast path), and only when that fails does it call the kernel through the <code>futex</code> system call to sleep. Some mutexes spin briefly first and then block (an <strong>adaptive mutex</strong>). The kernel itself uses plain spinlocks for very short sections with interrupts disabled, because it cannot sleep in interrupt context.</p>
+<p>A refinement matters on multiprocessors. Plain test-and-set writes the lock word on every spin, so the cache line holding it bounces between cores and floods the memory bus. A <strong>test-and-test-and-set</strong> lock spins with an ordinary read until the lock looks free, and only then attempts the atomic write, which keeps the line shared and quiet. <strong>Ticket locks</strong> go further by serving waiters in first-come order, which gives the bounded waiting that a plain spinlock lacks.</p>
+<h3 id="priority-inversion">Priority inversion</h3>
+<p>Locks interact badly with priority scheduling. Suppose three tasks have high (H), medium (M) and low (L) priority. L takes a lock. H wakes up, preempts L, and then needs the same lock, so H blocks. Now M wakes up. M does not need the lock, and M has higher priority than L, so M runs and L cannot finish its critical section. H, the most important task, is stuck behind M, a less important one. This is <strong>priority inversion</strong>.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> priority
+  H:   .......... [try lock: BLOCKED ............................] [runs]
+  M:   ......................... [ M runs, long job ...........]
+  L:   [run][lock] [CS -&gt;preempted by H, then by M]            [CS][unlock]
+                                                                   ^
+       time ------------------------------------------------------+
+       H waits for L, but L cannot run because M outranks it.
+</pre></div><figcaption><b>Figure 5.4..</b> Priority inversion: the medium-priority task indirectly blocks the high-priority one.</figcaption></figure>
+<div class="admonition history">
+<p class="admonition-title">Mars Pathfinder, July 1997</p>
+<p>Pathfinder's lander ran the VxWorks real-time kernel. A high-priority bus-management task and a low-priority meteorological task shared a data structure protected by a mutex. When a medium-priority communications task preempted the low-priority holder at the wrong moment, the bus task starved, a watchdog timer noticed that it had missed its deadline, and the spacecraft rebooted itself repeatedly. Engineers diagnosed it using a replica on Earth and fixed it by uploading a patch that enabled <strong>priority inheritance</strong> on that mutex.</p>
+</div>
+<p>The standard cure is <strong>priority inheritance</strong>: while L holds a lock that H wants, L temporarily runs at H's priority, so M cannot preempt it, and L drops back when it unlocks. POSIX offers it through the mutex attribute <code>PTHREAD_PRIO_INHERIT</code>. A second approach, <strong>priority ceiling</strong>, gives each lock a priority equal to the highest priority of any task that uses it.</p>
+<h2 id="semaphores">Semaphores</h2>
+<h3 id="wait-and-signal">Wait and signal</h3>
+<p>A <strong>semaphore</strong>, introduced by Dijkstra, is an integer variable that, apart from initialization, is touched only through two atomic operations. Dijkstra named them <strong>P</strong> (from Dutch <em>proberen</em>, to try) and <strong>V</strong> (<em>verhogen</em>, to increment). Modern APIs call them <code>wait</code> (or <code>down</code>) and <code>signal</code> (or <code>post</code>, <code>up</code>).</p>
+<div class="admonition definition">
+<p class="admonition-title">Semaphore operations</p>
+<p><code>wait(S)</code>: decrement S. If the result is negative, the calling thread blocks. <code>signal(S)</code>: increment S. If the result is zero or negative, wake exactly one blocked thread. Both operations execute atomically. In the common textbook formulation, a negative value means "this many threads are waiting".</p>
+</div>
+<p>A <strong>counting semaphore</strong> has an unrestricted integer value and tracks a pool of N identical resources: initialize it to N, <code>wait</code> to take one, <code>signal</code> to return one. A <strong>binary semaphore</strong> only takes the values 0 and 1 and behaves like a lock. Semaphores serve three different jobs, distinguished by the initial value:</p>
+<table>
+<thead>
+<tr>
+<th>Initial value</th>
+<th>Use</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Mutual exclusion</td>
+<td><code>wait(S); critical section; signal(S)</code></td>
+</tr>
+<tr>
+<td>0</td>
+<td>Ordering / signalling "event happened"</td>
+<td>Thread A: <code>signal(S)</code>. Thread B: <code>wait(S)</code> runs only after A signalled</td>
+</tr>
+<tr>
+<td>N</td>
+<td>Resource counting</td>
+<td>Up to N threads inside at once</td>
+</tr>
+</tbody>
+</table>
+<h3 id="implementation-without-busy-waiting">Implementation without busy waiting</h3>
+<p>The first definition of a semaphore (<code>while (S &lt;= 0) ; S--;</code>) busy waits. A practical implementation gives each semaphore a <strong>queue</strong> of blocked threads, so a waiter sleeps rather than spins.</p>
+<pre><code class="language-c">typedef struct {
+    int value;
+    struct thread_list *waiters;   /* queue of blocked threads */
+} semaphore;
+
+void wait(semaphore *S) {
+    S-&gt;value--;
+    if (S-&gt;value &lt; 0) {
+        add_to_queue(S-&gt;waiters, current_thread());
+        block();                    /* sleep; scheduler runs someone else */
+    }
+}
+
+void signal(semaphore *S) {
+    S-&gt;value++;
+    if (S-&gt;value &lt;= 0) {
+        thread *t = remove_from_queue(S-&gt;waiters);
+        wakeup(t);                  /* move t to the ready queue */
+    }
+}
+</code></pre>
+<p>The bodies of <code>wait</code> and <code>signal</code> are themselves critical sections, so on a multiprocessor they are protected by a short spinlock (or, on a single core, by disabling interrupts). That is an acceptable use of busy waiting: it lasts a handful of instructions, not the whole time a thread waits for the resource.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   semaphore S
+   +--------------------+
+   | value = -2         |   two threads are blocked
+   | waiters: T7 -&gt; T3  |   wait(S) by T9 would make value -3 and queue T9
+   +--------------------+
+        ^                     signal(S): value becomes -1 (&lt;= 0),
+        |                     so dequeue T7 and make it ready
+   value &gt;= 0: no one waits; value counts free resources
+</pre></div><figcaption><b>Figure 5.5..</b> A semaphore pairs an integer with a queue; a negative value is the number of sleepers.</figcaption></figure>
+<p>Semaphores have a useful property that condition variables lack: they <strong>remember</strong>. If <code>signal</code> runs before <code>wait</code>, the count goes to 1 and the later <code>wait</code> returns immediately, so a wake-up cannot be lost. Semaphores also lack ownership: any thread may signal, which is flexible but means a semaphore used as a lock cannot detect "unlock by the wrong thread", unlike an error-checking mutex.</p>
+<h2 id="the-posix-api-mutexes-semaphores-and-condition-variables">The POSIX API: mutexes, semaphores and condition variables</h2>
+<h3 id="mutexes">Mutexes</h3>
+<p>POSIX threads (<code>pthreads</code>) provide <code>pthread_mutex_lock</code> and <code>pthread_mutex_unlock</code>, which are the tools you reach for first. The golden rule: keep <strong>the check and the update inside one critical section</strong>, as <code>withdraw</code> does below.</p>
+<pre><code class="language-c">#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+
+struct account {
+    pthread_mutex_t lock;
+    long balance;
+};
+
+static struct account acct = { PTHREAD_MUTEX_INITIALIZER, 100 };
+
+static void deposit(struct account *a, long amount) {
+    pthread_mutex_lock(&amp;a-&gt;lock);
+    a-&gt;balance += amount;
+    pthread_mutex_unlock(&amp;a-&gt;lock);
+}
+
+static int withdraw(struct account *a, long amount) {
+    int ok = 0;
+    pthread_mutex_lock(&amp;a-&gt;lock);
+    if (a-&gt;balance &gt;= amount) {      /* check and update inside ONE critical section */
+        a-&gt;balance -= amount;
+        ok = 1;
+    }
+    pthread_mutex_unlock(&amp;a-&gt;lock);
+    return ok;
+}
+
+static void *teller(void *arg) {
+    (void)arg;
+    for (int i = 0; i &lt; 100000; i++) {
+        deposit(&amp;acct, 10);
+        withdraw(&amp;acct, 10);
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t[3];
+    for (int i = 0; i &lt; 3; i++) pthread_create(&amp;t[i], NULL, teller, NULL);
+    for (int i = 0; i &lt; 3; i++) pthread_join(t[i], NULL);
+    printf(&quot;final balance = %ld (expected 100)\n&quot;, acct.balance);
+    return 0;
+}
+</code></pre>
+<p>Every <code>lock</code> is matched by an <code>unlock</code> on the same thread, on every path, including early returns. Locking a mutex you already hold (with the default type) is undefined or deadlocks. Only the thread that locked a mutex may unlock it.</p>
+<h3 id="semaphores_1">Semaphores</h3>
+<p>POSIX unnamed semaphores (<code>&lt;semaphore.h&gt;</code>) use <code>sem_init</code>, <code>sem_wait</code>, <code>sem_post</code> and <code>sem_destroy</code>. This example lets only two of six workers use a resource at a time.</p>
+<pre><code class="language-c">#include &lt;pthread.h&gt;
+#include &lt;semaphore.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+/* A counting semaphore limits how many threads use a resource at once. */
+#define NWORKERS 6
+#define SLOTS    2
+
+static sem_t slots;
+
+static void *worker(void *arg) {
+    long id = (long)arg;
+    sem_wait(&amp;slots);                       /* P / wait / down */
+    printf(&quot;worker %ld enters\n&quot;, id);
+    usleep(100000);                         /* pretend to use the resource */
+    printf(&quot;worker %ld leaves\n&quot;, id);
+    sem_post(&amp;slots);                       /* V / signal / up */
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t[NWORKERS];
+    sem_init(&amp;slots, 0, SLOTS);             /* pshared = 0: threads of one process */
+    for (long i = 0; i &lt; NWORKERS; i++) pthread_create(&amp;t[i], NULL, worker, (void *)i);
+    for (int i = 0; i &lt; NWORKERS; i++) pthread_join(t[i], NULL);
+    sem_destroy(&amp;slots);
+    return 0;
+}
+</code></pre>
+<p>The output always shows at most two "enters" without a matching "leaves"; the exact order varies from run to run.</p>
+<h3 id="condition-variables-and-the-while-loop-rule">Condition variables and the while-loop rule</h3>
+<p>Locks answer "who may touch the data right now?" They do not answer "is the data in the state I need?" A consumer that finds the queue empty must wait <strong>until a producer adds something</strong>, and it must not hold the lock while waiting, or no producer could ever enter. A <strong>condition variable</strong> is a queue of sleeping threads attached to a mutex, with three operations:</p>
+<ul>
+<li><code>pthread_cond_wait(&amp;cv, &amp;m)</code>: atomically release mutex <code>m</code> and sleep on <code>cv</code>; when woken, re-acquire <code>m</code> before returning.</li>
+<li><code>pthread_cond_signal(&amp;cv)</code>: wake at least one waiter, if any.</li>
+<li><code>pthread_cond_broadcast(&amp;cv)</code>: wake all waiters.</li>
+</ul>
+<p>Unlike a semaphore, a condition variable has <strong>no memory</strong>: a signal sent when nobody waits is lost. That is why the condition itself is stored in ordinary shared variables (the <strong>predicate</strong>) protected by the mutex.</p>
+<pre><code class="language-c">#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+
+/* A one-slot mailbox: the consumer sleeps until the producer fills it. */
+static pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  ready = PTHREAD_COND_INITIALIZER;
+static int  full = 0;
+static int  value;
+
+static void *producer(void *arg) {
+    (void)arg;
+    pthread_mutex_lock(&amp;m);
+    value = 42;
+    full = 1;                               /* change the predicate while holding the lock */
+    pthread_cond_signal(&amp;ready);            /* wake one waiter */
+    pthread_mutex_unlock(&amp;m);
+    return NULL;
+}
+
+static void *consumer(void *arg) {
+    (void)arg;
+    pthread_mutex_lock(&amp;m);
+    while (!full)                           /* WHILE, never if */
+        pthread_cond_wait(&amp;ready, &amp;m);      /* atomically unlock, sleep, re-lock on wake */
+    printf(&quot;consumer got %d\n&quot;, value);
+    full = 0;
+    pthread_mutex_unlock(&amp;m);
+    return NULL;
+}
+
+int main(void) {
+    pthread_t p, c;
+    pthread_create(&amp;c, NULL, consumer, NULL);
+    pthread_create(&amp;p, NULL, producer, NULL);
+    pthread_join(p, NULL);
+    pthread_join(c, NULL);
+    return 0;
+}
+</code></pre>
+<p>The consumer works whichever thread runs first. If the producer goes first, <code>full</code> is already 1 when the consumer arrives and the loop never waits. That is the reason the predicate lives in a variable.</p>
+<div class="admonition warning">
+<p class="admonition-title">Always wait in a while loop</p>
+<p>Re-check the predicate after every wake-up. Three things can make a woken thread find the condition false: another thread may have run between the signal and your re-acquiring the mutex and consumed the item (a "stolen wake-up"); <code>pthread_cond_broadcast</code> wakes every waiter although only one can proceed; and POSIX permits <strong>spurious wake-ups</strong> with no signal at all. Code using <code>if</code> instead of <code>while</code> works in testing and fails under load.</p>
+</div>
+<p>The three tools compare as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Remembers past signals</th>
+<th>Owner concept</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mutex</td>
+<td>n/a</td>
+<td>Yes, only the locker unlocks</td>
+<td>Short critical sections</td>
+</tr>
+<tr>
+<td>Counting semaphore</td>
+<td>Yes (the count)</td>
+<td>No</td>
+<td>Counting resources, signalling events</td>
+</tr>
+<tr>
+<td>Condition variable</td>
+<td>No</td>
+<td>Used with a mutex</td>
+<td>Waiting for arbitrary predicates</td>
+</tr>
+</tbody>
+</table>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 5.1</span><span class="lvl lvl-warmup">warm-up</span><h4>Trace a lost update</h4></header><div class="ex-q"><p>A shared <code>counter</code> starts at 0. Thread T1 executes <code>counter++</code> twice in a loop and thread T2 executes <code>counter++</code> once. Each <code>counter++</code> is <code>load</code>, <code>add</code>, <code>store</code>. The instructions run in this order: T1 load, T2 load, T2 add, T2 store, T1 add, T1 store, T1 load, T1 add, T1 store. What is the final value and how many updates were lost?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>T1 load reads 0. T2 load reads 0. T2 add makes its register 1, T2 store writes 1 (memory = 1). T1 add makes its register 0 + 1 = 1 (it still holds the stale 0), T1 store writes 1 (memory = 1, T2's update is overwritten). T1's second increment loads 1, adds 1, stores 2. The final value is 2, but three increments ran, so one update was lost.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 5.2</span><span class="lvl lvl-core">core</span><h4>Count the good interleavings</h4></header><div class="ex-q"><p>Two threads each run the three instructions load, add, store on the same counter (initial value 5). All interleavings preserving each thread's own order are equally possible. How many interleavings exist, and for how many is the final value 7?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Choose which 3 of the 6 time slots belong to T1: C(6,3) = 20 interleavings. The final value is 7 only if the second thread's load occurs after the first thread's store, which forces one thread to run entirely before the other. There are exactly two such orders (T1 then T2, T2 then T1). In the other 18, both threads read 5, so both write 6. So 2 of 20 give 7 and 18 of 20 give 6. A bug that fails 90 percent of the time under a worst-case scheduler can still pass most real test runs, because real schedulers rarely interleave this finely.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 5.3</span><span class="lvl lvl-core">core</span><h4>Which requirement fails?</h4></header><div class="ex-q"><p>Two threads use a shared flag <code>busy</code>, initially 0. Entry code is <code>while (busy) ; busy = 1;</code> and exit code is <code>busy = 0;</code>. Identify the violated requirement and give a concrete interleaving.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Mutual exclusion fails. The test of <code>busy</code> and the assignment <code>busy = 1</code> are separate steps. Interleaving: T1 reads busy = 0 and exits its loop; before T1 sets it, T2 reads busy = 0 and exits its loop; T1 sets busy = 1 and enters; T2 sets busy = 1 and also enters. Both are in the critical section. The fix needs the test and the set to be one atomic instruction, which is exactly test-and-set. (Progress and bounded waiting do hold here for the single-threaded view, but a lock that is not exclusive is useless.)</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="challenging"><header><span class="ex-n">Exercise 5.4</span><span class="lvl lvl-challenging">challenging</span><h4>Why does Peterson&#x27;s algorithm need a barrier?</h4></header><div class="ex-q"><p>Rewrite Peterson's <code>lock(me)</code> with plain <code>int</code> flags and explain, with a concrete reordering, how both threads can enter the critical section on a processor with a store buffer.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Plain version: <code>flag[me] = 1; turn = other; while (flag[other] &amp;&amp; turn == other) ;</code>. Suppose T0 and T1 run on different cores. T0 executes <code>flag[0] = 1</code> but the store waits in T0's store buffer, invisible to T1. T0 then performs <code>turn = 1</code> (also buffered) and loads <code>flag[1]</code>, which is still 0 in memory, so the while condition is false and T0 enters. Symmetrically, T1's <code>flag[1] = 1</code> is buffered while it loads <code>flag[0]</code> and sees 0. Both enter. The load of the other thread's flag has overtaken the earlier store to one's own flag (a store-load reordering, the one reordering x86 permits). A full memory barrier (<code>mfence</code>, or sequentially consistent atomics) between the stores and the load drains the buffer first and prevents it. The compiler may also reorder the plain accesses, which needs a compiler barrier or atomics as well.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 5.5</span><span class="lvl lvl-core">core</span><h4>Spin or sleep?</h4></header><div class="ex-q"><p>A critical section takes 50 ns. Assume putting a thread to sleep and waking it again costs about 5 microseconds (two context switches plus system call overhead). On a multicore machine, should contended waiters spin or block? What changes if the critical section includes a disk read taking 5 ms?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>5 microseconds = 5000 ns, which is 100 times the critical section length (5000 / 50 = 100). A waiter that spins expects to wait at most about 50 ns, so spinning wastes about 50 ns of CPU while blocking wastes 5000 ns. Spin (or use an adaptive mutex that spins first). With a 5 ms critical section, a spinner would burn 5 ms = 5,000,000 ns of CPU, about 1000 times the sleep cost of 5000 ns, so blocking is clearly better. Rule of thumb: spin only when the expected wait is shorter than the cost of sleeping and waking, and only when the lock holder is running on another core.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="core"><header><span class="ex-n">Exercise 5.6</span><span class="lvl lvl-core">core</span><h4>Semaphore trace</h4></header><div class="ex-q"><p>A counting semaphore S starts at 2. Threads A, B, C, D call <code>wait(S)</code> in that order, then A calls <code>signal(S)</code>, then B calls <code>signal(S)</code>. Using the blocking implementation (value may go negative), give the value of S after each operation and say which threads are blocked.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Start: 2. A waits: 1, A proceeds. B waits: 0, B proceeds. C waits: -1, C blocks (queue: C). D waits: -2, D blocks (queue: C, D). A signals: -1, value is not above 0, so C is woken (queue: D). B signals: 0, D is woken (queue: empty). Final value 0, no thread blocked; C and D now hold the two slots and the count is back to 0 because two threads are using the pool.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 5.7</span><span class="lvl lvl-challenging">challenging</span><h4>Priority inversion in numbers</h4></header><div class="ex-q"><p>Times are in ms. Low-priority L runs from t = 0, needs 3 ms of CPU in total, and takes a mutex at t = 1; it must hold the mutex for its last 2 ms. High-priority H arrives at t = 2 and immediately requests that mutex; it then needs 2 ms of CPU after getting it. Medium-priority M arrives at t = 2 and needs 10 ms and does not use the mutex. (a) Without priority inheritance, when does H get the mutex? (b) With priority inheritance, when?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>At t = 2, L has run 2 ms (t = 0 to 2) of which 1 ms is inside the critical section, so 1 ms remains. (a) H blocks on the mutex. Among runnable tasks M (medium) outranks L, so M runs from t = 2 to 12. Then L runs from 12 to 13 and unlocks at t = 13. H gets the mutex at t = 13 and was blocked for 11 ms. (b) With inheritance, L runs at H's priority from t = 2, finishes its last millisecond at t = 3 and unlocks. H gets the mutex at t = 3, blocked for only 1 ms, runs t = 3 to 5, and M then runs 5 to 15.</p></div></details></section>
+<section class="exercise" id="ex-8" data-level="challenging"><header><span class="ex-n">Exercise 5.8</span><span class="lvl lvl-challenging">challenging</span><h4>A rendezvous with semaphores</h4></header><div class="ex-q"><p>Two threads must each finish phase 1 before either starts phase 2 (a two-thread barrier). Using only semaphores, write the code and state the initial values. Then explain why initializing both to 1 would be wrong.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Use two semaphores a and b, both initialized to 0.</p>
+<pre><code class="language-text">T1:  phase1();  signal(a);  wait(b);  phase2();
+T2:  phase1();  signal(b);  wait(a);  phase2();
+</code></pre>
+<p>Each thread announces that it finished phase 1 and then waits for the other's announcement. Because semaphores remember, the order of arrival does not matter. If both started at 1, <code>wait(b)</code> in T1 would succeed immediately without T2 having finished phase 1, so no synchronization would occur. A semaphore used for signalling must start at 0 so that the first <code>wait</code> blocks until a matching <code>signal</code> happens.</p></div></details></section>
+<section class="exercise" id="ex-9" data-level="challenging"><header><span class="ex-n">Exercise 5.9</span><span class="lvl lvl-challenging">challenging</span><h4>The if-versus-while bug</h4></header><div class="ex-q"><p>A queue is protected by mutex <code>m</code> and condition variable <code>cv</code>. Consumers run <code>lock(m); if (queue_empty()) cond_wait(&amp;cv, &amp;m); item = pop(); unlock(m);</code> and producers push then <code>cond_signal(&amp;cv)</code>. Two consumers C1 and C2 and one producer exist. Describe an interleaving where <code>pop()</code> runs on an empty queue.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>C1 locks, finds the queue empty and sleeps in <code>cond_wait</code> (mutex released). The producer pushes one item and calls <code>cond_signal</code>, waking C1, but the producer still holds the mutex until it unlocks. Before C1 can re-acquire the mutex, C2 arrives, locks it, sees the queue is non-empty (so it skips the wait), pops the item, and unlocks. C1 now re-acquires the mutex and, because it used <code>if</code>, does not re-check; it calls <code>pop()</code> on an empty queue. Replacing <code>if</code> with <code>while</code> makes C1 test the predicate again, find the queue empty and go back to sleep.</p></div></details></section>
+<h2 id="lab-three-fixes-for-a-racy-counter">Lab: three fixes for a racy counter</h2>
+<p>You will build one C program with four modes. The <code>racy</code> mode shows the bug, and <code>mutex</code>, <code>spin</code> and <code>sem</code> fix it in three different ways. A fifth mode, <code>atomic</code>, shows the lock-free fix for comparison. Save the following as <code>counter.c</code>.</p>
+<pre><code class="language-c">#define _POSIX_C_SOURCE 200809L
+#include &lt;pthread.h&gt;
+#include &lt;semaphore.h&gt;
+#include &lt;stdatomic.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;time.h&gt;
+
+#define NTHREADS 4
+#define NITERS   1000000L
+
+static volatile long counter = 0;          /* shared, deliberately unprotected in mode &quot;racy&quot; */
+static atomic_long   acounter = 0;
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+static atomic_flag     spin = ATOMIC_FLAG_INIT;
+static sem_t           sem;
+
+static void *worker_racy(void *arg) {
+    (void)arg;
+    for (long i = 0; i &lt; NITERS; i++)
+        counter++;                          /* load, add, store: not atomic */
+    return NULL;
+}
+
+static void *worker_mutex(void *arg) {
+    (void)arg;
+    for (long i = 0; i &lt; NITERS; i++) {
+        pthread_mutex_lock(&amp;mtx);
+        counter++;
+        pthread_mutex_unlock(&amp;mtx);
+    }
+    return NULL;
+}
+
+static void spin_lock(void) {
+    while (atomic_flag_test_and_set_explicit(&amp;spin, memory_order_acquire))
+        ;                                   /* busy wait */
+}
+static void spin_unlock(void) {
+    atomic_flag_clear_explicit(&amp;spin, memory_order_release);
+}
+
+static void *worker_spin(void *arg) {
+    (void)arg;
+    for (long i = 0; i &lt; NITERS; i++) {
+        spin_lock();
+        counter++;
+        spin_unlock();
+    }
+    return NULL;
+}
+
+static void *worker_sem(void *arg) {
+    (void)arg;
+    for (long i = 0; i &lt; NITERS; i++) {
+        sem_wait(&amp;sem);
+        counter++;
+        sem_post(&amp;sem);
+    }
+    return NULL;
+}
+
+static void *worker_atomic(void *arg) {
+    (void)arg;
+    for (long i = 0; i &lt; NITERS; i++)
+        atomic_fetch_add(&amp;acounter, 1);
+    return NULL;
+}
+
+int main(int argc, char **argv) {
+    const char *mode = argc &gt; 1 ? argv[1] : &quot;racy&quot;;
+    void *(*fn)(void *) = NULL;
+    if      (strcmp(mode, &quot;racy&quot;)   == 0) fn = worker_racy;
+    else if (strcmp(mode, &quot;mutex&quot;)  == 0) fn = worker_mutex;
+    else if (strcmp(mode, &quot;spin&quot;)   == 0) fn = worker_spin;
+    else if (strcmp(mode, &quot;sem&quot;)    == 0) fn = worker_sem;
+    else if (strcmp(mode, &quot;atomic&quot;) == 0) fn = worker_atomic;
+    else { fprintf(stderr, &quot;usage: %s racy|mutex|spin|sem|atomic\n&quot;, argv[0]); return 2; }
+
+    sem_init(&amp;sem, 0, 1);                   /* binary semaphore, initial value 1 */
+
+    pthread_t t[NTHREADS];
+    struct timespec a, b;
+    clock_gettime(CLOCK_MONOTONIC, &amp;a);
+    for (int i = 0; i &lt; NTHREADS; i++) pthread_create(&amp;t[i], NULL, fn, NULL);
+    for (int i = 0; i &lt; NTHREADS; i++) pthread_join(t[i], NULL);
+    clock_gettime(CLOCK_MONOTONIC, &amp;b);
+
+    long result = (fn == worker_atomic) ? (long)atomic_load(&amp;acounter) : counter;
+    double secs = (b.tv_sec - a.tv_sec) + (b.tv_nsec - a.tv_nsec) / 1e9;
+    printf(&quot;%-6s expected=%ld got=%ld time=%.3fs\n&quot;, mode, NTHREADS * NITERS, result, secs);
+    sem_destroy(&amp;sem);
+    return 0;
+}
+</code></pre>
+<p>Build and run all modes:</p>
+<pre><code class="language-bash">gcc -O2 -Wall -Wextra -pthread counter.c -o counter
+for m in racy mutex spin sem atomic; do ./counter $m; done
+</code></pre>
+<p><strong>What to observe.</strong> On a two-core test machine the output looked like this (your numbers will differ):</p>
+<pre><code class="language-text">racy   expected=4000000 got=2634433 time=0.007s
+mutex  expected=4000000 got=4000000 time=0.283s
+spin   expected=4000000 got=4000000 time=0.279s
+sem    expected=4000000 got=4000000 time=0.652s
+atomic expected=4000000 got=4000000 time=0.054s
+</code></pre>
+<p>The racy version loses updates and gives a different wrong answer each run, yet it is the fastest because it does no synchronization. The three fixes return exactly 4,000,000. The semaphore is usually slowest because every <code>sem_wait</code> and <code>sem_post</code> goes through the library's atomic bookkeeping and sometimes the kernel. Run each mode several times, and repeat with <code>taskset -c 0 ./counter spin</code> (one core): the spinlock usually becomes dramatically worse, because a spinner burns its time slice while the holder cannot run. That experiment is the practical meaning of Figure 5.3.</p>
+<div class="admonition tip">
+<p class="admonition-title">Why the volatile?</p>
+<p><code>volatile</code> stops the compiler from keeping <code>counter</code> in a register for the whole loop, which would hide the race by turning the loop into one add. It does not make <code>counter++</code> atomic, and it gives no ordering guarantee between threads. Never use <code>volatile</code> as a synchronization tool in real code.</p>
+</div>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Implement <code>spin_lock</code> with <code>atomic_compare_exchange_strong</code> instead of test-and-set and compare timings. Then add the test-and-test-and-set refinement (spin on a plain atomic load, attempt the exchange only when it reads 0).</li>
+<li>Vary <code>NTHREADS</code> from 1 to 16 and plot time against thread count for each lock. Where does each lock's cost stop growing, and why?</li>
+<li>Replace the mutex with a <code>PTHREAD_MUTEX_ERRORCHECK</code> mutex, deliberately unlock it from the wrong thread, and observe the error code. Then try the same mistake with a semaphore.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Final total is lower than expected and changes every run</td>
+<td>Unprotected read-modify-write on shared data</td>
+<td>Protect every access to the variable with the same lock, or use an atomic operation</td>
+</tr>
+<tr>
+<td>Program passes tests but fails under load</td>
+<td>Race with a tiny window; test timing too gentle</td>
+<td>Run under <code>valgrind --tool=helgrind</code> or compile with <code>-fsanitize=thread</code>; add stress threads</td>
+</tr>
+<tr>
+<td>A lock seems to work but sometimes two threads get in</td>
+<td>Different locks guard the same data, or one code path skips the lock</td>
+<td>Name which lock protects which variable; check all paths</td>
+</tr>
+<tr>
+<td>Thread hangs forever after a signal</td>
+<td>Signal sent before the waiter slept, predicate not stored in a variable</td>
+<td>Keep the predicate in shared state and wait in a <code>while</code> loop</td>
+</tr>
+<tr>
+<td><code>pthread_cond_wait</code> returns but data is not ready</td>
+<td><code>if</code> instead of <code>while</code>, spurious or stolen wake-up</td>
+<td>Always loop on the predicate</td>
+</tr>
+<tr>
+<td>Hang, with a thread stuck in <code>lock</code></td>
+<td>Forgot to unlock on an early <code>return</code> or <code>goto</code></td>
+<td>Unlock on every exit path; use one exit point</td>
+</tr>
+<tr>
+<td>Spinlock program is slower on one core</td>
+<td>Waiters burn their whole time slice</td>
+<td>Use a mutex, or make sure holders cannot be preempted</td>
+</tr>
+<tr>
+<td>Semaphore count drifts</td>
+<td><code>post</code> without matching <code>wait</code>, or the reverse</td>
+<td>Count them on paper; assert the value with <code>sem_getvalue</code> in debugging</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li><code>counter++</code> is load, add, store; interleaving two such sequences can lose updates, and most interleavings are bad.</li>
+<li>A correct critical section solution gives mutual exclusion, progress and bounded waiting.</li>
+<li>Software algorithms like Peterson's need atomics and memory barriers on real hardware; the practical foundation is an atomic instruction such as test-and-set or compare-and-swap.</li>
+<li>Spin only for very short waits on multicore machines; otherwise block. Priority inheritance cures priority inversion.</li>
+<li>A semaphore is a counter with a queue: init 1 for a lock, 0 for signalling, N for counting resources.</li>
+<li>Condition variables have no memory, so keep the predicate in shared state and always wait in a <code>while</code> loop.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 6 (Synchronization Tools), sections on the critical section problem, Peterson's solution, hardware support, mutex locks and semaphores.</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapters "Locks", "Condition Variables" and "Semaphores".</li>
+<li><strong>Essential.</strong> Tanenbaum and Bos, <em>Modern Operating Systems</em>, Section 2.3 (Interprocess Communication), covering race conditions, mutual exclusion with busy waiting, sleep and wakeup, and semaphores.</li>
+<li>OSTEP chapter "Common Concurrency Problems" for a survey of real-world bugs.</li>
+<li>G. L. Peterson, "Myths About the Mutual Exclusion Problem", <em>Information Processing Letters</em> 12(3), 1981.</li>
+<li>E. W. Dijkstra, "Solution of a Problem in Concurrent Programming Control", <em>Communications of the ACM</em> 8(9), 1965.</li>
+<li>U. Drepper, "Futexes Are Tricky" (the standard explanation of how Linux mutexes are built).</li>
+<li>Manual pages: <code>pthread_mutex_lock(3)</code>, <code>pthread_cond_wait(3)</code>, <code>sem_overview(7)</code>, <code>futex(7)</code>.</li>
+<li>M. Jones, "What Really Happened on Mars Rover Pathfinder", ACM Risks Digest, volume 19, issue 49 (1997).</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="5">Mark Week 5 as complete</button></div><div class="pager"><a class="pn prev" href="week-04.html"><small>Previous</small>Week 4: CPU Scheduling</a><a class="pn next" href="week-06.html"><small>Next</small>Week 6: Synchronization II</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#races-and-the-critical-section-problem">Races and the critical section problem</a></li><li><a href="#hardware-support-atomics-barriers-and-spinlocks">Hardware support: atomics, barriers and spinlocks</a></li><li><a href="#semaphores">Semaphores</a></li><li><a href="#the-posix-api-mutexes-semaphores-and-condition-variables">The POSIX API: mutexes, semaphores and condition variables</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab-three-fixes-for-a-racy-counter">Lab: three fixes for a racy counter</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

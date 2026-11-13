@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 9: Virtual Memory · Operating Systems for Dummies</title>
+<meta name="description" content="How an OS lets programs use more memory than exists by loading pages only when they are touched, how fork stays cheap with copy-on-write, and how the kernel and malloc hand out memory.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="3"><article class="week" data-week="9"><header class="week-head" data-num="09"><p class="kicker">Week 9 · Phase 3: Memory</p><h1>Virtual Memory</h1><p class="abstract">How an OS lets programs use more memory than exists by loading pages only when they are touched, how fork stays cheap with copy-on-write, and how the kernel and malloc hand out memory.</p><ul class="chips"><li><b>29</b> min read</li><li><b>2</b> demos</li><li><b>5</b> figures</li><li><b>4</b> code blocks</li><li><b>8</b> exercises</li></ul><p class="lab-line"><b>Lab.</b> Write C programs that mmap a file, observe copy-on-write after fork, and measure the cost of a page fault.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Explain why virtual memory enables larger-than-RAM programs, sharing and isolation</li><li>Trace the steps the OS takes to service a page fault</li><li>Compute effective access time given a memory access time, TLB behaviour and a page-fault rate</li><li>Explain how copy-on-write makes fork cheap and when the copying actually happens</li><li>Describe memory-mapped files and the layout of a Linux process address space</li><li>Simulate buddy-system allocation and explain what slab allocation adds</li><li>Evaluate the page-size trade-off and compute TLB reach</li></ul></section><div class="prose"><p>In <a href="week-08.html">Week 8</a> we built paging: a page table maps each virtual page of a process to a physical frame, and a TLB caches recent translations. That chapter quietly assumed that every page of every running process sits in RAM. This week we drop that assumption. A page table entry may say "this page exists, but it is not in memory right now", and the hardware and OS cooperate to fetch it only when the program actually touches it. That is virtual memory, and it is the single most important trick in a modern OS.</p>
+<p>Once pages can be loaded lazily, many other tricks fall out almost for free: a child process that shares its parent's pages until it writes, files that appear as arrays in memory, memory that costs nothing until used. Next week, in <a href="week-10.html">Week 10</a>, we face the follow-up question: when RAM is full, which page do we throw out?</p>
+<h2 id="why-virtual-memory">Why virtual memory?</h2>
+<p>Think of a library with a small reading room. The library owns a million books (the virtual address space), but the reading room holds only a few hundred (physical RAM). Readers do not carry every book to their desk; they request a book when they need it, and a clerk fetches it from the stacks. As long as readers mostly reuse the books on their desk, they never notice the stacks exist.</p>
+<div class="admonition definition">
+<p class="admonition-title">Virtual memory</p>
+<p>Virtual memory is a technique that separates the logical (virtual) address space seen by a program from the physical memory actually installed. Only part of a program must be resident in RAM for it to run; the rest lives on a backing store (disk or SSD) and is brought in on demand.</p>
+</div>
+<p>Virtual memory buys us four things.</p>
+<ul>
+<li><strong>Larger-than-RAM programs.</strong> A program may be bigger than physical memory, or a process may reserve a huge sparse address space (for example, a database that maps a 2 TB file) and use only the parts it needs.</li>
+<li><strong>More processes in memory.</strong> Since each process needs only its active pages resident, more processes fit at once, which raises CPU utilization (we revisit this in <a href="week-10.html#thrashing">Week 10</a>).</li>
+<li><strong>Isolation.</strong> Each process has its own page table, so it cannot name another process's memory. Bugs and attacks stay inside the process.</li>
+<li><strong>Sharing.</strong> Two page tables can point at the same frame: shared libraries, shared memory, and the copy-on-write trick below.</li>
+</ul>
+<p>Many programs never use all their code. Error handlers, rarely used features and the tail of a large array may never run. Loading them would waste both RAM and start-up time.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Process A virtual        Page table A           Physical RAM        Disk
+ +-----------+          +---+-----+---+        +-----------+     +---------+
+ | page 0    | -------&gt; | 0 | f=4 | V | -----&gt; | frame 4 A0|     |         |
+ +-----------+          +---+-----+---+        +-----------+     |  swap / |
+ | page 1    | -------&gt; | 1 |  -  | i | - - -&gt; (not resident)----&gt;| program |
+ +-----------+          +---+-----+---+        +-----------+     |  file   |
+ | page 2    | -------&gt; | 2 | f=7 | V | -----&gt; | frame 7 A2|     |         |
+ +-----------+          +---+-----+---+        +-----------+     +---------+
+ Process B virtual        Page table B           | frame 9 *|&lt;---- shared
+ | page 0    | -------&gt; | 0 | f=9 | V | -----&gt; +-----------+  (read-only lib)
+ +-----------+          +---+-----+---+
+</pre></div><figcaption><b>Figure 9.1..</b> Virtual pages map to frames only if the valid bit is set; an invalid entry means "not in RAM" and the data lives on disk. Two processes can map the same frame.</figcaption></figure>
+<h2 id="demand-paging">Demand paging</h2>
+<p><strong>Demand paging</strong> loads a page into memory only when it is first referenced. Contrast this with loading the whole program at start-up, as simple systems once did. A system that brings pages in lazily is sometimes called a <strong>lazy pager</strong>; one that guesses which pages will be needed and loads them early does <strong>prepaging</strong>.</p>
+<h3 id="the-validinvalid-bit">The valid/invalid bit</h3>
+<p>Each page-table entry gets a <strong>valid/invalid bit</strong>. We met it in <a href="week-08.html">Week 8</a> for protecting addresses outside the process; now it carries a second meaning.</p>
+<ul>
+<li><strong>Valid (1):</strong> the page is legal and currently in memory; the entry holds a frame number.</li>
+<li><strong>Invalid (0):</strong> either the page is outside the process's address space (a genuine error), or it is legal but not currently in memory.</li>
+</ul>
+<p>The OS distinguishes these two cases by keeping extra information elsewhere (for example, a record of which address ranges the process legally owns, and where on disk each page lives). A reference to an invalid entry makes the hardware raise a <strong>page fault</strong>, a trap into the kernel.</p>
+<div class="admonition intuition">
+<p class="admonition-title">A page fault is not (always) an error</p>
+<p>The word "fault" is misleading. A page fault is a request: "the page I need is not mapped, please arrange it". Only if the access is illegal (outside any valid region, or a write to a read-only page) does the OS kill the process with a segmentation fault. A well-behaved program takes thousands of harmless faults every time it starts.</p>
+</div>
+<h3 id="handling-a-page-fault">Handling a page fault</h3>
+<p>Here is the sequence, assuming a legal access to a page that is on disk.</p>
+<ol>
+<li>The program issues a load, store or instruction fetch. The MMU looks in the TLB (miss), then the page table, and finds the valid bit is 0.</li>
+<li>The hardware traps to the kernel, saving the faulting address (on x86 it is placed in the CR2 register) and the program counter of the faulting instruction.</li>
+<li>The kernel checks its own records: is this address legal for this process, and is the access type allowed? If not, send the process a SIGSEGV and stop.</li>
+<li>Otherwise find a <strong>free frame</strong>. If none is free, run page replacement to choose a victim frame (next week); if the victim is dirty, write it to disk first.</li>
+<li>Schedule a disk read for the needed page into that frame. The process is blocked and the CPU is given to another process.</li>
+<li>When the disk interrupt signals completion, update the page table: store the frame number and set the valid bit. (The TLB is updated on the next access.)</li>
+<li>Mark the process ready. When it runs again, <strong>restart the faulting instruction</strong> from the beginning; it now succeeds.</li>
+</ol>
+<figure class="figure"><div class="scroll"><pre class="diagram">   +---------+  1. reference     +------------------+
+   | process |------------------&gt;|  page table      |
+   +---------+                   |  valid bit = 0   |
+        ^                        +--------+---------+
+        |                                 | 2. trap (page fault)
+        |                                 v
+        |                        +------------------+
+        | 7. restart             |  operating system|
+        |    instruction         |  3. legal access?|
+        |                        |  4. find frame   |
+        |                        +--------+---------+
+        |                                 | 5. read page
+   +----+------------+            +-------v--------+
+   | 6. page table:  |&lt;-----------|  backing store |
+   |  frame set,     |  disk I/O  |  (disk / SSD)  |
+   |  valid = 1      |  complete  +----------------+
+   +-----------------+
+</pre></div><figcaption><b>Figure 9.2..</b> The seven steps of servicing a page fault. Steps 5 and 6 take milliseconds on a hard disk, millions of times longer than a normal memory access.</figcaption></figure>
+<p>Step 7 needs care from the hardware designer. The CPU must be able to restart an instruction after a fault in the middle of it. An instruction that moves a block of bytes may fault halfway through; architectures either check that all pages are present before starting, or keep enough state to undo the partial effects.</p>
+<h3 id="pure-demand-paging">Pure demand paging</h3>
+<p>In <strong>pure demand paging</strong> a process starts with no pages in memory at all. The very first instruction fetch faults, then the first stack access faults, and so on until the <strong>working set</strong> (the pages in active use) is resident. The program then runs fast. In practice real systems start with a few pages mapped, or prepage the first pages of the executable, but the idea is the same: never load what is not touched.</p>
+<div class="admonition history">
+<p class="admonition-title">Atlas and the one-level store</p>
+<p>Virtual memory was invented for the Atlas computer at the University of Manchester around 1962, where it was called the "one-level store": programmers saw a single large memory, and the system moved pages between a small core memory and a drum automatically. Within a decade almost every mainframe had it, and today it is in every phone.</p>
+</div>
+<h2 id="performance-effective-access-time">Performance: effective access time</h2>
+<p>Page faults are rare but catastrophically slow, so the question is how rare they must be. Let</p>
+<ul>
+<li><code>ma</code> = the memory access time (for a normal access that hits),</li>
+<li><code>p</code> = the <strong>page-fault rate</strong> (probability that an access faults), <code>0 ≤ p ≤ 1</code>,</li>
+<li><code>S</code> = the page-fault service time.</li>
+</ul>
+<p>Then the <strong>effective access time</strong> (EAT) is</p>
+<p><code>EAT = (1 − p) × ma + p × S</code></p>
+<div class="admonition example">
+<p class="admonition-title">Worked example 1: the cost of one fault in a thousand</p>
+<p>Take <code>ma = 200 ns</code> and a disk-backed fault service time of <code>S = 8 ms = 8,000,000 ns</code>.</p>
+<p>Suppose one access in 1,000 faults, so <code>p = 0.001</code>.</p>
+<p><code>EAT = 0.999 × 200 + 0.001 × 8,000,000 = 199.8 + 8,000 = 8,199.8 ns</code></p>
+<p>That is about 8.2 microseconds: the program is <strong>41 times slower</strong> (8,199.8 / 200 ≈ 41.0), even though 99.9 percent of accesses are fast. The 0.1 percent of faults contribute 8,000 of the 8,199.8 ns.</p>
+</div>
+<p>How low must <code>p</code> be to keep slowdown under 10 percent? We need <code>EAT ≤ 220 ns</code>:</p>
+<p><code>220 &gt; 200 + p × (8,000,000 − 200)</code> so <code>p &lt; 20 / 7,999,800 = 2.5 × 10⁻⁶</code></p>
+<p>That is fewer than one fault in about 400,000 accesses (the exact figure is 399,990). The lesson: the fault rate must be extraordinarily small, which is why locality (below) matters so much.</p>
+<div class="admonition example">
+<p class="admonition-title">Worked example 2: including the TLB</p>
+<p>Let the TLB lookup take 10 ns, a memory access 100 ns, and the TLB hit ratio 90 percent. With a single-level page table:</p>
+<ul>
+<li>TLB hit: <code>10 + 100 = 110 ns</code></li>
+<li>TLB miss: <code>10 + 100 (page table) + 100 (data) = 210 ns</code></li>
+<li>Average with no faults: <code>0.9 × 110 + 0.1 × 210 = 99 + 21 = 120 ns</code></li>
+</ul>
+<p>Now add page faults with <code>p = 0.0001</code> and <code>S = 5 ms = 5,000,000 ns</code>:</p>
+<p><code>EAT = 0.9999 × 120 + 0.0001 × 5,000,000 = 119.988 + 500 = 619.988 ns</code> (about 620 ns).</p>
+<p>Faults, at only 0.01 percent, now cost more than four times the whole translation machinery.</p>
+</div>
+<p>Where does <code>S</code> come from? On a hard disk it is roughly: seek 5 ms plus rotational latency 3 ms plus transfer 0.05 ms, around 8 ms (see <a href="week-11.html#hdd-geometry-and-access-time">Week 11</a>). If the victim is dirty, we also write it out, doubling the I/O. On an SSD the service time is closer to 100 microseconds: the same <code>p = 0.001</code> with <code>ma = 200 ns</code> then gives <code>0.999 × 200 + 0.001 × 100,000 = 199.8 + 100 = 299.8 ns</code>, only 1.5 times slower.</p>
+<p>Try your own numbers in the calculator: change the fault rate, and watch how EAT explodes as <code>p</code> rises past one in a hundred thousand.</p>
+<div class="demo" data-demo="eat-calculator"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Compute effective access time with a TLB and page faults</span></div><div class="demo-body"></div></div>
+<h3 id="locality-of-reference">Locality of reference</h3>
+<p>Why do real programs get away with such tiny fault rates? <strong>Locality of reference.</strong> <em>Temporal locality</em>: a recently used location is likely to be used again soon (loop variables, hot functions). <em>Spatial locality</em>: nearby locations are likely to be used next (sequential array walks, consecutive instructions). A process executing a loop touches a small set of code and data pages repeatedly; after the initial faults it runs fault-free until it moves to a new phase. Demand paging works because programs have locality, and thrashing (next week) happens when they cannot keep their locality resident.</p>
+<div class="demo reveal" data-demo="hierarchy-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">Send a memory request down the storage hierarchy and see what each level costs</span></div><div class="demo-body"></div></div>
+<h2 id="copy-on-write-and-fork">Copy-on-write and fork</h2>
+<p>Recall from <a href="week-02.html">Week 2</a> that <code>fork()</code> creates a child that is an exact copy of the parent. Literally copying hundreds of megabytes would be slow, and it is usually wasted, because the child typically calls <code>exec()</code> right away and throws the copy away.</p>
+<p><strong>Copy-on-write (COW)</strong> avoids the copy. At <code>fork()</code> the kernel gives the child its own page table, but both page tables point to the <em>same</em> physical frames, and the kernel marks every writable page read-only in both. Reading is free. The first time either process writes a shared page, the hardware raises a protection fault; the kernel sees the page is a COW page, allocates a new frame, copies the 4 KB, points the writer's page table at the copy with write permission restored, and restarts the write.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> After fork(), before any write        After child writes page 1
+ Parent PT        Frames   Child PT     Parent PT        Frames   Child PT
+ +--------+      +------+  +--------+   +--------+      +------+  +--------+
+ | P0 R/O |-----&gt;|  A   |&lt;-| C0 R/O |   | P0 R/O |-----&gt;|  A   |&lt;-| C0 R/O |
+ +--------+      +------+  +--------+   +--------+      +------+  +--------+
+ | P1 R/O |-----&gt;|  B   |&lt;-| C1 R/O |   | P1 R/W |-----&gt;|  B   |  | C1 R/W |
+ +--------+      +------+  +--------+   +--------+      +------+  +---|----+
+                                                         +------+      |
+ refcount(A)=2, refcount(B)=2                            |  B'  |&lt;-----+
+                                                         +------+
+                                         refcount(A)=2, B=1, B'=1
+</pre></div><figcaption><b>Figure 9.3..</b> Copy-on-write. Frames are shared and read-only after fork. A write by the child allocates a private copy B' only for the touched page; untouched pages stay shared.</figcaption></figure>
+<p>The kernel keeps a <strong>reference count</strong> per frame. When a COW fault finds the count is already 1 (the other process has since copied or exited), it just flips the page back to writable, with no copy at all.</p>
+<div class="admonition tip">
+<p class="admonition-title">Why this makes fork() plus exec() cheap</p>
+<p>With COW, <code>fork()</code> copies only the page tables, not the data. If the child then calls <code>exec()</code>, the shared pages are simply dropped from the child with no copy ever made. The shell in your Assignment 1 relies on this: every command line you type forks the shell. Historically a separate <code>vfork()</code> existed to avoid even copying page tables; with COW it is rarely needed, although <code>posix_spawn</code> and <code>vfork</code> remain cheaper for very large parents.</p>
+</div>
+<p>COW also explains a subtle memory-accounting effect: after a <code>fork()</code>, the sum of the two processes' resident sizes (RSS) is larger than the physical memory used, because shared pages are counted in both. Tools that report <em>proportional set size</em> (PSS) divide shared pages among the sharers to remove this double counting.</p>
+<h3 id="zero-fill-on-demand">Zero-fill-on-demand</h3>
+<p>When a process asks for fresh anonymous memory (a new heap region, a stack that grows, a huge <code>calloc</code>), the kernel must not show it another process's old data. So the first touch of such a page must give it zeros. Linux does this lazily: all untouched pages of an anonymous mapping are mapped to one shared <strong>zero page</strong> that is read-only. A <em>read</em> returns zeros at no cost. The first <em>write</em> faults, and the kernel allocates a frame, fills it with zeros (or, equivalently, takes a pre-zeroed frame), and maps it writable. This is <strong>zero-fill-on-demand</strong>, and it is why <code>malloc(1 GB)</code> followed by touching only a few pages uses only a few pages of RAM.</p>
+<h2 id="memory-mapped-files">Memory-mapped files</h2>
+<p>A <strong>memory-mapped file</strong> associates a range of a process's virtual addresses with a file. The system call <code>mmap()</code> sets up the mapping and returns a pointer; no data is read yet. Touching a byte of the mapping page-faults, the kernel reads the corresponding 4 KB of the file into the page cache, maps it, and the load completes. Reads and writes become ordinary memory operations instead of <code>read()</code> and <code>write()</code> system calls.</p>
+<p>Two flavours matter.</p>
+<ul>
+<li><code>MAP_SHARED</code>: writes go to the page-cache page and eventually to the file, and are visible to other processes that map it. This is also how processes share memory (even with <code>MAP_ANONYMOUS</code>, among parent and children).</li>
+<li><code>MAP_PRIVATE</code>: copy-on-write semantics. Reads see the file; a write makes a private copy that is never written back. The kernel loads program code and initialized data of an executable this way.</li>
+</ul>
+<p>Benefits: no extra copy between kernel buffer and user buffer, lazy loading, and shared pages between processes mapping the same library. Dangers: a sparse pattern of faults can be slower than one large <code>read()</code>, and an I/O error on the file arrives as a signal (SIGBUS) instead of a return value. Section "Lab" has a program that maps a file and edits it in place.</p>
+<h2 id="the-linux-virtual-address-space">The Linux virtual address space</h2>
+<p>On x86-64 Linux, pointers are 64 bits wide but the hardware uses 48 bits of virtual address (four-level page table; 57 bits with five levels on newer CPUs). The address space is split: user space occupies the lower 128 TiB, the kernel the upper half. All user processes share the same kernel mapping, so a system call does not need to switch page tables for the kernel's own data.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> high  +--------------------------+  0xFFFFFFFFFFFFFFFF
+       |  kernel space            |  (same in every process,
+       |  (direct map, vmalloc)   |   not accessible from user mode)
+       +--------------------------+  0xFFFF800000000000
+       |  non-canonical hole      |  (addresses that fault)
+       +--------------------------+  0x00007FFFFFFFFFFF
+       |  stack (grows down)      |  main thread stack + args, environment
+       |            v             |
+       |  (random gap: ASLR)      |
+       |  mmap region             |  shared libraries, mmap'ed files,
+       |  (grows down)            |  large malloc blocks, thread stacks
+       |            ^             |
+       |  heap (grows up via brk) |
+       +--------------------------+
+       |  .bss  (zero-filled)     |
+       |  .data (initialized)     |
+       |  .text (code, read-only) |
+ low   +--------------------------+  0x0000000000400000 (typical)
+</pre></div><figcaption><b>Figure 9.4..</b> Layout of an x86-64 Linux process. Look at /proc/PID/maps to see the real thing; every line is one contiguous mapping with its permissions and backing file.</figcaption></figure>
+<p>You can inspect any process with <code>cat /proc/self/maps</code>. Each line shows the address range, permissions (<code>r-xp</code>: readable, executable, private), the file offset, and the file name or <code>[heap]</code>, <code>[stack]</code>. Address-space layout randomization (ASLR) shifts the stack, heap and mmap base on every run to make exploits harder.</p>
+<h2 id="allocating-memory-inside-the-kernel">Allocating memory inside the kernel</h2>
+<p>When a process takes a page fault, the kernel needs a frame. But the kernel also needs memory for its own data structures: process descriptors, page tables, file buffers, network packets. Some of those need <em>physically contiguous</em> memory (devices doing DMA cannot follow a page table), and many are far smaller than a page.</p>
+<h3 id="the-buddy-system">The buddy system</h3>
+<p>The <strong>buddy system</strong> allocates physically contiguous memory in power-of-two sizes. Memory starts as one block of size 2ᵏ. To satisfy a request, round it up to the next power of two. If a block of that size is free, use it; otherwise split a larger free block in half repeatedly. The two halves of a split are <em>buddies</em>. When a block is freed and its buddy is also free, they merge back into the larger block, recursively. The buddy of a block of size <code>s</code> at address <code>a</code> is at address <code>a XOR s</code>, which makes finding it trivial.</p>
+<div class="admonition example">
+<p class="admonition-title">Worked example: buddy allocation in 256 KB</p>
+<p>Start with one free 256 KB block at address 0. Addresses below are in KB.</p>
+<ol>
+<li><strong>Request A = 21 KB.</strong> Round up to 32. Split 256 into 128@0 and 128@128; split 128@0 into 64@0 and 64@64; split 64@0 into 32@0 and 32@32. Give 32@0 to A. Free list: 32@32, 64@64, 128@128. Internal fragmentation: 32 − 21 = 11 KB.</li>
+<li><strong>Request B = 60 KB.</strong> Round up to 64. Take 64@64. Free: 32@32, 128@128.</li>
+<li><strong>Request C = 30 KB.</strong> Round up to 32. Take 32@32. Free: 128@128.</li>
+<li><strong>Free A.</strong> Its buddy is 32@(0 XOR 32 = 32), which is C and allocated: no merge. Free: 32@0, 128@128.</li>
+<li><strong>Free C.</strong> Block 32@32 has buddy 32@0, which is free: merge into 64@0. Its buddy is 64@(0 XOR 64 = 64), which is B: stop. Free: 64@0, 128@128.</li>
+<li><strong>Free B.</strong> 64@64 merges with 64@0 into 128@0, whose buddy 128@128 is free, so they merge into the original 256@0.</li>
+</ol>
+<p>The system returns to one clean block, which is the whole point of buddy merging.</p>
+</div>
+<figure class="figure"><div class="scroll"><pre class="diagram"> 256 KB  [                              256                              ]
+ split   [              128              |             128               ]
+ split   [      64       |      64       |
+ split   [  32  |  32    |
+ after A, B, C allocated:
+         [ A(32)| C(32)  |    B (64)     |           free 128            ]
+          0       32       64              128                         256
+</pre></div><figcaption><b>Figure 9.5..</b> State of the 256 KB buddy arena after requests A = 21 KB (rounded to 32), B = 60 KB (rounded to 64) and C = 30 KB (rounded to 32).</figcaption></figure>
+<p>Strengths: fast splitting and merging, and merging fights <strong>external fragmentation</strong>. Weakness: <strong>internal fragmentation</strong>, up to nearly 50 percent when a request is just over a power of two (a 33 KB request takes 64 KB). Linux uses a buddy allocator for physical page frames (orders 0 to 10, i.e. 4 KB up to 4 MB blocks); <code>cat /proc/buddyinfo</code> shows the free blocks of each order.</p>
+<h3 id="slab-allocation">Slab allocation</h3>
+<p>Kernel objects such as inodes and task structures are small (a few hundred bytes) and allocated and freed constantly. Asking the buddy system for a page each time would waste memory, and initializing each object from scratch wastes time. The <strong>slab allocator</strong> keeps a <strong>cache</strong> per object type. A cache consists of one or more <strong>slabs</strong>, each slab being one or more contiguous pages carved into equal-sized object slots. A slab is <em>full</em>, <em>partial</em> or <em>empty</em>. To allocate, take a slot from a partial slab; if none, take an empty slab; if none, ask the buddy system for pages and make a new slab. Freed objects return to their slab <em>still initialized</em>, so the next allocation skips construction work.</p>
+<p>Benefits: no internal fragmentation per object, fast allocation, and recycled, already-initialized objects. Linux's current implementations (SLUB is the default) follow this design; see <code>/proc/slabinfo</code>.</p>
+<h2 id="user-level-memory-allocation">User-level memory allocation</h2>
+<p>Programs call <code>malloc</code> and <code>free</code>, which live in the C library, not the kernel. <code>malloc</code> manages a pool of memory obtained from the kernel in large pieces and hands out small chunks.</p>
+<p>The classic design is a <strong>free list</strong>: a linked list of free chunks, each chunk preceded by a small header recording its size. <code>malloc(n)</code> searches the list for a chunk of at least <code>n</code> bytes (first fit, best fit and so on, exactly the policies from <a href="week-08.html">Week 8</a>), splits it if much bigger, and returns a pointer just past the header. <code>free(p)</code> reads the header and puts the chunk back, <strong>coalescing</strong> with adjacent free chunks. Modern allocators (glibc's ptmalloc, jemalloc, tcmalloc) use many size-segregated bins and per-thread arenas to avoid lock contention.</p>
+<p>When the pool runs out, <code>malloc</code> asks the kernel for more in one of two ways.</p>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>What it does</th>
+<th>Typical use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>brk</code> / <code>sbrk</code></td>
+<td>Moves the end of the contiguous heap ("program break") up or down</td>
+<td>Small and medium allocations</td>
+</tr>
+<tr>
+<td><code>mmap</code> (anonymous)</td>
+<td>Maps a fresh region of zero-filled pages anywhere in the address space</td>
+<td>Large allocations (glibc default threshold 128 KB) and extra arenas</td>
+</tr>
+</tbody>
+</table>
+<p>Large blocks come from <code>mmap</code> because <code>free</code> can then <code>munmap</code> them and give the memory straight back to the OS, whereas memory at the middle of a <code>brk</code> heap cannot be returned while chunks above it are still in use. Both paths are lazy: neither actually allocates RAM until the pages are touched.</p>
+<div class="admonition warning">
+<p class="admonition-title">malloc succeeding does not mean memory exists</p>
+<p>On Linux with default overcommit settings, <code>malloc</code> can return a valid pointer for far more memory than RAM plus swap, because pages are only allocated on first touch. The failure arrives later, as the OOM killer (see <a href="week-10.html#linux-page-cache-reclaim-and-the-oom-killer">Week 10</a>) terminating a process. Always check <code>malloc</code>'s result, but do not expect the check to prove the memory is really available.</p>
+</div>
+<h2 id="page-size-and-tlb-reach">Page size and TLB reach</h2>
+<p>What page size should a system choose? The trade-offs pull in opposite directions.</p>
+<table>
+<thead>
+<tr>
+<th>Smaller pages</th>
+<th>Larger pages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Less internal fragmentation (average waste = half a page per region)</td>
+<td>More internal fragmentation</td>
+</tr>
+<tr>
+<td>Better match to locality, less unwanted data read in</td>
+<td>Fewer, larger disk transfers (seek time is amortized)</td>
+</tr>
+<tr>
+<td>Larger page tables (more entries)</td>
+<td>Smaller page tables</td>
+</tr>
+<tr>
+<td>More page faults, more TLB entries needed</td>
+<td>Fewer faults, better TLB coverage</td>
+</tr>
+</tbody>
+</table>
+<p>A classic formula: for a process of <code>s</code> bytes with <code>e</code> bytes per page-table entry and page size <code>p</code>, the overhead is the page table <code>s × e / p</code> plus internal fragmentation <code>p / 2</code> on average, so <code>overhead = s × e / p + p / 2</code>. Setting the derivative to zero gives the optimum <code>p = √(2 × s × e)</code>. For <code>s = 1 MiB</code> and <code>e = 8</code> bytes: <code>p = √(2 × 2²⁰ × 8) = √(2²⁴) = 2¹² = 4096</code> bytes, which is the very 4 KB most systems use. Check the overhead at this point: <code>2²⁰ × 8 / 4096 = 2048</code> plus <code>4096 / 2 = 2048</code>, total 4096 bytes.</p>
+<div class="admonition definition">
+<p class="admonition-title">TLB reach</p>
+<p>TLB reach is the amount of memory covered by the entries in the TLB: <code>reach = (number of TLB entries) × (page size)</code>. If the working set of a process fits within the TLB reach, almost all translations hit.</p>
+</div>
+<p>A TLB with 64 entries and 4 KB pages reaches only <code>64 × 4 KB = 256 KB</code>. With 2 MiB pages the same 64 entries reach 128 MiB, a 512-fold increase. That is why Linux offers <strong>huge pages</strong> (2 MiB, 1 GiB on x86-64), explicitly via <code>hugetlbfs</code> or automatically as <em>transparent huge pages</em>, for databases and virtual machines. The cost is internal fragmentation and costlier zeroing and copying on faults.</p>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 9.1</span><span class="lvl lvl-warmup">warm-up</span><h4>EAT with a rare fault</h4></header><div class="ex-q"><p>Memory access time is 100 ns, the page-fault service time is 10 ms, and one access in 10,000 faults. Compute the effective access time and the slowdown relative to no faults.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p><code>p = 1/10,000 = 0.0001</code>, <code>S = 10 ms = 10,000,000 ns</code>.</p>
+<p><code>EAT = 0.9999 × 100 + 0.0001 × 10,000,000 = 99.99 + 1,000 = 1,099.99 ns</code>.</p>
+<p>Slowdown = <code>1,099.99 / 100 ≈ 11.0</code>. Even one fault in 10,000 accesses makes the program eleven times slower, and almost all of the added time (1,000 of 1,099.99 ns) is fault service.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 9.2</span><span class="lvl lvl-core">core</span><h4>Largest tolerable fault rate</h4></header><div class="ex-q"><p>With <code>ma = 200 ns</code> and <code>S = 8 ms</code>, what is the largest page-fault rate <code>p</code> that keeps the slowdown at 20 percent or less? Express it as "one fault per N accesses".</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>We need <code>EAT ≤ 1.2 × 200 = 240 ns</code>.</p>
+<p><code>EAT = 200 + p × (8,000,000 − 200) = 200 + p × 7,999,800 ≤ 240</code></p>
+<p><code>p ≤ 40 / 7,999,800 ≈ 5.0 × 10⁻⁶</code></p>
+<p>Taking the reciprocal, <code>7,999,800 / 40 = 199,995</code>, so about one fault per 200,000 accesses. (Compare 10 percent slowdown, one per 399,990: halving the tolerated slowdown halves the allowed N, as expected.)</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 9.3</span><span class="lvl lvl-core">core</span><h4>EAT with a TLB and two-level page table</h4></header><div class="ex-q"><p>TLB lookup 5 ns, memory access 80 ns, TLB hit ratio 95 percent, two-level page table (a TLB miss costs two extra memory accesses to walk the table), <code>p = 10⁻⁵</code>, <code>S = 4 ms</code>. Compute EAT.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>TLB hit: <code>5 + 80 = 85 ns</code>. TLB miss: <code>5 + 2 × 80 + 80 = 245 ns</code>.</p>
+<p>Average without faults: <code>0.95 × 85 + 0.05 × 245 = 80.75 + 12.25 = 93 ns</code>.</p>
+<p>Faults: <code>S = 4,000,000 ns</code>, <code>p × S = 10⁻⁵ × 4,000,000 = 40 ns</code>.</p>
+<p><code>EAT = (1 − 10⁻⁵) × 93 + 40 = 92.99907 + 40 ≈ 133.0 ns</code>.</p>
+<p>Even at one fault per 100,000 accesses, faults contribute 40 of 133 ns, about 30 percent of the total.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 9.4</span><span class="lvl lvl-core">core</span><h4>Buddy system trace</h4></header><div class="ex-q"><p>A buddy allocator manages 512 KB (addresses in KB, starting at 0). Requests arrive in order: A = 70 KB, B = 35 KB, C = 80 KB, D = 60 KB. Show where each is placed (take the lowest-addressed block when there is a choice), compute the total internal fragmentation, then free A, B and D in that order and give the final free list.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Round up: A to 128, B to 64, C to 128, D to 64.</p>
+<ul>
+<li>A: split 512 into 256@0 and 256@256; split 256@0 into 128@0 and 128@128. A = 128@0. Free: 128@128, 256@256.</li>
+<li>B: split 128@128 into 64@128 and 64@192. B = 64@128. Free: 64@192, 256@256.</li>
+<li>C: no free 128; split 256@256 into 128@256 and 128@384. C = 128@256. Free: 64@192, 128@384.</li>
+<li>D: take 64@192. Free: 128@384.</li>
+</ul>
+<p>Internal fragmentation: A <code>128 − 70 = 58</code>, B <code>64 − 35 = 29</code>, C <code>128 − 80 = 48</code>, D <code>64 − 60 = 4</code>. Total = <code>58 + 29 + 48 + 4 = 139 KB</code>.</p>
+<p>Free A: buddy of 128@0 is 128@128, which is split and in use: no merge. Free B: buddy 64@192 is D: no merge. Free D: merges with 64@128 into 128@128; its buddy 128@0 (A, now free) merges into 256@0; its buddy 256@256 holds C: stop.</p>
+<p>Final free list: <strong>256 KB at 0</strong> and <strong>128 KB at 384</strong>. Allocated: C (128@256).</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 9.5</span><span class="lvl lvl-core">core</span><h4>Copy-on-write accounting</h4></header><div class="ex-q"><p>A process has 200 MB resident and calls <code>fork()</code>. The child then writes one byte in each of 10 MB worth of distinct pages (4 KB pages), and the parent writes nothing. (a) How much additional physical memory does the system use right after the fork? (b) After the child's writes? (c) How many COW page faults does the child take?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Essentially none for data: only the child's page tables and kernel structures are allocated, since all 200 MB of frames are shared.</p>
+<p>(b) Each written page is copied, so <code>10 MB</code> more, plus the page-table overhead. The system now holds <code>210 MB</code> of data frames.</p>
+<p>(c) <code>10 MB / 4 KB = 10 × 1024 / 4 = 2,560</code> pages, each taking one COW fault (the first write to each page; later writes to the same page do not fault again). If the child had called <code>exec</code> instead of writing, there would have been zero copies.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="core"><header><span class="ex-n">Exercise 9.6</span><span class="lvl lvl-core">core</span><h4>Optimal page size</h4></header><div class="ex-q"><p>Using <code>overhead = s × e / p + p / 2</code>, find the optimal page size for a process with <code>s = 4 MiB</code> and page-table entries of <code>e = 8</code> bytes. Compute the overhead at the optimum and at 4 KB for comparison.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p><code>p = √(2 × s × e) = √(2 × 2²² × 2³) = √(2²⁶) = 2¹³ = 8192</code> bytes (8 KB).</p>
+<p>Overhead at 8 KB: <code>2²² × 8 / 8192 = 2²⁵ / 2¹³ = 2¹² = 4096</code> plus <code>8192 / 2 = 4096</code>, total <code>8192</code> bytes.</p>
+<p>At 4 KB: <code>2²⁵ / 2¹² = 8192</code> plus <code>4096 / 2 = 2048</code>, total <code>10,240</code> bytes. So 8 KB is better by this simple model (20 percent less overhead), but real systems also weigh TLB reach and disk transfer sizes.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="warm-up"><header><span class="ex-n">Exercise 9.7</span><span class="lvl lvl-warmup">warm-up</span><h4>TLB reach and huge pages</h4></header><div class="ex-q"><p>A data TLB has 64 entries. (a) What is its reach with 4 KB pages and with 2 MiB pages? (b) A program randomly accesses an 8 MiB array. Roughly what fraction of that array can the TLB cover with each page size?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) <code>64 × 4 KB = 256 KB</code>; <code>64 × 2 MiB = 128 MiB</code>.</p>
+<p>(b) With 4 KB pages: <code>256 KB / 8 MiB = 1/32 ≈ 3.1 percent</code>, so random accesses mostly miss the TLB (about 97 percent of the time, ignoring the other levels). With 2 MiB pages the array needs only 4 entries and is entirely covered (100 percent), so TLB misses almost vanish after warm-up.</p></div></details></section>
+<section class="exercise" id="ex-8" data-level="challenging"><header><span class="ex-n">Exercise 9.8</span><span class="lvl lvl-challenging">challenging</span><h4>Prepaging and cluster faults</h4></header><div class="ex-q"><p>A program reads 100 consecutive pages of a freshly mapped file, each a major fault. (a) How many faults occur under pure demand paging? (b) The kernel reads ahead in clusters of 8 pages on each fault. How many major faults now occur, and what is the I/O time if one cluster read costs 8.3 ms (a single seek plus 8 transfers) versus 8.05 ms per single-page read? (c) Explain when read-ahead hurts.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) 100 faults; I/O time <code>100 × 8.05 = 805 ms</code>.</p>
+<p>(b) Each fault brings in 8 pages, so <code>⌈100 / 8⌉ = 13</code> faults (12 full clusters cover 96 pages, a 13th covers the remaining 4). I/O time <code>13 × 8.3 = 107.9 ms</code>, about 7.5 times faster (805 / 107.9 ≈ 7.46). The seek and rotation are paid 13 times instead of 100.</p>
+<p>(c) Read-ahead wastes I/O and memory when access is random or sparse: the 7 extra pages are never used, and they displace useful pages. Linux therefore adapts: it grows the read-ahead window only while it detects sequential access, and <code>madvise(MADV_RANDOM)</code> turns it off.</p></div></details></section>
+<h2 id="lab">Lab</h2>
+<p>You will observe three behaviours with real programs: a memory-mapped file, copy-on-write after <code>fork</code>, and the cost of a page fault. Compile each with <code>gcc -Wall -Wextra -o name name.c</code>.</p>
+<h3 id="part-1-mmap-a-file-and-edit-it-in-place">Part 1: mmap a file and edit it in place</h3>
+<pre><code class="language-c">#define _GNU_SOURCE
+#include &lt;ctype.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/resource.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;unistd.h&gt;
+
+static void report(const char *when) {
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &amp;ru);
+    printf(&quot;%-14s minor faults = %ld, major faults = %ld\n&quot;,
+           when, ru.ru_minflt, ru.ru_majflt);
+}
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        fprintf(stderr, &quot;usage: %s file\n&quot;, argv[0]);
+        return 1;
+    }
+    int fd = open(argv[1], O_RDWR);
+    if (fd &lt; 0) { perror(&quot;open&quot;); return 1; }
+
+    struct stat st;
+    if (fstat(fd, &amp;st) &lt; 0) { perror(&quot;fstat&quot;); return 1; }
+    if (st.st_size == 0) { fprintf(stderr, &quot;empty file\n&quot;); return 1; }
+
+    report(&quot;before mmap&quot;);
+    char *p = mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (p == MAP_FAILED) { perror(&quot;mmap&quot;); return 1; }
+    report(&quot;after mmap&quot;);
+
+    long lines = 0;
+    for (off_t i = 0; i &lt; st.st_size; i++)
+        if (p[i] == '\n') lines++;
+    report(&quot;after scan&quot;);
+    printf(&quot;file has %ld bytes and %ld lines\n&quot;, (long)st.st_size, lines);
+
+    /* Upper-case the first line directly in the page cache. */
+    for (off_t i = 0; i &lt; st.st_size &amp;&amp; p[i] != '\n'; i++)
+        p[i] = toupper((unsigned char)p[i]);
+    if (msync(p, st.st_size, MS_SYNC) &lt; 0) perror(&quot;msync&quot;);
+    report(&quot;after write&quot;);
+
+    munmap(p, st.st_size);
+    close(fd);
+    return 0;
+}
+</code></pre>
+<p>Create a test file and run it: <code>printf 'hello world\nsecond line\nthird\n' &gt; t.txt; ./mmap_file t.txt; cat t.txt</code>. The first line of the file becomes <code>HELLO WORLD</code> although the program never called <code>write()</code>. Observe that <code>mmap</code> itself adds only a handful of faults, the scan adds about one, and the write adds one or two more. The exact baseline counts (around 80) come from program start-up and vary between systems. Now try a large file (<code>dd if=/dev/zero of=big bs=1M count=200</code>) and watch the minor-fault count grow by roughly one per 4 KB page scanned (51,200 pages).</p>
+<h3 id="part-2-copy-on-write-after-fork">Part 2: copy-on-write after fork</h3>
+<pre><code class="language-c">#define _GNU_SOURCE
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/resource.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+#define MB (1024UL * 1024UL)
+
+/* Return the Private_Dirty figure (in kB) from /proc/self/smaps_rollup. */
+static long private_dirty_kb(void) {
+    FILE *f = fopen(&quot;/proc/self/smaps_rollup&quot;, &quot;r&quot;);
+    if (!f) return -1;
+    char line[256];
+    long kb = -1;
+    while (fgets(line, sizeof line, f))
+        if (sscanf(line, &quot;Private_Dirty: %ld kB&quot;, &amp;kb) == 1) break;
+    fclose(f);
+    return kb;
+}
+
+static long minflt(void) {
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &amp;ru);
+    return ru.ru_minflt;
+}
+
+int main(int argc, char **argv) {
+    size_t total_mb = argc &gt; 1 ? strtoul(argv[1], NULL, 10) : 64;
+    size_t write_mb = argc &gt; 2 ? strtoul(argv[2], NULL, 10) : 16;
+    long page = sysconf(_SC_PAGESIZE);
+    size_t bytes = total_mb * MB;
+
+    char *buf = mmap(NULL, bytes, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (buf == MAP_FAILED) { perror(&quot;mmap&quot;); return 1; }
+    memset(buf, 1, bytes);  /* parent touches every page */
+    printf(&quot;parent: Private_Dirty = %ld kB\n&quot;, private_dirty_kb());
+
+    fflush(stdout);  /* avoid duplicating buffered output in the child */
+    pid_t pid = fork();
+    if (pid &lt; 0) { perror(&quot;fork&quot;); return 1; }
+    if (pid == 0) {
+        long f0 = minflt();
+        printf(&quot;child : right after fork, Private_Dirty = %ld kB\n&quot;,
+               private_dirty_kb());
+        for (size_t off = 0; off &lt; write_mb * MB; off += page)
+            buf[off] = 2;  /* first write to each page triggers a COW fault */
+        long f1 = minflt();
+        printf(&quot;child : wrote %zu MB (%zu pages): %ld new minor faults\n&quot;,
+               write_mb, write_mb * MB / page, f1 - f0);
+        printf(&quot;child : after writing, Private_Dirty = %ld kB\n&quot;,
+               private_dirty_kb());
+        fflush(stdout);
+        _exit(0);
+    }
+    waitpid(pid, NULL, 0);
+    printf(&quot;parent: buf[0] is still %d (child's write was private)\n&quot;, buf[0]);
+    return 0;
+}
+</code></pre>
+<p>Run <code>./cow 64 16</code>. Expected output (numbers approximate):</p>
+<pre><code class="language-text">parent: Private_Dirty = 65664 kB
+child : right after fork, Private_Dirty = 36 kB
+child : wrote 16 MB (4096 pages): 4114 new minor faults
+child : after writing, Private_Dirty = 16424 kB
+parent: buf[0] is still 1 (child's write was private)
+</code></pre>
+<p>Right after the fork the child owns almost no private pages (they are all shared), and after writing 16 MB it owns about 16 MB privately, with about one fault per page (4,096 plus a few extra from library and stdio). Also try <code>/usr/bin/time -v ./cow 64 16</code> and compare "Minor (reclaiming a frame) page faults" and "Maximum resident set size" with a run using <code>./cow 64 0</code>. Note that RSS counts shared pages, so it hardly changes between runs; the private-dirty counter is what shows the copying.</p>
+<h3 id="part-3-what-does-a-page-fault-cost">Part 3: what does a page fault cost?</h3>
+<pre><code class="language-c">#define _GNU_SOURCE
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;sys/resource.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+static double now_ns(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &amp;ts);
+    return ts.tv_sec * 1e9 + ts.tv_nsec;
+}
+
+static long minflt(void) {
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &amp;ru);
+    return ru.ru_minflt;
+}
+
+int main(int argc, char **argv) {
+    size_t pages = argc &gt; 1 ? strtoul(argv[1], NULL, 10) : 100000;
+    long psz = sysconf(_SC_PAGESIZE);
+    volatile char *p = mmap(NULL, pages * psz, PROT_READ | PROT_WRITE,
+                            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED) { perror(&quot;mmap&quot;); return 1; }
+
+    long f0 = minflt();
+    double t0 = now_ns();
+    for (size_t i = 0; i &lt; pages; i++) p[i * psz] = 1;   /* first touch */
+    double t1 = now_ns();
+    long f1 = minflt();
+    for (size_t i = 0; i &lt; pages; i++) p[i * psz] = 2;   /* already mapped */
+    double t2 = now_ns();
+
+    printf(&quot;pages touched        : %zu (%ld bytes each)\n&quot;, pages, psz);
+    printf(&quot;minor faults         : %ld\n&quot;, f1 - f0);
+    printf(&quot;first touch          : %.0f ns per page\n&quot;, (t1 - t0) / pages);
+    printf(&quot;second touch         : %.0f ns per page\n&quot;, (t2 - t1) / pages);
+    return 0;
+}
+</code></pre>
+<p>A typical result on a laptop or virtual machine is a first touch of one to several microseconds per page (this includes the kernel finding a frame and zeroing 4 KB) against a few tens of nanoseconds for the second touch: a ratio of 50 to 150. That is a <em>minor</em> fault, with no disk I/O. A <em>major</em> fault would cost thousands of times more. To provoke one, create a file bigger than your RAM cache, run <code>sync; echo 3 | sudo tee /proc/sys/vm/drop_caches</code> (this only discards clean cache and is safe), then scan it with Part 1's program and watch <code>major faults</code> rise.</p>
+<p>Use your measured per-fault time as <code>S</code> in the EAT formula. What fault rate keeps the slowdown under 10 percent for your machine?</p>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Make Part 3 touch pages with <code>MAP_POPULATE</code> added to the <code>mmap</code> flags and compare the time; explain the difference.</li>
+<li>Modify Part 2 so that the child calls <code>execl("/bin/true", "true", (char *)NULL)</code> right after the fork instead of writing, and time 1,000 forks of a 1 GB parent. Compare with a parent that first memsets the 1 GB (it will be about the same: why?).</li>
+<li>In Part 1, change <code>MAP_SHARED</code> to <code>MAP_PRIVATE</code>. The program still runs, but what happens to the file on disk, and why?</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EAT answer is off by a factor of 1,000</td>
+<td>Mixed up milliseconds and nanoseconds</td>
+<td>Convert everything to ns first (1 ms = 1,000,000 ns)</td>
+</tr>
+<tr>
+<td>EAT too high in a hand calculation</td>
+<td>Used <code>p × S</code> plus the full <code>ma</code> instead of <code>(1 − p) × ma</code></td>
+<td>Write the formula with <code>(1 − p)</code> explicitly</td>
+</tr>
+<tr>
+<td>Child's RSS equals the parent's after fork, so "COW does not work"</td>
+<td>RSS counts shared pages in both processes</td>
+<td>Compare PSS or Private_Dirty in <code>/proc/PID/smaps_rollup</code></td>
+</tr>
+<tr>
+<td><code>mmap</code> returns <code>MAP_FAILED</code> for a zero-length file</td>
+<td>Length 0 is invalid</td>
+<td>Check <code>st_size</code> first, or <code>ftruncate</code> the file to the desired size</td>
+</tr>
+<tr>
+<td>Bus error (SIGBUS) while reading a mapped file</td>
+<td>File was truncated by another process after the mapping</td>
+<td>Avoid shrinking mapped files; handle SIGBUS or use <code>read()</code></td>
+</tr>
+<tr>
+<td>Buddy exercise answer ends with wrong buddy</td>
+<td>Computed buddy as <code>address + size</code></td>
+<td>The buddy is <code>address XOR size</code> (matters when the block is the upper half)</td>
+</tr>
+<tr>
+<td><code>malloc(1 GB)</code> succeeds but the process is later killed</td>
+<td>Overcommit: memory is reserved lazily</td>
+<td>Touch the memory early (or <code>MAP_POPULATE</code>) if you need it guaranteed</td>
+</tr>
+<tr>
+<td>Duplicate output lines after <code>fork()</code> with stdout piped</td>
+<td>Unflushed stdio buffer copied into the child</td>
+<td><code>fflush(stdout)</code> before <code>fork()</code>, and before <code>_exit()</code> in the child</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>Virtual memory lets a process run with only some of its pages resident; the valid bit marks which, and a page fault is the trap that fetches a missing page.</li>
+<li>A fault is serviced in seven steps ending with restarting the faulting instruction; the I/O step makes it a million times slower than a normal access.</li>
+<li><code>EAT = (1 − p) × ma + p × S</code>: with <code>S</code> of milliseconds, <code>p</code> must be below about one in a few hundred thousand to avoid a visible slowdown, which locality makes possible.</li>
+<li>Copy-on-write shares frames after <code>fork()</code> and copies a page only on its first write; zero-fill-on-demand and <code>mmap</code> rely on the same lazy machinery.</li>
+<li>The kernel allocates frames with the buddy system (power-of-two blocks merged with <code>address XOR size</code>) and small objects with slabs; user <code>malloc</code> uses free lists on top of <code>brk</code> and <code>mmap</code>.</li>
+<li>Page size trades fragmentation and fault cost against page-table size and TLB reach; reach is entries times page size.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 10 "Virtual Memory": sections on demand paging, copy-on-write, memory-mapped files and allocating kernel memory.</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau and Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapters "Beyond Physical Memory: Mechanisms" and "Complete Virtual Memory Systems" (the Linux case study).</li>
+<li><strong>Essential.</strong> Man pages: <code>mmap(2)</code>, <code>fork(2)</code>, <code>brk(2)</code>, <code>malloc(3)</code>, <code>proc(5)</code> (for <code>/proc/PID/maps</code> and <code>smaps</code>).</li>
+<li>Tanenbaum and Bos, <em>Modern Operating Systems</em>, Chapter 3.3 and 3.4 on virtual memory and design issues.</li>
+<li>Jeff Bonwick, "The Slab Allocator: An Object-Caching Kernel Memory Allocator", USENIX Summer Conference, 1994.</li>
+<li>Kenneth Knowlton, "A Fast Storage Allocator", Communications of the ACM, 1965 (the buddy system).</li>
+<li>Peter Denning, "Virtual Memory", ACM Computing Surveys, 1970.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="9">Mark Week 9 as complete</button></div><div class="pager"><a class="pn prev" href="week-08.html"><small>Previous</small>Week 8: Main Memory</a><a class="pn next" href="week-10.html"><small>Next</small>Week 10: Page Replacement, Frame Allocation and Thrashing</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#why-virtual-memory">Why virtual memory?</a></li><li><a href="#demand-paging">Demand paging</a></li><li><a href="#performance-effective-access-time">Performance: effective access time</a></li><li><a href="#copy-on-write-and-fork">Copy-on-write and fork</a></li><li><a href="#memory-mapped-files">Memory-mapped files</a></li><li><a href="#the-linux-virtual-address-space">The Linux virtual address space</a></li><li><a href="#allocating-memory-inside-the-kernel">Allocating memory inside the kernel</a></li><li><a href="#user-level-memory-allocation">User-level memory allocation</a></li><li><a href="#page-size-and-tlb-reach">Page size and TLB reach</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab">Lab</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 11: Mass Storage: Disks, SSDs, Scheduling and RAID · Operating Systems for Dummies</title>
+<meta name="description" content="How hard disks and flash drives actually store and retrieve data, why seek and rotation dominate disk performance, how the OS orders requests with FCFS, SSTF, SCAN and LOOK, and how RAID combines drives for speed and fault tolerance.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk on" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="4"><article class="week" data-week="11"><header class="week-head" data-num="11"><p class="kicker">Week 11 · Phase 4: Storage, Protection and Modern Systems</p><h1>Mass Storage: Disks, SSDs, Scheduling and RAID</h1><p class="abstract">How hard disks and flash drives actually store and retrieve data, why seek and rotation dominate disk performance, how the OS orders requests with FCFS, SSTF, SCAN and LOOK, and how RAID combines drives for speed and fault tolerance.</p><ul class="chips"><li><b>32</b> min read</li><li><b>4</b> demos</li><li><b>4</b> figures</li><li><b>10</b> code blocks</li><li><b>7</b> exercises</li></ul><p class="lab-line"><b>Lab.</b> Compute disk access times, implement and compare the disk scheduling algorithms, simulate a flash translation layer to measure write amplification, and verify RAID capacity and XOR parity arithmetic in C.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Compute the average access time and throughput of a hard disk from RPM, seek time and transfer rate</li><li>Explain why flash cannot be overwritten in place and describe the roles of the FTL, garbage collection and wear leveling</li><li>Trace FCFS, SSTF, SCAN, C-SCAN, LOOK and C-LOOK on a request queue and compute total head movement</li><li>Choose a disk scheduling algorithm for a workload and explain why it matters little for SSDs</li><li>Compute usable capacity, fault tolerance and small-write cost for RAID 0, 1, 5, 6 and 10</li><li>Use XOR parity to reconstruct a failed disk and to update parity on a small write</li><li>Estimate rebuild time and the risk of an unrecoverable read error during a RAID 5 rebuild</li></ul></section><div class="prose"><p>In <a href="week-10.html">Week 10</a> page replacement kept asking one thing of the disk: fetch this page, write that one back. We treated the disk as a black box with a fixed service time. This week we open the box. Secondary storage is the slowest and largest tier of the memory hierarchy, and the physics of how it works shapes the design of everything built on it: the paging policies of the last two chapters, and the file systems of <a href="week-12.html">Week 12</a> and <a href="week-13.html">Week 13</a>.</p>
+<p>We look at the two technologies in use today. Magnetic hard disk drives (HDDs) have moving parts, so their performance is a story about mechanical delays, and the OS can help by ordering requests sensibly. Solid-state drives (SSDs) have no moving parts but have their own awkward rules about erasing, and hide them behind a layer of firmware. Finally we combine several drives into a RAID array, trading capacity for speed and reliability. Arithmetic matters a lot this week, so every example is worked with real numbers.</p>
+<h2 id="hdd-geometry-and-access-time">HDD geometry and access time</h2>
+<p>A hard disk is a stack of rigid circular <strong>platters</strong> coated with magnetic material, spinning together on one <strong>spindle</strong>. Each platter surface has its own <strong>read/write head</strong> on an arm; all arms move together on one actuator. Data are recorded in concentric rings called <strong>tracks</strong>. The set of tracks at the same arm position on all surfaces is a <strong>cylinder</strong>. Each track is divided into <strong>sectors</strong>, the smallest unit the drive reads or writes: traditionally 512 bytes, and 4096 bytes on modern "Advanced Format" drives.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">        spindle                     side view               top view of one surface
+          |            arm + head       +--------+                  ___---___
+   +------+------+    ____             | platter| surface 0     .-'  _---_  '-.
+   |  platter 0  |===&lt;____ ---&gt; head   +--------+              /  .'  _  '.  \
+   +-------------+                     | platter| surface 1    | |  | (o) |  | |  track
+   |  platter 1  |===&lt;____             +--------+               \ '.  '-'  .' /
+   +-------------+                      cylinder = same track    '-.___---___.-'
+        |                               on every surface          sectors = slices
+      motor                                                       of each track
+</pre></div><figcaption><b>Figure 11.1..</b> A disk is platters on a spindle, one head per surface on a common actuator. A cylinder is the set of tracks the heads can reach without moving the arm.</figcaption></figure>
+<p>Old systems addressed a sector by (cylinder, head, sector). Modern drives present a flat array of numbered blocks, <strong>logical block addressing</strong> (LBA): block 0, 1, 2, and so on. The firmware maps LBAs to the physical layout, remaps bad sectors to spares, and hides the zones in which outer tracks hold more sectors than inner ones (<strong>zoned bit recording</strong>). Consecutive LBAs are usually physically close, which is the only fact the OS relies on.</p>
+<h3 id="the-three-delays">The three delays</h3>
+<p>To read a block the drive must perform three steps, each taking time.</p>
+<ol>
+<li><strong>Seek.</strong> Move the arm to the right track. Roughly 0.5 to 1 ms to the adjacent track, 4 to 10 ms on average for a random seek, up to 15 to 20 ms across the whole surface.</li>
+<li><strong>Rotational latency.</strong> Wait for the wanted sector to rotate under the head. On average this is half a rotation.</li>
+<li><strong>Transfer.</strong> Read the bytes as the sector passes under the head, then send them over the bus.</li>
+</ol>
+<div class="admonition definition">
+<p class="admonition-title">Disk access time</p>
+<p><code>access time = seek time + rotational latency + transfer time</code> (plus a small controller overhead). The <strong>average rotational latency</strong> is half of one rotation: <code>(60 / RPM) / 2</code> seconds. The transfer time of <code>b</code> bytes is <code>b / transfer rate</code>.</p>
+</div>
+<p>A 7200 RPM disk turns once in <code>60 / 7200 = 8.33 ms</code>, so its average rotational latency is 4.17 ms. Spindle speeds of 5400, 7200, 10,000 and 15,000 RPM give half-rotation delays of 5.56, 4.17, 3.00 and 2.00 ms. The program below computes the cost of a random 4 KiB read for several disks, and of a random 1 MiB read, from these formulas.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+/* Average time (ms) for one random I/O on a hard disk. */
+static void report(const char *name, double rpm, double seek_ms,
+                   double mb_per_s, double bytes) {
+    double rot_ms      = 60000.0 / rpm;                 /* one full rotation */
+    double latency_ms  = rot_ms / 2.0;                  /* average: half a turn */
+    double transfer_ms = bytes / (mb_per_s * 1e6) * 1000.0;
+    double total_ms    = seek_ms + latency_ms + transfer_ms;
+    double iops        = 1000.0 / total_ms;
+    printf(&quot;%-12s rot %5.2f ms  seek %5.2f  latency %5.2f  xfer %6.3f  total %6.3f ms&quot;
+           &quot;  %6.1f IOPS  %5.2f MB/s\n&quot;,
+           name, rot_ms, seek_ms, latency_ms, transfer_ms, total_ms, iops,
+           bytes * iops / 1e6);
+}
+
+int main(void) {
+    printf(&quot;Random 4 KiB reads\n&quot;);
+    report(&quot;5400 rpm&quot;,  5400,  12.0, 100.0, 4096);
+    report(&quot;7200 rpm&quot;,  7200,   9.0, 150.0, 4096);
+    report(&quot;15000 rpm&quot;, 15000,  4.0, 200.0, 4096);
+    printf(&quot;Random 1 MiB reads on the 7200 rpm disk\n&quot;);
+    report(&quot;7200 rpm&quot;,  7200,   9.0, 150.0, 1048576);
+    printf(&quot;Sequential streaming on the 7200 rpm disk: %.0f MB/s (no seeks)\n&quot;, 150.0);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">Random 4 KiB reads
+5400 rpm     rot 11.11 ms  seek 12.00  latency  5.56  xfer  0.041  total 17.597 ms    56.8 IOPS   0.23 MB/s
+7200 rpm     rot  8.33 ms  seek  9.00  latency  4.17  xfer  0.027  total 13.194 ms    75.8 IOPS   0.31 MB/s
+15000 rpm    rot  4.00 ms  seek  4.00  latency  2.00  xfer  0.020  total  6.020 ms   166.1 IOPS   0.68 MB/s
+Random 1 MiB reads on the 7200 rpm disk
+7200 rpm     rot  8.33 ms  seek  9.00  latency  4.17  xfer  6.991  total 20.157 ms    49.6 IOPS  52.02 MB/s
+Sequential streaming on the 7200 rpm disk: 150 MB/s (no seeks)
+</code></pre>
+<p>Study these numbers, because they explain most of the chapter. A random 4 KiB read on a 7200 RPM disk takes 13.2 ms, of which the actual data transfer is 0.027 ms: <strong>over 99.8 percent of the time is mechanical positioning</strong>. The disk delivers 76 operations per second, 0.31 MB/s, though the same drive can stream 150 MB/s when reading sequentially. Sequential access is roughly 500 times faster than random access on the same hardware. Reading 1 MiB at a time amortizes the seek and gets 52 MB/s. This is why file systems try hard to keep a file's blocks contiguous, why the OS reads ahead, and why scheduling the order of requests is worth the effort.</p>
+<div class="admonition intuition">
+<p class="admonition-title">A record player with a slow arm</p>
+<p>Picture a vinyl record. Playing a song straight through is fast. Jumping between random tracks means lifting the arm, moving it, and waiting for the record to spin to the right spot. The music itself takes microseconds; the arm and the spinning take milliseconds. A disk is that record player, just with a much smaller arm and a much faster spin.</p>
+</div>
+<div class="demo reveal" data-demo="disk-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">Spin a hard disk and move the arm to seek between tracks</span></div><div class="demo-body"></div></div>
+<h2 id="solid-state-drives">Solid-state drives</h2>
+<p>An SSD stores bits in <strong>NAND flash</strong> memory: transistors that trap electric charge. There are no moving parts, so a random read costs tens of microseconds regardless of address, a thousand times faster than a disk seek. Flash comes with three rules that shape everything.</p>
+<ul>
+<li><strong>Reads and writes are by page, erasure is by block.</strong> A page is typically 4 to 16 KiB. An <strong>erase block</strong> is a group of pages (commonly 128 to 512, so 1 to 8 MiB).</li>
+<li><strong>A page can be programmed (written) only if it is erased</strong>, and the only way to erase is to wipe a whole block. A flash page cannot be overwritten in place.</li>
+<li><strong>Blocks wear out.</strong> Each erase damages the cells. A block survives a limited number of program/erase cycles, roughly 100,000 for single-level cell (SLC), around 10,000 for MLC, 3,000 for TLC and 1,000 for QLC (rough figures that vary by product).</li>
+</ul>
+<p>Typical times are on the order of 25 to 100 µs for a page read, a few hundred microseconds for a page program, and several milliseconds for a block erase. Writes are far slower than reads and erases are slower still.</p>
+<h3 id="the-flash-translation-layer">The flash translation layer</h3>
+<p>Rule 2 means a naive "overwrite sector 7" would require copying the whole block elsewhere. SSDs hide this behind firmware, the <strong>flash translation layer</strong> (FTL), which presents the same block interface as a disk.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   host writes LBA 7 again          FTL mapping table (in the drive's DRAM)
+         |                          LBA   -&gt;  block:page
+         v                           7    -&gt;  B3:p2   (old copy)
+  +--------------+                         -&gt;  B9:p0   (new copy)
+  | FTL          |--- 1. write new data to next free page in an open block
+  | log-structured|-- 2. update map: LBA 7 now points to B9:p0
+  +--------------+--- 3. mark old page B3:p2 INVALID (stale)
+         |
+         v                  Garbage collection (background)
+   [B3: v v x v x x v x]   pick block with most stale pages, copy valid pages
+   [B9: new . . . . . . .]  elsewhere, erase it: now B3 is free again
+</pre></div><figcaption><b>Figure 11.2..</b> The FTL turns an in-place overwrite into an append to a fresh page plus a map update. Stale pages accumulate until garbage collection copies the survivors and erases the block.</figcaption></figure>
+<p>The FTL does four jobs.</p>
+<ul>
+<li><strong>Address mapping.</strong> A table maps each logical block to a physical (block, page). Writes go to the next free page of an open block, like a log.</li>
+<li><strong>Garbage collection.</strong> When free blocks run low, pick a block with many stale pages, copy its remaining valid pages to a new block, and erase it. Copying costs extra writes.</li>
+<li><strong>Wear leveling.</strong> Spread erases evenly so no block dies early. <em>Dynamic</em> wear leveling directs new writes to young blocks; <em>static</em> wear leveling also relocates rarely changed (cold) data off young blocks so that they can take part in the rotation.</li>
+<li><strong>Bad block management and ECC.</strong> Retire failed blocks and correct bit errors; flash raw bit error rates rise with wear.</li>
+</ul>
+<p>The OS helps with a command called <strong>TRIM</strong> (SATA) or <strong>deallocate</strong> (NVMe), which tells the drive which logical blocks the file system has freed. Without it the FTL would treat deleted data as valid and copy it needlessly. Linux issues it via <code>fstrim</code> or the <code>discard</code> mount option.</p>
+<h3 id="write-amplification-and-over-provisioning">Write amplification and over-provisioning</h3>
+<div class="admonition definition">
+<p class="admonition-title">Write amplification</p>
+<p>Write amplification (WA) is the ratio of data written to flash to data written by the host: <code>WA = flash writes / host writes</code>. WA of 1 is ideal. Garbage collection copies push it above 1.</p>
+</div>
+<p>When GC must reclaim a block, the more valid pages it contains, the more it must copy. A drive with spare room (<strong>over-provisioning</strong>: flash capacity that the host cannot see, often 7 to 28 percent) can pick blocks that are mostly stale, so WA falls. The program below is a toy FTL: a chip of 16 blocks of 8 pages (128 pages), greedy garbage collection, and a host that fills the drive and then does 20,000 random overwrites. It repeats this for several levels of exposed capacity.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define BLOCKS 16              /* erase blocks on the &quot;chip&quot; */
+#define PPB    8               /* pages per block */
+#define PHYS   (BLOCKS * PPB)  /* 128 physical pages */
+
+static unsigned long long seed = 99;
+static int rnd(int m) {
+    seed = seed * 6364136223846793005ULL + 1442695040888963407ULL;
+    return (int)((seed &gt;&gt; 33) % m);
+}
+
+static int map[PHYS];          /* logical page -&gt; physical page, -1 = unmapped */
+static int owner[PHYS];        /* physical page -&gt; logical page */
+static int state[PHYS];        /* 0 erased, 1 valid, 2 invalid (stale) */
+static int erases[BLOCKS];
+static int cur = 0, curpage = 0;   /* block being filled (-1 = none), next page in it */
+static long host_writes, flash_writes;
+
+static int valid_in(int b) {
+    int c = 0;
+    for (int i = 0; i &lt; PPB; i++) c += state[b * PPB + i] == 1;
+    return c;
+}
+
+static int block_is_erased(int b) {
+    for (int i = 0; i &lt; PPB; i++) if (state[b * PPB + i] != 0) return 0;
+    return 1;
+}
+
+static void program(int lpn) {          /* flash pages are written once, in order */
+    int p = cur * PPB + curpage;
+    if (map[lpn] &gt;= 0) state[map[lpn]] = 2;           /* the old copy becomes stale */
+    state[p] = 1; owner[p] = lpn; map[lpn] = p; flash_writes++;
+    if (++curpage == PPB) cur = -1;
+}
+
+/* Greedy garbage collection: pick the full block with the fewest valid pages,
+   erase it, and write its surviving pages back into it. */
+static void gc(void) {
+    int victim = -1;
+    for (int b = 0; b &lt; BLOCKS; b++)
+        if (victim &lt; 0 || valid_in(b) &lt; valid_in(victim)) victim = b;
+    int moved[PPB], m = 0;
+    for (int i = 0; i &lt; PPB; i++)
+        if (state[victim * PPB + i] == 1) moved[m++] = owner[victim * PPB + i];
+    for (int i = 0; i &lt; PPB; i++) state[victim * PPB + i] = 0;
+    erases[victim]++;
+    cur = victim; curpage = 0;
+    for (int i = 0; i &lt; m; i++) { map[moved[i]] = -1; program(moved[i]); }
+}
+
+static void host_write(int lpn) {
+    host_writes++;
+    if (cur &lt; 0) {
+        for (int b = 0; b &lt; BLOCKS &amp;&amp; cur &lt; 0; b++)
+            if (block_is_erased(b)) { cur = b; curpage = 0; }
+        if (cur &lt; 0) gc();
+    }
+    program(lpn);
+}
+
+int main(void) {
+    int exposed[] = {50, 70, 80, 90};          /* percent of physical space shown to the host */
+    printf(&quot;%d physical pages in %d erase blocks of %d pages\n&quot;, PHYS, BLOCKS, PPB);
+    printf(&quot;exposed  spare  host writes  flash writes  write amp.  erases max/min\n&quot;);
+    for (int f = 0; f &lt; 4; f++) {
+        int logical = PHYS * exposed[f] / 100;
+        for (int i = 0; i &lt; PHYS; i++) { map[i] = -1; owner[i] = -1; state[i] = 0; }
+        for (int b = 0; b &lt; BLOCKS; b++) erases[b] = 0;
+        cur = 0; curpage = 0; seed = 99;
+        for (int l = 0; l &lt; logical; l++) host_write(l);               /* fill the drive */
+        host_writes = flash_writes = 0;
+        for (int i = 0; i &lt; 20000; i++) host_write(rnd(logical));     /* random overwrites */
+        int mx = 0, mn = 1 &lt;&lt; 30;
+        for (int b = 0; b &lt; BLOCKS; b++) {
+            if (erases[b] &gt; mx) mx = erases[b];
+            if (erases[b] &lt; mn) mn = erases[b];
+        }
+        printf(&quot;%6d%%  %4d%%  %11ld  %12ld  %10.2f  %6d/%d\n&quot;, exposed[f],
+               100 - exposed[f], host_writes, flash_writes,
+               (double)flash_writes / host_writes, mx, mn);
+    }
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">128 physical pages in 16 erase blocks of 8 pages
+exposed  spare  host writes  flash writes  write amp.  erases max/min
+    50%    50%        20000         23600        1.18     218/149
+    70%    30%        20000         33156        1.66     295/222
+    80%    20%        20000         45047        2.25     422/290
+    90%    10%        20000         72525        3.63     657/433
+</code></pre>
+<p>With half the chip held back, each host write costs 1.18 flash writes; with only 10 percent spare, 3.63. The cost of GC rises steeply as the drive fills up, which is why SSDs slow down and wear faster when nearly full, and why you can extend a drive's life by leaving part of it unpartitioned or trimmed. The erase counts at the end of each run also show wear: the busiest block was erased 657 times and the least busy 433 in the last row; a real FTL works to narrow that gap.</p>
+<div class="admonition tip">
+<p class="admonition-title">SSD versus HDD in one table</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>HDD</th>
+<th>SSD (typical)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Random 4 KiB read</td>
+<td>about 12 ms, roughly 80 IOPS</td>
+<td>50 to 100 µs, tens of thousands to 1 million IOPS</td>
+</tr>
+<tr>
+<td>Sequential throughput</td>
+<td>100 to 250 MB/s</td>
+<td>0.5 GB/s (SATA) to several GB/s (NVMe)</td>
+</tr>
+<tr>
+<td>Overwrite in place</td>
+<td>yes</td>
+<td>no (FTL, GC, TRIM)</td>
+</tr>
+<tr>
+<td>Wear</td>
+<td>mechanical</td>
+<td>limited program/erase cycles</td>
+</tr>
+<tr>
+<td>Cost per byte</td>
+<td>lowest</td>
+<td>several times higher</td>
+</tr>
+<tr>
+<td>Best use</td>
+<td>bulk capacity, archives</td>
+<td>operating systems, databases, caches</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>SSDs attach by SATA (a single command queue of 32 entries, designed for disks) or by <strong>NVMe</strong> over PCIe, which supports up to 65,535 queues of up to 65,535 commands, so many CPU cores can issue I/O in parallel without sharing a lock.</p>
+<h2 id="disk-scheduling">Disk scheduling</h2>
+<p>Many processes issue disk requests, so a queue of pending requests builds up. In what order should the drive serve them? Because seek time dominates, a good order cuts the total head movement. The OS (and the drive's own firmware, which also reorders) wants to improve two things: <strong>throughput</strong> (requests served per second) and <strong>fairness</strong> (no request waits forever).</p>
+<p>Our test case is the classic one. The disk has cylinders 0 to 199, the head is at cylinder 53, and the queue holds requests for cylinders <code>98, 183, 37, 122, 14, 124, 65, 67</code> (in arrival order). The measure is the total number of cylinders the head crosses.</p>
+<h3 id="fcfs">FCFS</h3>
+<p><strong>First come, first served</strong> serves the requests in arrival order: <code>53 → 98 → 183 → 37 → 122 → 14 → 124 → 65 → 67</code>. The moves are 45, 85, 146, 85, 108, 110, 59 and 2, a total of <strong>640</strong> cylinders. It is fair and trivially simple, but the head flies back and forth.</p>
+<h3 id="sstf">SSTF</h3>
+<p><strong>Shortest seek time first</strong> always serves the request closest to the head: <code>53 → 65 → 67 → 37 → 14 → 98 → 122 → 124 → 183</code>. The moves are 12, 2, 30, 23, 84, 24, 2 and 59, a total of <strong>236</strong>. Much better, but SSTF can <strong>starve</strong> requests: if new requests keep arriving near the head, a distant request waits indefinitely. It is a form of shortest-job-first and inherits SJF's problem.</p>
+<h3 id="scan-the-elevator-algorithm">SCAN (the elevator algorithm)</h3>
+<p><strong>SCAN</strong> moves the head in one direction, serving requests on the way, until it reaches the end of the disk, then reverses. Like an elevator, it sweeps up and down. Toward cylinder 0 first: <code>53 → 37 → 14 → 0 → 65 → 67 → 98 → 122 → 124 → 183</code>, moves 16, 23, 14, 65, 2, 31, 24, 2 and 59, a total of <strong>236</strong>. If the head is moving toward 199 first: <code>53 → 65 → 67 → 98 → 122 → 124 → 183 → 199 → 37 → 14</code>, moves 12, 2, 31, 24, 2, 59, 16, 162 and 23, a total of <strong>331</strong>. The direction matters: here going toward 0 first is cheaper, because only two requests lie below the head, and it so happens to tie with SSTF.</p>
+<p>SCAN avoids starvation because every request is served within one round trip. It still favours the middle cylinders, which the head passes twice in a short time, while a request just behind the head must wait nearly two full sweeps.</p>
+<h3 id="c-scan">C-SCAN</h3>
+<p><strong>Circular SCAN</strong> sweeps in one direction only. On reaching the last cylinder it jumps back to cylinder 0 without serving anything and starts again. Toward 199: <code>53 → 199</code> (146), return jump to 0 (199), then <code>0 → 14 → 37</code> (14 and 23), a total of <strong>382</strong> when the return jump is counted. The jump is a fast, single long seek, and some textbooks leave it out, which would give 183; the choice must always be stated. The benefit is a more uniform waiting time, since each cylinder is visited once per cycle.</p>
+<h3 id="look-and-c-look">LOOK and C-LOOK</h3>
+<p>SCAN and C-SCAN go to the physical end of the disk even when no request is there. <strong>LOOK</strong> reverses at the last <em>request</em> in the current direction, and <strong>C-LOOK</strong> jumps from the last request to the first request at the other end. Toward 199: LOOK is <code>53 → 183</code> (130) and then <code>183 → 14</code> (169), a total of <strong>299</strong>. C-LOOK is <code>53 → 183</code> (130), jump <code>183 → 14</code> (169), then <code>14 → 37</code> (23), a total of <strong>322</strong>.</p>
+<p>Here are all seven results from the program in the Lab, with the head movements in cylinders.</p>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>Service order after 53</th>
+<th style="text-align: right;">Total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FCFS</td>
+<td>98 183 37 122 14 124 65 67</td>
+<td style="text-align: right;">640</td>
+</tr>
+<tr>
+<td>SSTF</td>
+<td>65 67 37 14 98 122 124 183</td>
+<td style="text-align: right;">236</td>
+</tr>
+<tr>
+<td>SCAN toward 0</td>
+<td>37 14 0 65 67 98 122 124 183</td>
+<td style="text-align: right;">236</td>
+</tr>
+<tr>
+<td>SCAN toward 199</td>
+<td>65 67 98 122 124 183 199 37 14</td>
+<td style="text-align: right;">331</td>
+</tr>
+<tr>
+<td>C-SCAN toward 199 (jump counted)</td>
+<td>65 67 98 122 124 183 199 0 14 37</td>
+<td style="text-align: right;">382</td>
+</tr>
+<tr>
+<td>LOOK toward 199</td>
+<td>65 67 98 122 124 183 37 14</td>
+<td style="text-align: right;">299</td>
+</tr>
+<tr>
+<td>C-LOOK toward 199 (jump counted)</td>
+<td>65 67 98 122 124 183 14 37</td>
+<td style="text-align: right;">322</td>
+</tr>
+</tbody>
+</table>
+<figure class="figure"><div class="scroll"><pre class="diagram"> FCFS: 640 cylinders                   SCAN toward 0: 236 cylinders
+ 0                             199     0                             199
+         *  53                                 *  53
+                *  98                        *  37
+                             *  183      *  14
+       *  37                           *  0
+                   *  122                        *  65
+   *  14                                         *  67
+                    *  124                            *  98
+           *  65                                         *  122
+           *  67                                          *  124
+                                                                   *  183
+</pre></div><figcaption><b>Figure 11.3..</b> Head position over time for the 8-request queue (time runs downward). FCFS zigzags across the whole disk; SCAN toward 0 makes one smooth sweep down, then one sweep up.</figcaption></figure>
+<p>Replay these in the demo: drag requests around, change the starting head position and direction, and watch the total movement change. Look for a queue where C-LOOK beats LOOK, and one where SSTF loses to SCAN.</p>
+<div class="demo" data-demo="disk-scheduling"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Sweep the disk head under five scheduling policies</span></div><div class="demo-body"></div></div>
+<div class="admonition warning">
+<p class="admonition-title">Scheduling is not the whole story</p>
+<p>These algorithms minimize seek distance and ignore rotation, and a modern drive hides its geometry, so the OS cannot know true cylinder numbers. Today the OS sorts and merges by LBA, and the drive's firmware (with NCQ, up to 32 outstanding commands on SATA) picks the final order using its knowledge of the real head position. On an SSD there is no seek, so reordering by address brings little: Linux uses simple schedulers (<code>none</code> for NVMe, <code>mq-deadline</code> or <code>bfq</code> for others) that mainly merge adjacent requests and bound latency. We return to kernel I/O schedulers in <a href="week-13.html#the-io-subsystem">Week 13</a>.</p>
+</div>
+<p>How do you choose? SSTF or LOOK-style policies suit a lightly loaded disk. Under heavy load, SCAN and C-SCAN variants perform best and prevent starvation. For file systems that allocate blocks well, requests often fall in one area, and the choice matters less than the allocation policy. Real kernels also add deadlines so that a request cannot wait longer than a few hundred milliseconds.</p>
+<h2 id="raid">RAID</h2>
+<p>A single drive is limited in speed and eventually fails. Combining several drives into a <strong>RAID</strong> (Redundant Array of Independent Disks, originally "Inexpensive") addresses both: spread data across drives for parallel speed, and store redundant information to survive failures. The OS or a controller presents the array as one big disk. Two basic ideas are used in combination.</p>
+<ul>
+<li><strong>Striping</strong> splits data into fixed-size <strong>stripe units</strong> (chunks, for example 64 KiB) placed round-robin across disks. Large reads and writes run on all disks in parallel.</li>
+<li><strong>Redundancy</strong> is either a <strong>mirror</strong> (a full second copy) or <strong>parity</strong>, the XOR of the data blocks, which allows a lost block to be recomputed.</li>
+</ul>
+<figure class="figure"><div class="scroll"><pre class="diagram"> RAID 0 (stripe)      RAID 1 (mirror)      RAID 5 (striped, rotating parity)
+ D0   D1              D0   D0              D0   D1   D2   P
+ +--+ +--+            +--+ +--+            D3   D4   P    D5
+ |A1| |A2|            |A1| |A1|            D6   P    D7   D8
+ |A3| |A4|            |A2| |A2|            P    D9   D10  D11
+ +--+ +--+            +--+ +--+            (4 disks, parity shifts left)
+ no redundancy        1 disk can fail
+                                           RAID 10: stripe across mirrored pairs
+ RAID 6: like RAID 5 with two               +-----+-----+     +-----+-----+
+ parity blocks per stripe (P and Q);        | A1  | A1  |     | A2  | A2  |
+ any two disks can fail                     +-----+-----+     +-----+-----+
+                                             mirror pair 1     mirror pair 2
+</pre></div><figcaption><b>Figure 11.4..</b> The common RAID layouts. RAID 5 rotates the parity block so that no single disk becomes a parity bottleneck, which is the flaw of RAID 4 (a dedicated parity disk).</figcaption></figure>
+<h3 id="the-levels">The levels</h3>
+<p><strong>RAID 0</strong> stripes with no redundancy: all the capacity, full speed, but if any one disk fails the whole array's data is lost (the failure probability grows with the number of disks). <strong>RAID 1</strong> mirrors: every write goes to both disks, reads can use either, and one disk may fail. Capacity is half the raw total. <strong>RAID 5</strong> uses <code>N</code> disks, stores <code>N − 1</code> disks' worth of data and one disk's worth of parity spread across the array; one disk may fail. <strong>RAID 6</strong> adds a second, independent parity (Reed-Solomon codes), stores <code>N − 2</code> disks' worth, and survives any two failures. <strong>RAID 10</strong> (1+0) stripes across mirrored pairs: half the capacity, and it survives at least one failure and up to one per mirror pair, but two failures in the <em>same</em> pair destroy data. (Levels 2, 3 and 4 exist but are rarely used.)</p>
+<h3 id="capacity-and-performance-arithmetic">Capacity and performance arithmetic</h3>
+<p>Take six 4 TB disks, each delivering 150 random IOPS (RAID 1 shown with two disks). The program in the Lab produces this table. The IOPS columns assume the best case for reads (all disks serve independent reads) and apply the write penalty explained next.</p>
+<pre><code class="language-text">each disk: 4 TB, 150 random IOPS
+level    disks  usable TB  usable %     survives   read IOPS   write IOPS
+RAID 0       6         24      100%            0         900          900
+RAID 1       2          4       50%            1         300          150
+RAID 5       6         20       83%            1         900          225
+RAID 6       6         16       67%            2         900          150
+RAID 10      6         12       50%  1 (up to 3)         900          450
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Usable data</th>
+<th>Always survives</th>
+<th style="text-align: right;">Disk I/Os per small write</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RAID 0</td>
+<td><code>N</code> disks</td>
+<td>none</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>RAID 1</td>
+<td><code>N / 2</code> (pair)</td>
+<td>1</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td>RAID 5</td>
+<td><code>N − 1</code></td>
+<td>1</td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr>
+<td>RAID 6</td>
+<td><code>N − 2</code></td>
+<td>2</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td>RAID 10</td>
+<td><code>N / 2</code></td>
+<td>1 (up to <code>N / 2</code> if lucky)</td>
+<td style="text-align: right;">2</td>
+</tr>
+</tbody>
+</table>
+<p>Use the next demo to compute capacity and fault tolerance for any disk count and size. Change the number of disks and level and see which are valid (RAID 5 needs at least 3 disks, RAID 6 at least 4, RAID 10 an even number at least 4).</p>
+<div class="demo" data-demo="raid-calc"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Compare RAID levels by capacity, fault tolerance and write cost</span></div><div class="demo-body"></div></div>
+<h3 id="the-small-write-problem">The small-write problem</h3>
+<p>Parity makes small writes expensive. To change one block of a RAID 5 stripe, the controller does not need to read the whole stripe. Because parity is XOR, the new parity can be computed from the old data, the old parity, and the new data:</p>
+<p><code>P_new = P_old XOR D_old XOR D_new</code></p>
+<p>That takes <strong>two reads</strong> (old data, old parity) and <strong>two writes</strong> (new data, new parity): four disk I/Os for one logical write, the <strong>small-write penalty</strong>. RAID 6 must update two parities: six I/Os. RAID 1 and 10 write two copies: two I/Os. The next program shows the parity algebra on one byte and prints the RAID 5 layout of Figure 11.4.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+static void bits(const char *label, unsigned char v) {
+    printf(&quot;%-22s &quot;, label);
+    for (int i = 7; i &gt;= 0; i--) putchar((v &gt;&gt; i) &amp; 1 ? '1' : '0');
+    printf(&quot;  (0x%02X)\n&quot;, v);
+}
+
+int main(void) {
+    /* One byte from each of three data disks, plus parity on a fourth. */
+    unsigned char d0 = 0xB2, d1 = 0x5C, d2 = 0x0F;
+    unsigned char p = d0 ^ d1 ^ d2;
+    bits(&quot;D0&quot;, d0); bits(&quot;D1&quot;, d1); bits(&quot;D2&quot;, d2); bits(&quot;P = D0^D1^D2&quot;, p);
+
+    unsigned char rebuilt = d0 ^ d2 ^ p;                 /* disk 1 died */
+    bits(&quot;rebuild D1 = D0^D2^P&quot;, rebuilt);
+    printf(&quot;rebuilt matches D1: %s\n\n&quot;, rebuilt == d1 ? &quot;yes&quot; : &quot;NO&quot;);
+
+    /* Small write: change D2 without reading D0 and D1. */
+    unsigned char new_d2 = 0xF0;
+    unsigned char new_p  = p ^ d2 ^ new_d2;              /* read old D2 and old P: 2 reads */
+    bits(&quot;new D2&quot;, new_d2);
+    bits(&quot;P' = P^D2^D2'&quot;, new_p);
+    printf(&quot;equals full recompute: %s  (2 reads + 2 writes = 4 I/Os)\n\n&quot;,
+           new_p == (d0 ^ d1 ^ new_d2) ? &quot;yes&quot; : &quot;NO&quot;);
+
+    /* Left-asymmetric RAID 5 layout, 4 disks: parity starts on the last disk and rotates left. */
+    printf(&quot;RAID 5 layout (left-asymmetric), 4 disks (P = parity, Dn = data block n)\n&quot;);
+    printf(&quot;stripe  disk0 disk1 disk2 disk3\n&quot;);
+    int next = 0;
+    for (int s = 0; s &lt; 4; s++) {
+        int pd = 3 - (s % 4);
+        printf(&quot;%4d   &quot;, s);
+        for (int d = 0; d &lt; 4; d++) {
+            if (d == pd) printf(&quot;  P   &quot;);
+            else printf(&quot; D%-3d &quot;, next++);
+        }
+        printf(&quot;\n&quot;);
+    }
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">D0                     10110010  (0xB2)
+D1                     01011100  (0x5C)
+D2                     00001111  (0x0F)
+P = D0^D1^D2           11100001  (0xE1)
+rebuild D1 = D0^D2^P   01011100  (0x5C)
+rebuilt matches D1: yes
+
+new D2                 11110000  (0xF0)
+P' = P^D2^D2'          00011110  (0x1E)
+equals full recompute: yes  (2 reads + 2 writes = 4 I/Os)
+
+RAID 5 layout (left-asymmetric), 4 disks (P = parity, Dn = data block n)
+stripe  disk0 disk1 disk2 disk3
+   0    D0    D1    D2     P   
+   1    D3    D4     P    D5   
+   2    D6     P    D7    D8   
+   3     P    D9    D10   D11  
+</code></pre>
+<p>If one disk fails, every lost block is recomputed as the XOR of the surviving blocks of its stripe (<code>D1 = D0 XOR D2 XOR P</code>), as the "rebuild" line shows. Full-stripe writes avoid the penalty, because the new parity is computed from the new data alone with no reads, which is why large sequential writes on RAID 5 are fast. Controllers use a write-back cache to turn small writes into full-stripe ones.</p>
+<h3 id="rebuilds-and-the-limits-of-raid">Rebuilds and the limits of RAID</h3>
+<p>When a disk fails, the array runs <strong>degraded</strong> (reads of the lost disk's data need reconstruction) until a <strong>hot spare</strong> is rebuilt. Rebuild time is at least the capacity divided by the write speed: a 4 TB disk at 100 MB/s needs <code>4 × 10¹² / 10⁸ = 40,000 s</code>, about 11.1 hours, and longer under load. During that time the array is vulnerable. With RAID 5 the rebuild must read <em>every</em> bit of all surviving disks, and any <strong>unrecoverable read error</strong> (URE) then loses data. A consumer drive is specified at one URE per <code>10¹⁴</code> bits read. Rebuilding our six-disk RAID 5 reads <code>5 × 4 TB = 20 TB = 1.6 × 10¹⁴</code> bits, so the expected number of UREs is 1.6 and the chance of at least one is <code>1 − e^(−1.6)</code>, about 80 percent. Enterprise drives (1 in <code>10¹⁵</code>) cut that to about 15 percent. This is the main argument for RAID 6 or RAID 10 with large drives.</p>
+<div class="admonition warning">
+<p class="admonition-title">RAID is not a backup</p>
+<p>RAID protects against disk failure only. It does nothing about accidental deletion, corruption, ransomware, a failed controller or a fire; it faithfully mirrors a deleted file. A <strong>write hole</strong> can also corrupt RAID 5 if power fails between the data and the parity write, so controllers use battery-backed caches and Linux <code>md</code> can use a journal. Keep separate backups.</p>
+</div>
+<p>Linux provides software RAID through <code>md</code> (managed by <code>mdadm</code>) and logical volumes through LVM; ZFS and Btrfs integrate RAID-like redundancy with the file system, which lets them detect and repair corruption using checksums.</p>
+<div class="demo reveal" data-demo="raid-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">Compare how RAID 0, 1 and 5 lay out blocks and survive a failed disk</span></div><div class="demo-body"></div></div>
+<h2 id="disk-management">Disk management</h2>
+<p>A new disk is prepared in stages. <strong>Low-level formatting</strong> (done at the factory) writes sector headers and spare sectors. The OS then <strong>partitions</strong> the disk (a partition table in MBR or GPT format divides it into regions, each treated as a separate logical disk) and creates a <strong>file system</strong> in each partition (<strong>logical formatting</strong>: the superblock, inode tables and free-space structures of <a href="week-12.html">Week 12</a>). On boot, firmware (BIOS or UEFI) loads a small boot loader from a known location, which loads the kernel. Drives remap <strong>bad blocks</strong> to spares transparently; the OS may also keep its own bad-block list. <strong>Swap space</strong>, used for the paging of <a href="week-09.html">Weeks 9</a> and <a href="week-10.html">10</a>, can be a raw partition or a file; raw partitions avoid file-system overhead, while swap files are easier to resize. On SSDs, swapping consumes write endurance, so Linux can compress pages in memory first (zswap or zram).</p>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 11.1</span><span class="lvl lvl-warmup">warm-up</span><h4>Access time of a fast disk</h4></header><div class="ex-q"><p>A 10,000 RPM disk has an average seek of 5 ms and transfers at 200 MB/s. (a) Find the average rotational latency. (b) Find the average time and IOPS for a random 4 KiB read. (c) Find the same for a random 1 MiB read and the resulting throughput in MB/s. (d) Which delay dominates in each case?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) One rotation takes <code>60 / 10,000 = 6 ms</code>; the average latency is half, <strong>3 ms</strong>.</p>
+<p>(b) Transfer of 4096 bytes at 200 MB/s: <code>4096 / 200,000,000 = 0.0205 ms</code>. Total <code>5 + 3 + 0.0205 = 8.02 ms</code>, so about <code>1000 / 8.02 = 124.7</code> IOPS.</p>
+<p>(c) Transfer of 1,048,576 bytes: <code>1,048,576 / 200,000,000 = 5.243 ms</code>. Total <code>5 + 3 + 5.243 = 13.24 ms</code>, which is <code>75.5</code> IOPS and <code>75.5 × 1.048576 ≈ 79.2 MB/s</code>.</p>
+<p>(d) For 4 KiB, the seek (5 ms) and rotation (3 ms) take 99.7 percent of the time. For 1 MiB, transfer takes 5.24 of 13.24 ms, about 40 percent: larger transfers amortize the positioning delay but throughput (79 MB/s) is still below the 200 MB/s streaming rate.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 11.2</span><span class="lvl lvl-core">core</span><h4>Disk scheduling trace</h4></header><div class="ex-q"><p>The head is at cylinder 100 on a disk with cylinders 0 to 199 and is moving toward 199. The queue, in arrival order, is <code>55, 58, 39, 18, 90, 160, 150, 38, 184</code>. Compute the total head movement for (a) FCFS, (b) SSTF, (c) LOOK, (d) C-LOOK counting the return jump. (e) Why might SSTF be a poor choice on a busy server?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) FCFS: <code>100 → 55 → 58 → 39 → 18 → 90 → 160 → 150 → 38 → 184</code> moves 45, 3, 19, 21, 72, 70, 10, 112, 146: total <strong>498</strong>.</p>
+<p>(b) SSTF order: 90 (10), 58 (32), 55 (3), 39 (16), 38 (1), 18 (20), 150 (132), 160 (10), 184 (24). Total <code>10 + 32 + 3 + 16 + 1 + 20 + 132 + 10 + 24 =</code> <strong>248</strong>.</p>
+<p>(c) LOOK toward 199: serve 150, 160, 184 (moves 50, 10, 24 = 84), reverse and serve 90, 58, 55, 39, 38, 18 (from 184 down to 18 = 166). Total <code>84 + 166 =</code> <strong>250</strong>.</p>
+<p>(d) C-LOOK: <code>100 → 184</code> (84), jump <code>184 → 18</code> (166), then <code>18 → 90</code> (72). Total <code>84 + 166 + 72 =</code> <strong>322</strong>.</p>
+<p>(e) SSTF always prefers the nearest request. If requests near the head keep arriving, a request at a far cylinder (say 190 when the head hovers around 20) can wait indefinitely: starvation. SCAN-family algorithms bound the wait to roughly one or two sweeps.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 11.3</span><span class="lvl lvl-core">core</span><h4>RAID capacity and write throughput</h4></header><div class="ex-q"><p>A server has eight 2 TB disks, each capable of 100 random IOPS. For RAID 0, RAID 5, RAID 6 and RAID 10 give (a) usable capacity, (b) number of disk failures always survived, and (c) maximum sustained random small-write IOPS.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Raw capacity is 16 TB and the raw IOPS are <code>8 × 100 = 800</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th style="text-align: right;">(a) Usable</th>
+<th style="text-align: right;">(b) Always survives</th>
+<th style="text-align: right;">(c) Small-write IOPS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RAID 0</td>
+<td style="text-align: right;">16 TB</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">800 / 1 = 800</td>
+</tr>
+<tr>
+<td>RAID 5</td>
+<td style="text-align: right;">14 TB (<code>7 × 2</code>)</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">800 / 4 = 200</td>
+</tr>
+<tr>
+<td>RAID 6</td>
+<td style="text-align: right;">12 TB (<code>6 × 2</code>)</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">800 / 6 ≈ 133</td>
+</tr>
+<tr>
+<td>RAID 10</td>
+<td style="text-align: right;">8 TB (<code>4 × 2</code>)</td>
+<td style="text-align: right;">1 (up to 4 if one per pair)</td>
+<td style="text-align: right;">800 / 2 = 400</td>
+</tr>
+</tbody>
+</table>
+<p>RAID 10 gives twice the small-write rate of RAID 5 for 6 TB less capacity. RAID 6 gives the strongest protection, at one third the write rate of RAID 0.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 11.4</span><span class="lvl lvl-core">core</span><h4>XOR parity</h4></header><div class="ex-q"><p>A RAID 5 stripe holds three data bytes <code>D0 = 11001010</code>, <code>D1 = 01010110</code> and <code>D2 = 00111100</code> and a parity byte <code>P</code>. (a) Compute <code>P</code>. (b) Disk 1 fails. Rebuild <code>D1</code>. (c) The host now overwrites <code>D1</code> with <code>10011101</code> (without reading <code>D0</code> or <code>D2</code>). Compute the new parity and count the disk I/Os.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) <code>D0 XOR D1 = 11001010 XOR 01010110 = 10011100</code>; <code>XOR D2 (00111100) = 10100000</code>. So <strong>P = 10100000</strong> (0xA0).</p>
+<p>(b) <code>D1 = D0 XOR D2 XOR P</code>: <code>11001010 XOR 00111100 = 11110110</code>; <code>XOR 10100000 = 01010110</code>, which equals the original <code>D1</code>.</p>
+<p>(c) <code>P_new = P_old XOR D1_old XOR D1_new</code>: <code>10100000 XOR 01010110 = 11110110</code>; <code>XOR 10011101 = 01101011</code>. <strong>P_new = 01101011</strong>. Check: <code>D0 XOR D1_new XOR D2 = 11001010 XOR 10011101 XOR 00111100 = 01101011</code>. ✓. The update uses 2 reads (old <code>D1</code>, old <code>P</code>) and 2 writes (new <code>D1</code>, new <code>P</code>): <strong>4 disk I/Os</strong>.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 11.5</span><span class="lvl lvl-core">core</span><h4>Write amplification and SSD lifetime</h4></header><div class="ex-q"><p>(a) A garbage-collection victim block has 256 pages, of which 192 are still valid. Compute the write amplification for the writes this collection makes possible. (b) A 1 TB TLC drive endures 3,000 program/erase cycles per cell and the workload runs at WA = 4. If the host writes 100 GB a day, how many years until the endurance is used up? (c) Name two things that lower WA.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Collecting the block copies 192 valid pages (192 extra flash writes) and frees 64 pages, which the host can then fill with 64 new pages. Flash writes <code>= 192 + 64 = 256</code> for 64 host writes: <code>WA = 256 / 64 =</code> <strong>4</strong>.</p>
+<p>(b) Total flash writes allowed <code>≈ 1 TB × 3,000 = 3,000 TB</code>. Host writes absorbed <code>= 3,000 / 4 = 750 TB</code>. At 0.1 TB per day, that is <code>750 / 0.1 = 7,500</code> days, about <strong>20.5 years</strong>. (Real drives also have other limits, but the arithmetic shows why WA matters.)</p>
+<p>(c) Any two of: more over-provisioning, TRIM, sequential or large writes (which invalidate whole blocks together), separating hot and cold data, and keeping the drive less full.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="core"><header><span class="ex-n">Exercise 11.6</span><span class="lvl lvl-core">core</span><h4>Mapping a byte to a disk in RAID 0</h4></header><div class="ex-q"><p>A RAID 0 array has 4 disks and a stripe unit of 64 KiB (65,536 bytes). Stripe units are placed round-robin: unit 0 on disk 0, unit 1 on disk 1, and so on, wrapping after disk 3. Which disk holds byte offset 1,000,000 of the array, at what byte offset on that disk, and which stripe row is it in?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Unit number <code>= ⌊1,000,000 / 65,536⌋ = 15</code> (since <code>15 × 65,536 = 983,040</code>). Offset within the unit <code>= 1,000,000 − 983,040 = 16,960</code>.</p>
+<p>Disk <code>= 15 mod 4 =</code> <strong>3</strong>. Stripe row <code>= ⌊15 / 4⌋ = 3</code>. Offset on disk 3 <code>= 3 × 65,536 + 16,960 =</code> <strong>213,568</strong>.</p>
+<p>Check: row 3 on disk 3 is stripe unit <code>3 × 4 + 3 = 15</code> ✓.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 11.7</span><span class="lvl lvl-challenging">challenging</span><h4>Rebuild time and unrecoverable errors</h4></header><div class="ex-q"><p>A RAID 5 array has five 8 TB disks. A disk fails and is replaced by a hot spare. (a) How many bytes and bits must be read to rebuild it? (b) With a URE rate of one per <code>10¹⁵</code> bits, find the expected number of UREs and the probability of at least one (treat errors as a Poisson process). (c) If the spare is written at 150 MB/s and the rebuild is not throttled, how long does it take? (d) How does RAID 6 change the picture?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) Four surviving disks must be read in full: <code>4 × 8 TB = 32 TB = 3.2 × 10¹³</code> bytes <code>= 2.56 × 10¹⁴</code> bits.</p>
+<p>(b) Expected UREs <code>λ = 2.56 × 10¹⁴ / 10¹⁵ = 0.256</code>. <code>P(at least one) = 1 − e^(−0.256) ≈ 0.226</code>, about <strong>23 percent</strong> (with consumer-grade <code>10¹⁴</code>, <code>λ = 2.56</code> and the probability is <code>1 − e^(−2.56) ≈ 92.3</code> percent).</p>
+<p>(c) The new disk is written in full: <code>8 × 10¹² / 1.5 × 10⁸ = 53,333 s ≈ 14.8 hours</code>, and in practice longer because the array also serves users.</p>
+<p>(d) With RAID 6, after one disk fails the stripes still have one redundant parity left, so a URE found during the rebuild can be corrected from it, and a second whole-disk failure during the long rebuild window is also survivable. The cost is <code>N − 2</code> instead of <code>N − 1</code> usable disks and six I/Os per small write.</p></div></details></section>
+<h2 id="lab">Lab</h2>
+<p>You will build the models from this chapter. All programs compile with <code>gcc -Wall -pthread -o name name.c</code>, and every output shown above was produced by these programs.</p>
+<h3 id="part-1-disk-access-time">Part 1: disk access time</h3>
+<p>Compile and run <code>disktime.c</code> (the listing near the beginning of the chapter). Change the RPM, seek time and block size, and answer: at what block size does the transfer time equal the positioning time on the 7200 RPM disk? (Solve <code>b / 150 MB/s = 13.17 ms</code>, giving about 1.98 MB.)</p>
+<h3 id="part-2-the-disk-scheduler">Part 2: the disk scheduler</h3>
+<p>The program below reads an optional head position and request list from the command line (<code>./sched 100 55 58 39 18 90 160 150 38 184</code>); with no arguments it uses the chapter's queue. SCAN, C-SCAN, LOOK and C-LOOK are all one sweep routine with two switches: whether to travel to the physical edge, and whether to wrap around or reverse.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define MAXQ 64
+static int q[MAXQ], n, head = 53, maxcyl = 199;
+
+static int cmp(const void *a, const void *b) { return *(const int *)a - *(const int *)b; }
+static int absd(int x) { return x &lt; 0 ? -x : x; }
+
+static void show(const char *name, const int *path, int len, int total) {
+    printf(&quot;%-16s %3d  &quot;, name, total);
+    for (int i = 0; i &lt; len; i++) printf(&quot;%d%s&quot;, path[i], i + 1 &lt; len ? &quot; &quot; : &quot;&quot;);
+    printf(&quot;\n&quot;);
+}
+
+static void fcfs(void) {
+    int path[MAXQ + 2], len = 0, pos = head, total = 0;
+    path[len++] = pos;
+    for (int i = 0; i &lt; n; i++) { total += absd(q[i] - pos); pos = q[i]; path[len++] = pos; }
+    show(&quot;FCFS&quot;, path, len, total);
+}
+
+static void sstf(void) {
+    int path[MAXQ + 2], len = 0, pos = head, total = 0, done[MAXQ] = {0};
+    path[len++] = pos;
+    for (int k = 0; k &lt; n; k++) {
+        int best = -1;
+        for (int i = 0; i &lt; n; i++)
+            if (!done[i] &amp;&amp; (best &lt; 0 || absd(q[i] - pos) &lt; absd(q[best] - pos))) best = i;
+        done[best] = 1; total += absd(q[best] - pos); pos = q[best]; path[len++] = pos;
+    }
+    show(&quot;SSTF&quot;, path, len, total);
+}
+
+/* kind: 0 = SCAN, 1 = C-SCAN, 2 = LOOK, 3 = C-LOOK; up = 1 means toward high cylinders */
+static void sweep(const char *name, int kind, int up) {
+    int s[MAXQ], path[MAXQ + 4], len = 0, pos = head, total = 0;
+    memcpy(s, q, n * sizeof(int));
+    qsort(s, n, sizeof(int), cmp);
+    int lo = 0;
+    while (lo &lt; n &amp;&amp; s[lo] &lt; head) lo++;               /* s[lo..n-1] are &gt;= head */
+    path[len++] = pos;
+    int edge = (kind == 0 || kind == 1);               /* go all the way to the edge */
+    int wrap = (kind == 1 || kind == 3);               /* circular: jump back, same direction */
+    if (up) {
+        for (int i = lo; i &lt; n; i++) { total += s[i] - pos; pos = s[i]; path[len++] = pos; }
+        if (edge &amp;&amp; pos != maxcyl) { total += maxcyl - pos; pos = maxcyl; path[len++] = pos; }
+        if (wrap) {
+            if (lo &gt; 0) {
+                int first = edge ? 0 : s[0];
+                total += absd(pos - first); pos = first; path[len++] = pos;   /* the return jump counts */
+                for (int i = 0; i &lt; lo; i++) if (s[i] != pos) { total += s[i] - pos; pos = s[i]; path[len++] = pos; }
+            }
+        } else {
+            for (int i = lo - 1; i &gt;= 0; i--) { total += pos - s[i]; pos = s[i]; path[len++] = pos; }
+        }
+    } else {
+        for (int i = lo - 1; i &gt;= 0; i--) { total += pos - s[i]; pos = s[i]; path[len++] = pos; }
+        if (edge &amp;&amp; pos != 0) { total += pos; pos = 0; path[len++] = pos; }
+        for (int i = lo; i &lt; n; i++) { total += s[i] - pos; pos = s[i]; path[len++] = pos; }
+    }
+    show(name, path, len, total);
+}
+
+int main(int argc, char **argv) {
+    if (argc &gt; 2) {                                     /* sched HEAD q1 q2 ... */
+        head = atoi(argv[1]);
+        for (int i = 2; i &lt; argc &amp;&amp; n &lt; MAXQ; i++) q[n++] = atoi(argv[i]);
+    } else {
+        int d[] = {98, 183, 37, 122, 14, 124, 65, 67};
+        n = sizeof d / sizeof d[0]; memcpy(q, d, sizeof d);
+    }
+    printf(&quot;head at %d, cylinders 0..%d, %d requests\n&quot;, head, maxcyl, n);
+    printf(&quot;%-16s %3s  %s\n&quot;, &quot;algorithm&quot;, &quot;mv&quot;, &quot;service order&quot;);
+    fcfs();
+    sstf();
+    sweep(&quot;SCAN  (to 0)&quot;, 0, 0);
+    sweep(&quot;SCAN  (to 199)&quot;, 0, 1);
+    sweep(&quot;C-SCAN (to 199)&quot;, 1, 1);
+    sweep(&quot;LOOK  (to 199)&quot;, 2, 1);
+    sweep(&quot;C-LOOK (to 199)&quot;, 3, 1);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">$ ./sched
+head at 53, cylinders 0..199, 8 requests
+algorithm         mv  service order
+FCFS             640  53 98 183 37 122 14 124 65 67
+SSTF             236  53 65 67 37 14 98 122 124 183
+SCAN  (to 0)     236  53 37 14 0 65 67 98 122 124 183
+SCAN  (to 199)   331  53 65 67 98 122 124 183 199 37 14
+C-SCAN (to 199)  382  53 65 67 98 122 124 183 199 0 14 37
+LOOK  (to 199)   299  53 65 67 98 122 124 183 37 14
+C-LOOK (to 199)  322  53 65 67 98 122 124 183 14 37
+$ ./sched 100 55 58 39 18 90 160 150 38 184
+head at 100, cylinders 0..199, 9 requests
+algorithm         mv  service order
+FCFS             498  100 55 58 39 18 90 160 150 38 184
+SSTF             248  100 90 58 55 39 38 18 150 160 184
+SCAN  (to 0)     284  100 90 58 55 39 38 18 0 150 160 184
+SCAN  (to 199)   280  100 150 160 184 199 90 58 55 39 38 18
+C-SCAN (to 199)  388  100 150 160 184 199 0 18 38 39 55 58 90
+LOOK  (to 199)   250  100 150 160 184 90 58 55 39 38 18
+C-LOOK (to 199)  322  100 150 160 184 18 38 39 55 58 90
+</code></pre>
+<p>The first block reproduces the totals 640, 236, 236, 331, 382, 299 and 322. The second is the queue of Exercise 2 (498, 248, 250 and 322 appear in its solution). Assignment 4 may ask you to extend this simulator with a request generator and to measure average waiting time and starvation.</p>
+<h3 id="part-3-the-toy-flash-translation-layer">Part 3: the toy flash translation layer</h3>
+<p>Compile and run <code>ftl.c</code> (earlier in the chapter). Then experiment: set <code>PPB</code> to 32 and see how block size affects WA; change <code>rnd(logical)</code> to send 90 percent of writes to 10 percent of the pages (hot and cold data) and watch WA fall, because hot pages die together; then add a wear-leveling rule that, now and then, relocates the data of the least-erased block.</p>
+<h3 id="part-4-raid-arithmetic-and-parity">Part 4: RAID arithmetic and parity</h3>
+<p>Compile and run <code>raid.c</code> and <code>parity.c</code>, whose listings and outputs appear in the RAID section. The first reproduces the capacity and IOPS table. The second shows parity, rebuild and the small-write update. Verify by hand that <code>0xB2 XOR 0x5C XOR 0x0F = 0xE1</code>.</p>
+<h3 id="part-5-look-at-real-drives">Part 5: look at real drives</h3>
+<p>On a Linux machine (outputs differ, so none are shown):</p>
+<pre><code class="language-bash">lsblk -d -o NAME,ROTA,SIZE,MODEL     # ROTA = 1 for a spinning disk, 0 for flash
+cat /sys/block/sda/queue/scheduler   # the active I/O scheduler is in [brackets]
+cat /sys/block/sda/queue/rotational  # 1 = HDD, 0 = SSD
+sudo hdparm -t /dev/sda              # buffered sequential read speed (needs hdparm)
+sudo fstrim -v /                     # tell the SSD about free blocks, if supported
+cat /proc/mdstat                     # state of any software RAID arrays
+</code></pre>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Add arrival times to <code>sched.c</code> and simulate a stream of requests, reporting the longest wait under SSTF and under SCAN. Can you demonstrate starvation?</li>
+<li>Make <code>raid.c</code> interactive: take a level, disk count and disk size on the command line and print capacity, tolerance and write IOPS; reject invalid combinations.</li>
+<li>Extend <code>parity.c</code> to build a four-disk RAID 5 over a 16-byte buffer, "fail" any disk and rebuild it, and compare the result with the original.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Average rotational latency twice as big as the textbook</td>
+<td>Used a full rotation instead of half</td>
+<td>Latency <code>= (60 / RPM) / 2</code></td>
+</tr>
+<tr>
+<td>SCAN total differs from the classic answer</td>
+<td>Went to the wrong end first, or forgot that SCAN reaches the edge (cylinder 0 or 199)</td>
+<td>Draw the path; include the trip to the edge for SCAN and C-SCAN, not for LOOK</td>
+</tr>
+<tr>
+<td>C-SCAN total 183 instead of 382</td>
+<td>Left the return jump out of the count</td>
+<td>State your convention; this course counts the jump</td>
+</tr>
+<tr>
+<td>Head movement counted as sum of positions</td>
+<td>Added cylinder numbers instead of differences</td>
+<td>Sum the absolute differences between consecutive stops</td>
+</tr>
+<tr>
+<td>RAID 5 capacity wrong</td>
+<td>Used <code>N</code> instead of <code>N − 1</code></td>
+<td>One disk's worth of space holds parity</td>
+</tr>
+<tr>
+<td>RAID 10 "survives 3 failures" for six disks</td>
+<td>Ignored which disks fail</td>
+<td>Guaranteed only 1; more only if no two failures hit the same mirror pair</td>
+</tr>
+<tr>
+<td>Write IOPS equal to read IOPS on RAID 5</td>
+<td>Forgot the small-write penalty</td>
+<td>Divide raw IOPS by 4 (RAID 5), 6 (RAID 6) or 2 (RAID 1 and 10)</td>
+</tr>
+<tr>
+<td>Parity update computed from the whole stripe</td>
+<td>Missed the shortcut</td>
+<td><code>P_new = P_old XOR D_old XOR D_new</code></td>
+</tr>
+<tr>
+<td>SSD slows down when nearly full</td>
+<td>Garbage collection has little room to work, so WA grows</td>
+<td>Leave free space, enable TRIM, use over-provisioning</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>HDD access time is seek plus rotational latency plus transfer; for small random I/O positioning is over 99 percent of the time, so sequential access is hundreds of times faster than random.</li>
+<li>Flash cannot be overwritten in place; the FTL maps logical to physical pages, collects garbage, levels wear and causes write amplification, and TRIM and over-provisioning keep it low.</li>
+<li>For the queue 98, 183, 37, 122, 14, 124, 65, 67 at head 53: FCFS 640, SSTF 236, SCAN 236 (toward 0) or 331 (toward 199), C-SCAN 382, LOOK 299, C-LOOK 322 cylinders.</li>
+<li>SSTF can starve requests; SCAN-family algorithms bound waiting; on modern drives and SSDs the real ordering is done by firmware, and the OS mostly merges and enforces deadlines.</li>
+<li>RAID 0 stripes, RAID 1 mirrors, RAID 5 stripes with one parity (<code>N − 1</code> usable), RAID 6 with two (<code>N − 2</code>), RAID 10 stripes mirrors (half usable).</li>
+<li>A small write on RAID 5 costs 4 I/Os (RAID 6: 6, RAID 1 and 10: 2); parity is XOR, so any lost block equals the XOR of the others.</li>
+<li>RAID is not a backup, and long rebuilds of large disks expose RAID 5 to unrecoverable read errors.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 11 "Mass-Storage Structure": disk structure, disk scheduling, RAID and storage-device management.</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau and Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapters "Hard Disk Drives" and "Redundant Arrays of Inexpensive Disks (RAIDs)".</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau and Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapter "Flash-based SSDs" (the FTL, garbage collection and wear leveling).</li>
+<li>Tanenbaum and Bos, <em>Modern Operating Systems</em>, Chapter 5.4 "Disks" (geometry, RAID, disk arm scheduling).</li>
+<li>David Patterson, Garth Gibson and Randy Katz, "A Case for Redundant Arrays of Inexpensive Disks (RAID)", ACM SIGMOD, 1988.</li>
+<li>Peter Chen, Edward Lee, Garth Gibson, Randy Katz and David Patterson, "RAID: High-Performance, Reliable Secondary Storage", ACM Computing Surveys, 1994.</li>
+<li>Man pages: <code>lsblk(8)</code>, <code>mdadm(8)</code>, <code>fstrim(8)</code>, <code>hdparm(8)</code>, <code>smartctl(8)</code>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="11">Mark Week 11 as complete</button></div><div class="pager"><a class="pn prev" href="week-10.html"><small>Previous</small>Week 10: Page Replacement, Frame Allocation and Thrashing</a><a class="pn next" href="week-12.html"><small>Next</small>Week 12: File Systems I: Interface and Implementation</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#hdd-geometry-and-access-time">HDD geometry and access time</a></li><li><a href="#solid-state-drives">Solid-state drives</a></li><li><a href="#disk-scheduling">Disk scheduling</a></li><li><a href="#raid">RAID</a></li><li><a href="#disk-management">Disk management</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab">Lab</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

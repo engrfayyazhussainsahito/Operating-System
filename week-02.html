@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 2: Processes · Operating Systems for Dummies</title>
+<meta name="description" content="What a process is, how the operating system represents it with a process control block, how it moves between states, how the CPU is switched between processes, and how Unix creates, runs and reaps them with fork, exec and wait.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="1"><article class="week" data-week="2"><header class="week-head" data-num="02"><p class="kicker">Week 2 · Phase 1: Foundations</p><h1>Processes</h1><p class="abstract">What a process is, how the operating system represents it with a process control block, how it moves between states, how the CPU is switched between processes, and how Unix creates, runs and reaps them with fork, exec and wait.</p><ul class="chips"><li><b>28</b> min read</li><li><b>2</b> demos</li><li><b>4</b> figures</li><li><b>18</b> code blocks</li><li><b>7</b> exercises</li></ul><p class="lab-line"><b>Lab.</b> Build a tiny Unix shell in C that reads a command, forks, execs it and waits for it.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Distinguish a program from a process and name the four regions of a process&#x27;s address space</li><li>Draw the five-state process model and label each transition with the event that causes it</li><li>List what a process control block stores and what the kernel saves and restores in a context switch</li><li>Compute the CPU overhead of context switching from a switch cost and a time slice</li><li>Predict the output and the process count of small programs that call fork</li><li>Explain what exec replaces, what it preserves, and why a shell needs both fork and exec</li><li>Explain how zombie and orphan processes arise and how wait prevents them</li></ul></section><div class="prose"><p>In <a href="week-01.html">Week 1</a> you saw that the operating system exists to share one machine among many programs safely, and that programs ask for its services through system calls. This week we give a name to the thing the OS is actually sharing the CPU among: the <strong>process</strong>. Almost everything later in the course is phrased in terms of processes. The scheduler of <a href="week-04.html">Week 4</a> chooses among them, the memory manager of <a href="week-08.html">Week 8</a> gives each one an address space, and the file system of <a href="week-12.html">Week 12</a> tracks which ones have which files open.</p>
+<p>We start with the definition and the anatomy of a process, then follow it through its life: creation, running, waiting, being switched out, and dying. The second half is practical. You will write C programs that call <code>fork</code>, <code>exec</code> and <code>wait</code>, watch a zombie process appear in <code>/proc</code>, and finish by building a miniature shell. <a href="week-03.html">Week 3</a> then shows how processes talk to each other and how threads let one process do several things at once.</p>
+<h2 id="what-is-a-process">What is a process?</h2>
+<h3 id="program-versus-process">Program versus process</h3>
+<p>A <strong>program</strong> is a passive thing: a file on disk containing instructions and initialized data, such as <code>/bin/ls</code>. A <strong>process</strong> is that program in execution: the program plus all the changing state needed to run it (where it is in the code, the values of its variables, the files it has open). One program can be several processes at once. If three users each run <code>ls</code>, there are three processes and one program file.</p>
+<div class="admonition intuition">
+<p class="admonition-title">Recipe and cook</p>
+<p>A program is a recipe in a cookbook. A process is a cook actively following the recipe: they have a current step, a half-chopped onion, and a pan on the stove. Two cooks can follow the same recipe at the same time in separate kitchens with different results. The cookbook does not change; the kitchens do.</p>
+</div>
+<div class="admonition definition">
+<p class="admonition-title">Process</p>
+<p>A <strong>process</strong> is an instance of a program in execution. It consists of an address space (code, data, heap and stack), the CPU state (program counter, registers, stack pointer), and the kernel's bookkeeping about it: its identifier, open files, owner and scheduling information.</p>
+</div>
+<h3 id="the-address-space-of-a-process">The address space of a process</h3>
+<p>Each process sees its own private block of memory addresses, called its <strong>address space</strong> (the hardware and OS trick behind this is <a href="week-08.html">Week 8</a>). By convention a Unix process lays it out in four regions plus the kernel's part:</p>
+<ul>
+<li><strong>Text (code):</strong> the machine instructions. Read-only and executable, so several processes running one program can share a single physical copy.</li>
+<li><strong>Data:</strong> global and static variables. The part with explicit initial values (<code>int g = 5;</code>) is the initialized data segment. The part initialized to zero is the <strong>bss</strong> segment, which the program file records only as a size.</li>
+<li><strong>Heap:</strong> memory obtained at run time with <code>malloc</code>. It grows toward higher addresses.</li>
+<li><strong>Stack:</strong> one frame per active function call, holding local variables, arguments and the return address. It grows toward lower addresses.</li>
+</ul>
+<figure class="figure"><div class="scroll"><pre class="diagram"> high addresses
+ +----------------------------+
+ |   kernel (not accessible)  |
+ +----------------------------+
+ |   stack   (grows down)     |  locals, return addresses
+ |            |               |
+ |            v               |
+ |                            |
+ |            ^               |
+ |            |               |
+ |   heap    (grows up)       |  malloc / free
+ +----------------------------+
+ |   bss  (zero-initialized)  |
+ |   data (initialized)       |
+ +----------------------------+
+ |   text (code, read-only)   |
+ +----------------------------+
+ low addresses
+</pre></div><figcaption><b>Figure 2.1..</b> The memory layout of a typical Unix process. Stack and heap grow toward each other across unused space.</figcaption></figure>
+<p>You can see the regions for yourself by printing one address from each:</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int global_init = 5;                   /* data segment */
+int global_zero;                       /* bss */
+
+int main(void) {
+    int local = 1;                     /* stack */
+    int *heap = malloc(sizeof *heap);  /* heap */
+    printf(&quot;text  (main)        %p\n&quot;, (void *)main);
+    printf(&quot;data  (global_init) %p\n&quot;, (void *)&amp;global_init);
+    printf(&quot;bss   (global_zero) %p\n&quot;, (void *)&amp;global_zero);
+    printf(&quot;heap  (malloc)      %p\n&quot;, (void *)heap);
+    printf(&quot;stack (local)       %p\n&quot;, (void *)&amp;local);
+    free(heap);
+    return 0;
+}
+</code></pre>
+<p>A run on a 64-bit Linux machine printed:</p>
+<pre><code class="language-text">text  (main)        0x55e363d331a9
+data  (global_init) 0x55e363d36010
+bss   (global_zero) 0x55e363d36018
+heap  (malloc)      0x55e3882d32a0
+stack (local)       0x7ffd80564eac
+</code></pre>
+<p>Text, data and bss sit close together, the heap is elsewhere, and the stack is far above. Run it twice and every address changes. That is <strong>address space layout randomization</strong> (ASLR), a security feature that makes it harder for an attacker to guess where code and data live (<a href="week-14.html">Week 14</a>). The order of the regions stays the same.</p>
+<div class="demo reveal" data-demo="addrspace-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">Walk through a process address space and watch the heap and stack grow</span></div><div class="demo-body"></div></div>
+<h2 id="process-states-and-the-pcb">Process states and the PCB</h2>
+<h3 id="the-five-state-model">The five-state model</h3>
+<p>At any instant a process is doing one of a small number of things. The classic model uses five states:</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>New</td>
+<td>The process is being created; the OS is setting up its structures</td>
+</tr>
+<tr>
+<td>Ready</td>
+<td>It could run right now but is waiting for a CPU</td>
+</tr>
+<tr>
+<td>Running</td>
+<td>Its instructions are executing on a CPU</td>
+</tr>
+<tr>
+<td>Waiting (blocked)</td>
+<td>It cannot continue until some event occurs, such as I/O completing</td>
+</tr>
+<tr>
+<td>Terminated</td>
+<td>It has finished; the OS is cleaning up</td>
+</tr>
+</tbody>
+</table>
+<p>Only as many processes can be Running as there are CPU cores. On a one-core machine exactly one process is Running and the rest are Ready or Waiting.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">           admitted           dispatch
++-----+ ------------&gt; +-------+ ----------&gt; +---------+  exit  +------------+
+| New |               | Ready |             | Running | -----&gt; | Terminated |
++-----+               +-------+ &lt;---------- +---------+        +------------+
+                         ^       time slice      |
+                         |       expires         |
+                         |                       | blocks on I/O
+                         |     +---------+       | or waits for an event
+                         +---- | Waiting | &lt;-----+
+                I/O or event   +---------+
+                completes
+</pre></div><figcaption><b>Figure 2.2..</b> The five-state process model. Transitions: New to Ready (admitted), Ready to Running (dispatch), Running to Ready (time slice expires), Running to Waiting (blocks on I/O or an event), Waiting to Ready (event occurs), Running to Terminated (exit).</figcaption></figure>
+<p>Two transitions deserve attention. A process that finishes waiting goes to <strong>Ready</strong>, not straight to Running: the CPU may be busy with another process, and the scheduler decides who runs next. And a Running process may leave involuntarily (the timer interrupt expires its <strong>time slice</strong>, going back to Ready) or voluntarily (it asks for something slow, going to Waiting). You cannot go directly from Waiting to Running or from Ready to Waiting, since a process that is not running cannot execute the instruction that would block it.</p>
+<p>Linux names these states a little differently. In the output of <code>ps</code>, <code>R</code> means running or ready, <code>S</code> is an interruptible sleep (waiting), <code>D</code> is an uninterruptible sleep (usually waiting on disk), <code>T</code> is stopped, and <code>Z</code> is a zombie, which we meet shortly.</p>
+<p>The demo below lets you drive a process through these states. Try to force an illegal move (for example, send a Waiting process directly to Running) and read the explanation it gives. Then run a sequence in which the same process alternates between CPU work and I/O, and count how many times it is dispatched.</p>
+<div class="demo" data-demo="process-states"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Drive three processes through the five-state model</span></div><div class="demo-body"></div></div>
+<h3 id="the-process-control-block">The process control block</h3>
+<p>The kernel needs somewhere to keep everything it knows about a process. That record is the <strong>process control block (PCB)</strong>, also called a process descriptor or task struct (in Linux it is the C structure <code>task_struct</code>).</p>
+<div class="admonition definition">
+<p class="admonition-title">Process control block (PCB)</p>
+<p>The <strong>PCB</strong> is the kernel data structure holding all per-process information: the process identifier (PID), the state, the saved CPU registers including the program counter and stack pointer, scheduling information (priority, time used), memory-management information (page table pointers), accounting information, the table of open files, and links to the parent and children.</p>
+</div>
+<p>A tiny model of a PCB and the legal state moves makes the picture concrete. This program encodes Figure 2.2 and rejects the illegal move from Waiting to Running:</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+/* A toy PCB and the legal state transitions from Figure 2.2. */
+enum state { NEW, READY, RUNNING, WAITING, TERMINATED };
+static const char *names[] = { &quot;NEW&quot;, &quot;READY&quot;, &quot;RUNNING&quot;, &quot;WAITING&quot;, &quot;TERMINATED&quot; };
+
+struct pcb {
+    int pid;
+    enum state st;
+    unsigned long pc;                  /* saved program counter */
+    unsigned long regs[4];             /* saved general registers */
+};
+
+static int legal(enum state from, enum state to) {
+    switch (from) {
+    case NEW:     return to == READY;
+    case READY:   return to == RUNNING;
+    case RUNNING: return to == READY || to == WAITING || to == TERMINATED;
+    case WAITING: return to == READY;
+    default:      return 0;
+    }
+}
+
+static void move(struct pcb *p, enum state to) {
+    if (legal(p-&gt;st, to)) {
+        printf(&quot;pid %d: %-10s -&gt; %s\n&quot;, p-&gt;pid, names[p-&gt;st], names[to]);
+        p-&gt;st = to;
+    } else {
+        printf(&quot;pid %d: %-10s -&gt; %s  ILLEGAL\n&quot;, p-&gt;pid, names[p-&gt;st], names[to]);
+    }
+}
+
+int main(void) {
+    struct pcb p = { 42, NEW, 0x400000, {0} };
+    move(&amp;p, READY);      /* admitted */
+    move(&amp;p, RUNNING);    /* dispatched */
+    move(&amp;p, WAITING);    /* issued read() */
+    move(&amp;p, RUNNING);    /* illegal: must pass through READY */
+    move(&amp;p, READY);      /* I/O completed */
+    move(&amp;p, RUNNING);
+    move(&amp;p, TERMINATED); /* exit() */
+    return 0;
+}
+</code></pre>
+<p>Compiled with <code>gcc -Wall</code>, it prints:</p>
+<pre><code class="language-text">pid 42: NEW        -&gt; READY
+pid 42: READY      -&gt; RUNNING
+pid 42: RUNNING    -&gt; WAITING
+pid 42: WAITING    -&gt; RUNNING  ILLEGAL
+pid 42: WAITING    -&gt; READY
+pid 42: READY      -&gt; RUNNING
+pid 42: RUNNING    -&gt; TERMINATED
+</code></pre>
+<h2 id="context-switching">Context switching</h2>
+<h3 id="what-a-switch-does">What a switch does</h3>
+<p>The CPU has one set of registers, but many processes want to use it. When the kernel takes the CPU from process A and gives it to process B, it performs a <strong>context switch</strong>: it saves A's CPU state into A's PCB, selects B, and loads B's saved state into the CPU, so that B resumes exactly where it left off, unaware that time passed.</p>
+<div class="admonition definition">
+<p class="admonition-title">Context switch</p>
+<p>A <strong>context switch</strong> is the act of saving the state (the context) of the currently running process and restoring the saved state of another, so that the CPU changes from running one to running the other. The context includes the program counter, the general and floating-point registers, the stack pointer and the pointer to the page tables.</p>
+</div>
+<p>A switch is triggered either by an interrupt (the timer fires, or a device finishes) or by a system call (the process blocks or exits). In every case the CPU first enters kernel mode, which is itself a small cost, as <a href="week-01.html">Week 1</a> described.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Process A            Kernel                 Process B
+    |                   |                       |
+    | running           |                       |
+    |------ interrupt -&gt;|                       |
+    |  (or system call) | save A's registers    |
+    |                   |   into PCB(A), A is   |
+    |                   |   marked Ready/Waiting|
+    |                   | scheduler picks B     |
+    |                   | load B's registers    |
+    |                   |   from PCB(B), switch |
+    |                   |   page tables         |
+    |                   |------- return to ----&gt;|
+    |  (idle in queue)  |    user mode          | running
+    |                   |                       |
+          switch overhead: no useful user work happens here
+</pre></div><figcaption><b>Figure 2.3..</b> A context switch from process A to process B, mediated by the kernel.</figcaption></figure>
+<h3 id="why-the-cost-matters">Why the cost matters</h3>
+<p>During the switch the machine does no useful work for any user program, so a context switch is pure <strong>overhead</strong>. The direct cost (saving and loading registers, running the scheduler, changing the page-table base register) is typically a few microseconds. There are indirect costs too: B finds the CPU caches full of A's data, so B suffers cache misses until its own working set is loaded, and on many CPUs the <strong>TLB</strong> (the cache of address translations from <a href="week-08.html">Week 8</a>) must be flushed or tagged. Those indirect costs often exceed the direct ones.</p>
+<p>If a context switch costs <code>s</code> and the CPU runs each process for a time slice <code>q</code> before switching, the fraction of time lost is <code>s / (q + s)</code>. With <code>s = 5 µs</code> and <code>q = 10 ms</code> the overhead is <code>5 / 10005</code>, about 0.05 percent, negligible. With <code>q = 100 µs</code> it is <code>5 / 105</code>, about 4.8 percent, and the system starts to feel the cost. This trade-off between responsiveness (short slices) and efficiency (long slices) returns in <a href="week-04.html">Week 4</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">A context switch is not a mode switch</p>
+<p>Entering the kernel for a system call and returning to the same process is a <strong>mode switch</strong>, and it is much cheaper than a context switch, because no other process's state is loaded. A context switch happens only when the CPU is handed to a <em>different</em> process (or, in <a href="week-03.html">Week 3</a>, a different thread).</p>
+</div>
+<h2 id="creating-processes-with-fork">Creating processes with fork</h2>
+<h3 id="parents-children-and-the-process-tree">Parents, children and the process tree</h3>
+<p>In Unix, processes are created by other processes. The creator is the <strong>parent</strong>, the new process is the <strong>child</strong>, and the result is a tree. At boot the kernel starts one first user process (traditionally <code>init</code>, now often <code>systemd</code>) with PID 1, and every other process descends from it. The command <code>pstree</code> draws this tree. Each process has a unique <strong>process identifier (PID)</strong> that <code>getpid()</code> returns, and <code>getppid()</code> returns the parent's.</p>
+<p>The system call that creates a process is <code>fork()</code>. It is unusual because it returns <strong>twice</strong>, once in each process.</p>
+<div class="admonition definition">
+<p class="admonition-title">fork()</p>
+<p><code>fork()</code> creates a new process that is a near-exact copy of the caller: the same code, a copy of the data, heap and stack, the same open files and the same program counter. It returns the child's PID to the parent, 0 to the child, and -1 (with <code>errno</code> set) if it fails. After the call returns, the two processes run independently and the scheduler may run either first.</p>
+</div>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void) {
+    int x = 100;
+    printf(&quot;before fork: pid=%d\n&quot;, (int)getpid());
+    fflush(stdout);                    /* empty the buffer so it is not copied */
+    pid_t pid = fork();
+    if (pid &lt; 0) {
+        perror(&quot;fork&quot;);
+        return 1;
+    } else if (pid == 0) {
+        x += 1;                        /* changes the child's private copy */
+        printf(&quot;child : pid=%d parent=%d x=%d\n&quot;, (int)getpid(), (int)getppid(), x);
+        exit(7);
+    } else {
+        int status;
+        waitpid(pid, &amp;status, 0);
+        printf(&quot;parent: pid=%d x=%d, child %d exited with status %d\n&quot;,
+               (int)getpid(), x, (int)pid,
+               WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+    }
+    return 0;
+}
+</code></pre>
+<p>Output from a real run (PIDs differ every time):</p>
+<pre><code class="language-text">before fork: pid=219
+child : pid=220 parent=219 x=101
+parent: pid=219 x=100, child 220 exited with status 7
+</code></pre>
+<p>Read the code as one story told twice. Everything before <code>fork()</code> ran once. Everything after runs in both processes, and <code>pid</code> is the only variable that differs, so the <code>if</code> chain splits the two roles. The child changed <code>x</code> to 101, but the parent's <code>x</code> is still 100: after the fork the two address spaces are separate, so writes in one are invisible to the other. Real kernels do not copy all the memory up front. They use <strong>copy-on-write</strong>, sharing the physical pages and copying a page only when one process writes to it, a trick we develop in <a href="week-09.html">Week 9</a>.</p>
+<p>The parent called <code>waitpid</code> to block until that particular child ended and collect its <strong>exit status</strong>. The child passed 7 to <code>exit</code>, and <code>WEXITSTATUS</code> extracted it.</p>
+<div class="admonition intuition">
+<p class="admonition-title">Photocopying the whole kitchen</p>
+<p>Imagine a cook who, at the moment of <code>fork</code>, photocopies the entire kitchen along with themselves, including the half-chopped onion. Both cooks continue from the same instant. The only difference is a note pinned to each: the original gets "your new twin is number 220", the copy gets "you are the twin". They cannot reach into each other's kitchen, so they must send messages (<a href="week-03.html">Week 3</a>) to cooperate.</p>
+</div>
+<h2 id="running-new-programs-exec-and-the-shell">Running new programs: exec and the shell</h2>
+<p><code>fork</code> alone only produces copies of the same program. To run a <em>different</em> program, a process calls one of the <code>exec</code> family of functions (<code>execl</code>, <code>execlp</code>, <code>execv</code>, <code>execvp</code>, and others, all wrappers around the <code>execve</code> system call). <code>exec</code> replaces the calling process's code, data, heap and stack with a new program loaded from a file, and starts it at its beginning. The PID stays the same, and open files stay open (unless marked close-on-exec). <code>exec</code> does not create a process; it transforms the one that called it. On success it never returns, because the code that called it is gone.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void) {
+    pid_t pid = fork();
+    if (pid == 0) {
+        execlp(&quot;echo&quot;, &quot;echo&quot;, &quot;hello from the new program&quot;, (char *)NULL);
+        perror(&quot;execlp&quot;);              /* reached only if exec failed */
+        _exit(127);
+    }
+    int status;
+    waitpid(pid, &amp;status, 0);
+    printf(&quot;parent: child finished, status %d\n&quot;, WEXITSTATUS(status));
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">hello from the new program
+parent: child finished, status 0
+</code></pre>
+<p>The first argument names the program to find on the <code>PATH</code>, and the argument list that follows becomes the new program's <code>argv</code>, starting with its own name and ending with a null pointer. The line after <code>execlp</code> is only reachable when <code>exec</code> fails, for example when the program does not exist, so it reports the error and exits with the conventional status 127.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram">   parent (shell)                               child
+        |                                         |
+   fork() -------------------------------------&gt; (copy of shell)
+        |                                         |
+   waitpid(child)                            exec(&quot;ls&quot;, ...)
+        |  (blocked: state Waiting)               |  code replaced by ls
+        |                                      ls runs ...
+        |                                         |
+        |  &lt;------------ exit(status) ------------+
+   waitpid returns, status collected         child is gone
+        |
+   prints next prompt
+</pre></div><figcaption><b>Figure 2.4..</b> How a shell runs a command: fork, then exec in the child, while the parent waits.</figcaption></figure>
+<h3 id="why-two-calls-instead-of-one">Why two calls instead of one?</h3>
+<p>Windows has a single <code>CreateProcess</code> call that takes the program name and a long list of options. Unix splits creation into <code>fork</code> and <code>exec</code>, and the gap between them is where the power lies. Between the two calls, the child (still running the shell's code) can rearrange its own environment: redirect standard output to a file, connect a pipe, change directory or drop privileges. Then <code>exec</code> runs the new program, which inherits that rearranged environment without knowing anything about it. That is how <code>ls &gt; out.txt</code> works with a plain <code>ls</code> program that simply writes to file descriptor 1.</p>
+<p>This also explains why <code>cd</code> is a shell <strong>built-in</strong>. If <code>cd</code> were an external program run in a child, it would change the directory of the child, which then exits, and the shell's own directory would be unchanged. A command that must modify the shell's own state has to run inside the shell process.</p>
+<div class="admonition history">
+<p class="admonition-title">fork in Unix</p>
+<p>The fork and exec pair comes from the earliest versions of Unix at Bell Labs around 1970, designed by Ken Thompson and Dennis Ritchie. The idea of a process cloning itself was borrowed from earlier systems, and the design was praised for its small implementation. Critics note that <code>fork</code> is awkward in multithreaded programs and for processes with large memory, and Linux provides <code>posix_spawn</code> and <code>vfork</code> for the common case of "create and immediately exec".</p>
+</div>
+<h2 id="ending-processes-wait-zombies-and-orphans">Ending processes: wait, zombies and orphans</h2>
+<p>A process ends when it returns from <code>main</code>, calls <code>exit</code>, or is killed by a signal. The kernel then frees its memory and closes its files. But it cannot discard the PCB entirely, because the parent may still want the <strong>exit status</strong>. So the PCB lingers until the parent collects it with <code>wait</code> or <code>waitpid</code>.</p>
+<div class="admonition definition">
+<p class="admonition-title">Zombie and orphan</p>
+<p>A <strong>zombie</strong> process has terminated but its parent has not yet called <code>wait</code>, so its PCB (PID, exit status) remains in the table. It uses no CPU or memory beyond that entry. An <strong>orphan</strong> process is one whose parent has terminated while it still runs. The kernel reparents orphans to PID 1 (or a designated "subreaper" process), which calls <code>wait</code> on them when they finish.</p>
+</div>
+<p>The next program creates a zombie on purpose. The child exits immediately; the parent sleeps for a second without waiting, then reads the child's state letter from <code>/proc</code>:</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+/* Read the state letter of a process from /proc/&lt;pid&gt;/stat. */
+static char state_of(pid_t pid) {
+    char path[64], buf[256];
+    snprintf(path, sizeof path, &quot;/proc/%d/stat&quot;, (int)pid);
+    FILE *f = fopen(path, &quot;r&quot;);
+    if (!f) return '?';
+    if (!fgets(buf, sizeof buf, f)) { fclose(f); return '?'; }
+    fclose(f);
+    char *p = strrchr(buf, ')');       /* the name sits in parentheses */
+    return p ? p[2] : '?';
+}
+
+int main(void) {
+    pid_t pid = fork();
+    if (pid == 0) _exit(0);            /* child ends at once */
+    sleep(1);                          /* parent does not wait yet */
+    printf(&quot;child %d state before wait: %c\n&quot;, (int)pid, state_of(pid));
+    waitpid(pid, NULL, 0);
+    printf(&quot;child state after wait:    %c\n&quot;, state_of(pid));
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">child 411 state before wait: Z
+child state after wait:    ?
+</code></pre>
+<p>Before <code>waitpid</code>, the child is <code>Z</code>, a zombie. After it, the entry is gone, so <code>/proc</code> has no file and the function returns <code>?</code>. Zombies cannot be killed, because they are already dead; the only cure is for the parent to <code>wait</code>, or to exit so that PID 1 inherits and reaps the child. A long-running server that forks children and never waits fills the process table with zombies until <code>fork</code> starts failing.</p>
+<p>The mirror image is the orphan. Here the parent exits first, and the child prints who its parent is afterwards:</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void) {
+    pid_t pid = fork();
+    if (pid == 0) {
+        sleep(1);                      /* outlive the parent */
+        printf(&quot;child : my parent is now pid %d\n&quot;, (int)getppid());
+        return 0;
+    }
+    printf(&quot;parent: exiting, child is %d\n&quot;, (int)pid);
+    return 0;
+}
+</code></pre>
+<pre><code class="language-text">parent: exiting, child is 413
+child : my parent is now pid 1
+</code></pre>
+<p>On a desktop Linux with a per-user service manager the adopting process may be a different PID than 1, but it is always some long-lived "reaper" process.</p>
+<h2 id="process-queues-and-schedulers">Process queues and schedulers</h2>
+<p>With many processes the kernel organizes PCBs into <strong>queues</strong>. The <strong>ready queue</strong> holds processes in the Ready state, waiting for a CPU. Each device has a <strong>wait queue</strong> holding processes blocked on it. A process migrates between these queues as its state changes, and the scheduler's job is to choose the next PCB from the ready queue.</p>
+<p>Textbooks describe three scheduling decisions made at different time scales:</p>
+<table>
+<thead>
+<tr>
+<th>Scheduler</th>
+<th>Decides</th>
+<th>How often</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Long-term (job)</td>
+<td>Which new jobs are admitted to the ready pool</td>
+<td>Seconds to minutes</td>
+<td>Controls the degree of multiprogramming; rare in modern desktop systems</td>
+</tr>
+<tr>
+<td>Medium-term</td>
+<td>Which processes to swap out of memory and back</td>
+<td>Seconds</td>
+<td>Used when memory is short (<a href="week-09.html">Week 9</a>)</td>
+</tr>
+<tr>
+<td>Short-term (CPU)</td>
+<td>Which ready process runs next</td>
+<td>Milliseconds</td>
+<td>Must be very fast; the topic of <a href="week-04.html">Week 4</a></td>
+</tr>
+</tbody>
+</table>
+<p>Processes also differ in behaviour. An <strong>I/O-bound</strong> process spends most of its time waiting for I/O and uses the CPU in short bursts. A <strong>CPU-bound</strong> process uses long CPU bursts with rare I/O. A good mix of both keeps the CPU and the devices busy together, which is the original reason to multiprogram.</p>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="core"><header><span class="ex-n">Exercise 2.1</span><span class="lvl lvl-core">core</span><h4>Count the processes</h4></header><div class="ex-q"><p>How many processes exist (including the original) after this fragment runs, if every <code>fork</code> succeeds?</p>
+<pre><code class="language-c">fork();
+if (fork() == 0)
+    fork();
+</code></pre></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>After the first <code>fork</code> there are two processes: P and C1. Both then execute the <code>fork()</code> inside the condition. P creates C2 and C1 creates C3, giving four processes. In each of these four the condition tests the value just returned. P and C1 received a non-zero PID, so they skip the body. C2 and C3 received 0, so each executes <code>fork()</code> again, creating C4 and C5. Total: P, C1, C2, C3, C4 and C5, which is 6 processes. As a check, <code>fork</code> is executed once by 1 process, then once by 2, then once by 2, which is 5 calls, each creating one process, so 1 + 5 = 6.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="warm-up"><header><span class="ex-n">Exercise 2.2</span><span class="lvl lvl-warmup">warm-up</span><h4>Predict the output</h4></header><div class="ex-q"><p>What does this program print, and in what order? Is the order guaranteed?</p>
+<pre><code class="language-c">int x = 1;
+if (fork() == 0) {
+    x = 2;
+} else {
+    wait(NULL);
+    x = x + 10;
+}
+printf(&quot;%d\n&quot;, x);
+</code></pre></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>The child sets its own copy of <code>x</code> to 2 and prints <code>2</code>, then exits. The parent was blocked in <code>wait</code> until the child exited, so only afterwards does it compute <code>x = 1 + 10 = 11</code> using its own unchanged copy and print <code>11</code>. The output is <code>2</code> then <code>11</code>. The order is guaranteed because <code>wait</code> forces the parent to run its <code>printf</code> after the child has finished. Without the <code>wait</code>, the order would depend on the scheduler.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="challenging"><header><span class="ex-n">Exercise 2.3</span><span class="lvl lvl-challenging">challenging</span><h4>Buffered output and fork</h4></header><div class="ex-q"><p>Consider this program.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+int main(void) {
+    printf(&quot;A\n&quot;);
+    fork();
+    printf(&quot;B\n&quot;);
+    return 0;
+}
+</code></pre>
+<p>How many <code>A</code> lines are printed when stdout is a terminal, and how many when it is redirected to a file with <code>./a.out &gt; out.txt</code>? Explain.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>On a terminal, stdout is line-buffered: <code>"A\n"</code> is flushed as soon as the newline is written, before <code>fork</code>, so the buffer is empty at the fork. The output has one <code>A</code> and two <code>B</code> lines. When redirected to a file, stdout is fully buffered, so <code>"A\n"</code> is still sitting in the user-space buffer when <code>fork</code> copies the address space. Each process inherits a buffer holding <code>"A\n"</code>, appends <code>"B\n"</code> and flushes it on exit. The file therefore contains <code>A</code>, <code>B</code>, <code>A</code>, <code>B</code>: two <code>A</code> lines. The fix is <code>fflush(stdout)</code> before <code>fork</code>, which is why the earlier listing has one.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="warm-up"><header><span class="ex-n">Exercise 2.4</span><span class="lvl lvl-warmup">warm-up</span><h4>Label the transitions</h4></header><div class="ex-q"><p>A process is admitted, runs, calls <code>read()</code> on a slow disk, gets its data, runs again until its time slice expires, runs a third time and finally calls <code>exit</code>. Write the sequence of state transitions with the cause of each, and count how many times the process was dispatched.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>New to Ready (admitted by the OS); Ready to Running (dispatched); Running to Waiting (blocks on <code>read</code>); Waiting to Ready (disk interrupt, data available); Ready to Running (dispatched); Running to Ready (timer interrupt, time slice expired); Ready to Running (dispatched); Running to Terminated (<code>exit</code>). The Ready to Running transition occurs three times, so the process was dispatched 3 times.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="core"><header><span class="ex-n">Exercise 2.5</span><span class="lvl lvl-core">core</span><h4>Context-switch overhead</h4></header><div class="ex-q"><p>A context switch takes 8 µs. Compute the fraction of CPU time lost to switching for time slices of 100 ms, 1 ms and 50 µs, assuming a switch after every slice. For which of them would you worry?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Overhead = s / (q + s) with s = 8 µs. For q = 100 ms = 100,000 µs: 8 / 100,008 = 0.008 percent. For q = 1 ms = 1000 µs: 8 / 1008 = 0.79 percent. For q = 50 µs: 8 / 58 = 13.8 percent. The first two are negligible; the third wastes more than one-eighth of the machine, so a slice that short is a bad design (and the indirect cache costs would make it worse).</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="core"><header><span class="ex-n">Exercise 2.6</span><span class="lvl lvl-core">core</span><h4>Why is cd a built-in?</h4></header><div class="ex-q"><p>Suppose <code>cd</code> were an ordinary program such as <code>/bin/cd</code> that calls <code>chdir</code>. Explain precisely why typing <code>cd /tmp</code> in the shell would then appear to do nothing. Name one other shell command that must be built in for the same reason.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>The shell would <code>fork</code> a child, and the child would <code>exec</code> <code>/bin/cd</code>, which calls <code>chdir("/tmp")</code>. The current directory is a property of the process that calls <code>chdir</code>, so only the child's directory changes. The child then exits, and the parent shell still sits in its old directory. A command that changes the shell's own state must therefore be executed by the shell itself. Other examples: <code>exit</code>, <code>export</code> (setting an environment variable that later commands inherit) and <code>umask</code>.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 2.7</span><span class="lvl lvl-challenging">challenging</span><h4>Cost of fork with copy-on-write</h4></header><div class="ex-q"><p>A parent has 400 MiB of resident memory in 4 KiB pages. It forks a child. Compare the extra physical memory needed (ignoring page tables) if (a) <code>fork</code> copies everything immediately, and (b) the system uses copy-on-write and the child writes to 10 percent of the pages before exiting. How much work does a following <code>exec</code> save?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Number of pages = 400 MiB / 4 KiB = 400 × 1024 / 4 = 102,400 pages. (a) Copying everything costs another 400 MiB, all 102,400 pages. (b) With copy-on-write, only the written pages are copied: 10 percent of 102,400 = 10,240 pages, which is 40 MiB, one tenth of the eager cost. If the child immediately calls <code>exec</code>, it discards its address space without writing to almost any page, so (nearly) zero pages are copied: the full 400 MiB copy in (a) would have been wasted entirely. This is why copy-on-write makes the fork then exec pattern cheap.</p></div></details></section>
+<h2 id="lab-build-a-mini-shell">Lab: build a mini shell</h2>
+<p>You will write a shell that prints a prompt, reads a line, splits it into words, runs it with <code>fork</code>, <code>execvp</code> and <code>waitpid</code>, and reports non-zero exit statuses. It implements two built-ins, <code>cd</code> and <code>exit</code>. This is the core of Assignment 1 in <a href="week-04.html">Week 4</a>. Save the code as <code>mini.c</code>.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+/* A tiny shell: read a line, split on spaces, fork, exec, wait. */
+int main(void) {
+    char line[256];
+    for (;;) {
+        printf(&quot;mini$ &quot;);
+        fflush(stdout);
+        if (!fgets(line, sizeof line, stdin)) break;
+        char *argv[16];
+        int n = 0;
+        for (char *tok = strtok(line, &quot; \t\n&quot;); tok &amp;&amp; n &lt; 15; tok = strtok(NULL, &quot; \t\n&quot;))
+            argv[n++] = tok;
+        argv[n] = NULL;
+        if (n == 0) continue;
+        if (strcmp(argv[0], &quot;exit&quot;) == 0) break;
+        if (strcmp(argv[0], &quot;cd&quot;) == 0) {   /* must run in the shell itself */
+            if (n &gt; 1 &amp;&amp; chdir(argv[1]) != 0) perror(&quot;cd&quot;);
+            continue;
+        }
+        pid_t pid = fork();
+        if (pid == 0) {
+            execvp(argv[0], argv);
+            perror(argv[0]);
+            _exit(127);
+        }
+        int status;
+        waitpid(pid, &amp;status, 0);
+        if (WIFEXITED(status) &amp;&amp; WEXITSTATUS(status) != 0)
+            printf(&quot;[exit %d]\n&quot;, WEXITSTATUS(status));
+    }
+    printf(&quot;\n&quot;);
+    return 0;
+}
+</code></pre>
+<p>Build and try it, either interactively or by feeding it commands:</p>
+<pre><code class="language-bash">gcc -Wall -pthread mini.c -o mini
+printf 'echo hi there\nls /nonexistent\nfoo\ncd /tmp\npwd\nexit\n' | ./mini
+</code></pre>
+<p><strong>What to observe.</strong> The real output from that run was:</p>
+<pre><code class="language-text">mini$ hi there
+mini$ ls: cannot access '/nonexistent': No such file or directory
+[exit 2]
+mini$ foo: No such file or directory
+[exit 127]
+mini$ mini$ /tmp
+mini$ 
+</code></pre>
+<p>Each prompt appears right after the previous command finishes because the shell waits. <code>ls</code> fails with status 2, an unknown command makes <code>execvp</code> fail so the child reports the error and exits 127, and after the built-in <code>cd /tmp</code> the next command <code>pwd</code> prints <code>/tmp</code>, proving that the directory change took effect in the shell itself. Try removing the <code>waitpid</code> and run <code>echo hi</code> several times, then in another terminal run <code>ps -o pid,stat,cmd --ppid $(pgrep mini)</code> to watch zombies accumulate.</p>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Run a command in the background when the line ends in <code>&amp;</code> (do not call <code>waitpid</code> immediately) and reap finished children with <code>waitpid(-1, &amp;status, WNOHANG)</code> before each prompt, so that no zombies remain.</li>
+<li>Add output redirection <code>cmd &gt; file</code>: in the child, before <code>execvp</code>, open the file and use <code>dup2</code> to make it file descriptor 1. Explain why this must happen between <code>fork</code> and <code>exec</code>.</li>
+<li>Print the state letter of the last child (as in the zombie listing) just before you reap it, and the elapsed time of each command using <code>clock_gettime</code>.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Output appears twice or in a surprising order</td>
+<td>Unflushed stdio buffer copied by <code>fork</code>, or no <code>wait</code> to order parent and child</td>
+<td>Call <code>fflush(stdout)</code> before <code>fork</code>; use <code>waitpid</code> when order matters</td>
+</tr>
+<tr>
+<td>Program creates processes without limit and the machine slows down</td>
+<td>A child falls through the <code>if (pid == 0)</code> branch and continues into the parent's loop</td>
+<td>End the child branch with <code>exit</code> or <code>_exit</code>; check <code>fork</code> return values</td>
+</tr>
+<tr>
+<td><code>ps</code> shows entries marked <code>Z</code> or <code>&lt;defunct&gt;</code></td>
+<td>Parent never calls <code>wait</code> for terminated children</td>
+<td>Reap with <code>wait</code> or <code>waitpid</code>, or handle <code>SIGCHLD</code></td>
+</tr>
+<tr>
+<td>Child prints "No such file or directory" then exits with 127</td>
+<td><code>exec</code> failed: wrong program name, not on <code>PATH</code> or not executable</td>
+<td>Check the name, use <code>execvp</code> to search <code>PATH</code>, and always handle a failing <code>exec</code></td>
+</tr>
+<tr>
+<td>Code after <code>exec</code> never runs</td>
+<td>That is expected: <code>exec</code> replaces the program and returns only on error</td>
+<td>Put follow-up logic in the parent, or in the new program</td>
+</tr>
+<tr>
+<td><code>cd</code> in a child has no effect</td>
+<td>The directory belongs to the process that called <code>chdir</code></td>
+<td>Make <code>cd</code> a built-in executed by the shell itself</td>
+</tr>
+<tr>
+<td><code>fork</code> returns -1</td>
+<td>Process limit or memory exhausted</td>
+<td>Print <code>perror</code>, check <code>ulimit -u</code>, and make sure children are being reaped</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>A process is a program in execution: an address space (text, data/bss, heap, stack) plus CPU state plus kernel bookkeeping held in its PCB.</li>
+<li>Processes move among New, Ready, Running, Waiting and Terminated. Only the scheduler's dispatch moves a process from Ready to Running, and a process whose event completes returns to Ready.</li>
+<li>A context switch saves one process's context in its PCB and loads another's. It is pure overhead, roughly <code>s / (q + s)</code> of CPU time for a switch cost <code>s</code> and slice <code>q</code>.</li>
+<li><code>fork</code> clones the caller and returns the child's PID to the parent and 0 to the child; <code>exec</code> replaces the program in place; <code>wait</code> collects the exit status.</li>
+<li>Splitting creation into fork and exec lets a shell prepare the child's environment (redirection, pipes) before the new program starts.</li>
+<li>Terminated processes stay as zombies until their parent waits; orphans are adopted by PID 1.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 3 (Processes), sections on process concept, process scheduling, operations on processes.</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapters "The Abstraction: The Process" and "Interlude: Process API".</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapter "Mechanism: Limited Direct Execution" for how context switches use timer interrupts.</li>
+<li>Tanenbaum and Bos, <em>Modern Operating Systems</em>, Section 2.1 (Processes), including process creation, termination, hierarchies and states.</li>
+<li>A. Baumann et al., "A fork() in the road", Proceedings of HotOS 2019, a critique of fork in modern systems.</li>
+<li>D. M. Ritchie and K. Thompson, "The UNIX Time-Sharing System", <em>Communications of the ACM</em> 17(7), 1974.</li>
+<li>Manual pages: <code>fork(2)</code>, <code>execve(2)</code>, <code>wait(2)</code>, <code>exit(3)</code>, <code>proc(5)</code>, <code>pstree(1)</code>.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="2">Mark Week 2 as complete</button></div><div class="pager"><a class="pn prev" href="week-01.html"><small>Previous</small>Week 1: Introduction, OS Structure and System Calls</a><a class="pn next" href="week-03.html"><small>Next</small>Week 3: Threads and Interprocess Communication</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#what-is-a-process">What is a process?</a></li><li><a href="#process-states-and-the-pcb">Process states and the PCB</a></li><li><a href="#context-switching">Context switching</a></li><li><a href="#creating-processes-with-fork">Creating processes with fork</a></li><li><a href="#running-new-programs-exec-and-the-shell">Running new programs: exec and the shell</a></li><li><a href="#ending-processes-wait-zombies-and-orphans">Ending processes: wait, zombies and orphans</a></li><li><a href="#process-queues-and-schedulers">Process queues and schedulers</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab-build-a-mini-shell">Lab: build a mini shell</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

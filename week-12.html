@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 12: File Systems I: Interface and Implementation · Operating Systems for Dummies</title>
+<meta name="description" content="What a file and a directory are, how the kernel tracks open files, how blocks are allocated (contiguous, linked, FAT, indexed), how Unix inodes reach terabytes with a few pointers, and how links, free-space maps, mounting and the VFS layer fit together.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>document.documentElement.classList.add('js');try{var t=localStorage.getItem('osd-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><button class="icon-btn menu" id="menu" type="button" aria-label="Open course menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="brand" href="index.html"><svg class="brand-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent-soft)"/><path class="l3" d="M16 6l10 5-10 5-10-5z"/><path class="l2" d="M6 16l10 5 10-5" fill="none" stroke="var(--accent)" stroke-opacity=".65" stroke-width="2.6" stroke-linejoin="round"/><path class="l1" d="M6 21l10 5 10-5" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/></svg><span>OS <em>for Dummies</em></span></a><nav class="top-nav" aria-label="Main"><a href="index.html">Home</a><a href="syllabus.html">Syllabus</a><a href="glossary.html">Glossary</a></nav><div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search the course" autocomplete="off" aria-label="Search the course"><kbd>/</kbd><div id="results" class="results" hidden></div></div><button class="icon-btn theme" id="theme" type="button" aria-label="Toggle dark mode"><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/></svg></button><div class="progress" id="progress" aria-hidden="true"></div></header>
+<div class="shell"><nav class="side" aria-label="Course">
+<div class="side-top">
+<a class="side-link" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a>
+<a class="side-link" href="syllabus.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span>Syllabus</span></a>
+<a class="side-link" href="glossary.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg><span>Glossary</span></a>
+</div>
+<div data-phase="1"><div class="phase-h"><span><b>Phase 1</b> Foundations</span></div>
+<a class="wk" data-week="1" href="week-01.html"><b>1</b><span>Introduction, OS Structure and System Calls</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="2" href="week-02.html"><b>2</b><span>Processes</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="3" href="week-03.html"><b>3</b><span>Threads and Interprocess Communication</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="4" href="week-04.html"><b>4</b><span>CPU Scheduling</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="2"><div class="phase-h"><span><b>Phase 2</b> Concurrency and Deadlocks</span></div>
+<a class="wk" data-week="5" href="week-05.html"><b>5</b><span>Synchronization I</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="6" href="week-06.html"><b>6</b><span>Synchronization II</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="7" href="week-07.html"><b>7</b><span>Deadlocks</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="3"><div class="phase-h"><span><b>Phase 3</b> Memory</span></div>
+<a class="wk" data-week="8" href="week-08.html"><b>8</b><span>Main Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="9" href="week-09.html"><b>9</b><span>Virtual Memory</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="10" href="week-10.html"><b>10</b><span>Page Replacement, Frame Allocation and Thrashing</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<div data-phase="4"><div class="phase-h"><span><b>Phase 4</b> Storage, Protection and Modern Systems</span></div>
+<a class="wk" data-week="11" href="week-11.html"><b>11</b><span>Mass Storage: Disks, SSDs, Scheduling and RAID</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk on" data-week="12" href="week-12.html"><b>12</b><span>File Systems I: Interface and Implementation</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="13" href="week-13.html"><b>13</b><span>File Systems II: Journaling, Caching and the I/O Subsystem</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="14" href="week-14.html"><b>14</b><span>Protection and Security</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="15" href="week-15.html"><b>15</b><span>Virtualization, Containers and Case Studies: Linux and Windows</span><i class="chk" aria-hidden="true"></i></a>
+<a class="wk" data-week="16" href="week-16.html"><b>16</b><span>Review, Projects and Final Exam</span><i class="chk" aria-hidden="true"></i></a>
+</div>
+<a class="side-link small" href="about.html"><span>About and contributing</span></a>
+<button class="reset" id="reset-progress" type="button">Reset progress</button>
+</nav>
+<main id="main"><div class="wrap" data-phase="4"><article class="week" data-week="12"><header class="week-head" data-num="12"><p class="kicker">Week 12 · Phase 4: Storage, Protection and Modern Systems</p><h1>File Systems I: Interface and Implementation</h1><p class="abstract">What a file and a directory are, how the kernel tracks open files, how blocks are allocated (contiguous, linked, FAT, indexed), how Unix inodes reach terabytes with a few pointers, and how links, free-space maps, mounting and the VFS layer fit together.</p><ul class="chips"><li><b>30</b> min read</li><li><b>2</b> demos</li><li><b>4</b> figures</li><li><b>12</b> code blocks</li><li><b>7</b> exercises</li></ul><p class="lab-line"><b>Lab.</b> Use stat and readdir from C to inspect inodes and link counts, observe shared file offsets after fork, and write a block-map calculator that turns a byte offset into a path through an inode.</p></header><div class="week-grid"><div class="main-col"><section class="objectives"><h2>What you will be able to do</h2><p>By the end of this week you will be able to:</p><ul><li>Distinguish a file&#x27;s contents, its attributes and its name, and say where each is stored</li><li>Trace an open call through the per-process fd table, the system-wide open file table and the inode table</li><li>Compare contiguous, linked, FAT and indexed allocation for sequential and random access</li><li>Convert a byte offset to a logical block and to a path through direct, single, double or triple indirect pointers</li><li>Compute the maximum file size of an inode design from block size and pointer size</li><li>Compare a bitmap with a free list and compute the bitmap size for a given disk</li><li>Explain the difference between hard and symbolic links, and how mounting and the VFS layer merge file systems into one tree</li></ul></section><div class="prose"><p>In <a href="week-11.html">Week 11</a> a disk became a flat array of numbered blocks that can be read and written, and the device itself knows nothing about names, owners or folders. This week we build the layer that supplies them. A file system turns that array into the abstraction every programmer knows: named files organised in a tree of directories, with permissions and sizes. We look first at the interface a program sees, then at the structures the kernel builds to implement it.</p>
+<p>The ideas here carry directly into <a href="week-13.html">Week 13</a>, where we ask what happens when the power fails in the middle of an update, and into <a href="week-14.html">Week 14</a>, where the permission bits stored in the inode become a protection mechanism. Back in <a href="week-02.html">Week 2</a> we saw redirection work by rearranging file descriptors between <code>fork</code> and <code>exec</code>; this chapter explains what those descriptors point to.</p>
+<h2 id="files-attributes-and-operations">Files, attributes and operations</h2>
+<p>Think of a library. A book has contents, a catalogue card (title, author, shelf number, loan status) and a place on a shelf. The card is not the book, and the shelf position is not the title. A file system keeps the same three things apart.</p>
+<div class="admonition definition">
+<p class="admonition-title">File</p>
+<p>A file is a named, persistent collection of related bytes, managed by the operating system. To the kernel a file is an unstructured sequence of bytes. Any structure (lines of text, records, images) is imposed by the programs that read it.</p>
+</div>
+<p>Along with its bytes, each file has <strong>attributes</strong> (also called metadata): its type, size, owner, group, permission bits, timestamps (access, modification, status change), the link count, and the location of its data blocks. On Unix these all live in one on-disk record, the <strong>inode</strong> (index node). Notice what is missing: the file's name. Names belong to directories, which we reach shortly.</p>
+<p>The interface is a small set of system calls: <code>open</code>, <code>read</code>, <code>write</code>, <code>lseek</code>, <code>close</code>, <code>unlink</code> (delete a name), <code>rename</code>, <code>truncate</code>, and <code>stat</code> (read the attributes). Two details deserve attention.</p>
+<p>First, <code>open</code> returns a small integer, the <strong>file descriptor</strong>, and does the expensive work once: path lookup and permission checking. After that, <code>read(fd, ...)</code> needs no path at all. Second, the kernel keeps a <strong>current file offset</strong> per open file, so consecutive <code>read</code> calls move through the file. <code>lseek</code> changes it; <code>pread</code> and <code>pwrite</code> take an explicit offset instead. Access is <strong>sequential</strong> (the default, offset moves forward) or <strong>direct</strong> (jump anywhere with <code>lseek</code>), and files are also commonly accessed through <code>mmap</code> (<a href="week-09.html#memory-mapped-files">Week 9</a>).</p>
+<h2 id="directories-and-path-names">Directories and path names</h2>
+<p>A <strong>directory</strong> is a special file whose contents are a table mapping names to inode numbers. Looking up a name means searching that table. The directory entry <code>("report.txt", 4821)</code> says "the name report.txt refers to inode 4821". The inode, not the entry, holds the size, permissions and block pointers.</p>
+<p>This split explains many Unix behaviours. Renaming a file inside a directory changes only a directory entry, so it is instant, whatever the size. Two entries (in the same or different directories) may name the same inode; these are hard links. A file is deleted when its <strong>link count</strong> (the number of directory entries pointing to the inode) reaches zero and no process still has it open.</p>
+<p>Every directory contains two special entries: <code>.</code> (itself) and <code>..</code> (its parent). The root directory's <code>..</code> is itself. A path is resolved component by component, starting from the root <code>/</code> for an absolute path or from the process's current directory for a relative one.</p>
+<div class="admonition example">
+<p class="admonition-title">Resolving /usr/bin/ls on a cold cache</p>
+<p>Assume every directory fits in one block and the root inode is at a well-known location. The kernel must read: the root inode, the root directory's data block (find <code>usr</code>), the inode of <code>usr</code>, its directory block (find <code>bin</code>), the inode of <code>bin</code>, its directory block (find <code>ls</code>), and finally the inode of <code>ls</code>. That is 4 inode reads plus 3 directory-block reads, 7 disk accesses before a single byte of the program is read. This is why the kernel caches directory entries (the dentry cache) so that repeated lookups of popular paths cost no disk I/O at all.</p>
+</div>
+<p>Directories form a tree because Unix forbids hard links to directories (they would create cycles that make tree walks and reference counting unsafe). Symbolic links, described later, may point anywhere and can create cycles, so path resolution limits the number of links it follows.</p>
+<h2 id="the-open-file-tables">The open-file tables</h2>
+<p>When a process calls <code>open</code>, the kernel does not simply hand back a pointer to the inode. It uses three tables, and understanding their relationship answers many classic puzzles.</p>
+<ol>
+<li>The <strong>per-process file descriptor table</strong>: an array indexed by the descriptor number (0 is standard input, 1 standard output, 2 standard error). Each slot points to an entry in the next table. It lives in the process's kernel data and is copied by <code>fork</code>.</li>
+<li>The <strong>system-wide open file table</strong>: one entry per <em>open file description</em>. Each entry stores the current offset, the access mode (read, write, append), flags and a reference count, and points to an inode.</li>
+<li>The <strong>inode table</strong>: the in-memory copies of inodes for every file currently in use, shared by everyone. Each stores the attributes, the block pointers and an in-memory count of how many open file entries refer to it.</li>
+</ol>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Process P (fd table)        System-wide open file table       Inode table
+ +----+------------+         +-----------------------+        +------------+
+ | 0  | tty        |         |  A: offset=5, refs=2  |-------&gt;| inode 1204 |
+ | 3  | ----------------+---&gt;|     mode=read         |   +---&gt;| (data.txt) |
+ | 4  | ----------------|-+  +-----------------------+   |    +------------+
+ | 5  | ----------------+ |  |  B: offset=0, refs=1  |---+
+ +----+------------+        +-&gt;|     mode=read         |
+                              +-----------------------+
+ Process C (child of P, after fork) has its own fd table whose slots 3 and 5
+ point at the SAME entry A, so reads by C move the offset that P sees.
+</pre></div><figcaption><b>Figure 12.1..</b> The three tables. fd 3 and fd 5 share entry A (made by dup or inherited through fork); fd 4 came from a second open and has its own offset in entry B. Both entries reach the same inode.</figcaption></figure>
+<p>Why two levels above the inode? The answer is what must be shared. Two processes that independently open the same file need independent offsets, so each gets its own open file entry. But a parent and child after <code>fork</code>, or two descriptors made by <code>dup</code>, are meant to share an offset: this is exactly how a shell pipeline <code>(cmd1; cmd2) &gt; out.txt</code> writes both outputs one after the other rather than overwriting. The reference count on the entry records how many descriptors share it; <code>close</code> decrements it and frees the entry at zero.</p>
+<p>Listing 1 demonstrates it. Parent opens <code>data.txt</code> twice (<code>a</code> and <code>b</code>), reads 5 bytes through <code>a</code>, forks, and the child reads 3 more through its inherited copy of <code>a</code>.</p>
+<pre><code class="language-c">#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+
+static void show(const char *who, const char *name, int fd) {
+    printf(&quot;%-7s %-6s fd=%d offset=%ld\n&quot;, who, name, fd, (long)lseek(fd, 0, SEEK_CUR));
+    fflush(stdout);
+}
+
+int main(void) {
+    int a = open(&quot;data.txt&quot;, O_RDONLY);
+    int b = open(&quot;data.txt&quot;, O_RDONLY);    /* separate open file entry */
+    char buf[8];
+    if (a &lt; 0 || b &lt; 0) { perror(&quot;open&quot;); return 1; }
+
+    if (read(a, buf, 5) &lt; 0) return 1;      /* advance a only */
+    show(&quot;parent&quot;, &quot;a&quot;, a);
+    show(&quot;parent&quot;, &quot;b&quot;, b);
+
+    pid_t pid = fork();                     /* child inherits the fd table */
+    if (pid == 0) {
+        if (read(a, buf, 3) &lt; 0) _exit(1);  /* moves the SHARED offset */
+        show(&quot;child&quot;, &quot;a&quot;, a);
+        _exit(0);
+    }
+    waitpid(pid, NULL, 0);
+    show(&quot;parent&quot;, &quot;a&quot;, a);                 /* offset moved by the child */
+    show(&quot;parent&quot;, &quot;b&quot;, b);
+    return 0;
+}
+</code></pre>
+<p><em>Listing 1. Shared and independent file offsets (create data.txt first, for example with <code>echo "hello world" &gt; data.txt</code>).</em></p>
+<pre><code class="language-text">parent  a      fd=3 offset=5
+parent  b      fd=4 offset=0
+child   a      fd=3 offset=8
+parent  a      fd=3 offset=8
+parent  b      fd=4 offset=0
+</code></pre>
+<p>The parent's <code>a</code> jumped from 5 to 8 although the parent did nothing: the child moved the shared entry. Descriptor <code>b</code> is unaffected.</p>
+<div class="admonition warning">
+<p class="admonition-title">A descriptor is not a file</p>
+<p>Closing a descriptor does not delete anything. A file's data go away only when the inode's link count is zero and its in-memory reference count is zero. This is why you can <code>unlink</code> a file that a process still has open: the name disappears, but the program keeps reading and writing until it closes the descriptor. Log files deleted while a daemon still writes to them keep consuming disk space for exactly this reason.</p>
+</div>
+<h2 id="allocation-methods">Allocation methods</h2>
+<p>Now to the central implementation question: given a file of <code>n</code> bytes, which disk blocks hold it? The disk is a pool of fixed-size blocks (4 KiB is typical), so a file occupies <code>⌈n / 4096⌉</code> of them. The file system's <strong>allocation method</strong> records which. We compare four classical ones on three criteria: speed of sequential access, speed of random access, and waste.</p>
+<h3 id="contiguous-allocation">Contiguous allocation</h3>
+<p>Each file occupies a run of consecutive blocks; the directory records the start block and length. Sequential access is as fast as the disk can go (no seeks), and random access is trivial: block <code>k</code> is at <code>start + k</code>. The costs are those of <a href="week-08.html">Week 8</a> all over again: <strong>external fragmentation</strong> (free space splits into holes that no file fits), difficulty growing a file (the next block may be taken), and the need to know the final size at creation. Contiguous allocation survives where files are written once, such as CD and DVD file systems, and in the <em>extents</em> of modern file systems (below).</p>
+<h3 id="linked-allocation">Linked allocation</h3>
+<p>Each block holds the data plus a pointer to the next block; the directory records the first block. There is no external fragmentation and a file can grow anywhere. But random access is awful: to reach logical block <code>k</code> you must read all of blocks <code>0</code> to <code>k − 1</code>, one disk read each. Pointers also cost space (4 bytes of a 4096-byte block leaves 4092 for data) and one lost block breaks the rest of the chain.</p>
+<h3 id="fat-linked-allocation-with-the-pointers-moved">FAT: linked allocation with the pointers moved</h3>
+<p>The <strong>File Allocation Table</strong> keeps the idea but moves every pointer out of the data blocks into one table at the start of the volume, with one entry per block (or per cluster of blocks). Entry <code>i</code> holds the number of the block that follows block <code>i</code> in its file, or a special end-of-file mark, or a zero for free. The directory entry stores the first block.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Directory entry: &quot;a.txt&quot;, first = 4                 FAT (index -&gt; next)
+                                                     +-----+-------+
+ a.txt:  4 -&gt; 7 -&gt; 2 -&gt; EOF                          |  2  |  EOF  |
+ b.txt:  5 -&gt; 3 -&gt; EOF                               |  3  |  EOF  |
+                                                     |  4  |   7   |
+ Linked: pointer inside each block                   |  5  |   3   |
+ FAT:    the same chain, but stored in one table     |  6  | free  |
+ that stays cached in RAM, so following the          |  7  |   2   |
+ chain costs memory lookups, not disk reads.         +-----+-------+
+ Contiguous: (start=20, length=3) -&gt; blocks 20,21,22
+ Indexed:    one index block lists the blocks directly: [4, 7, 2]
+</pre></div><figcaption><b>Figure 12.2..</b> The four allocation methods describing the same 3-block file. FAT and linked store the chain; contiguous stores a run; indexed stores a list.</figcaption></figure>
+<p>With the FAT cached in memory, random access needs only table lookups (fast) and one data read. The price is that the whole table must be resident: a 32 GiB volume with 4 KiB clusters has <code>2³⁵ / 2¹² = 2²³ = 8,388,608</code> entries; at 4 bytes each the FAT is 32 MiB, and it grows with the disk. FAT is simple and still used on memory cards and USB sticks (FAT32, exFAT), but it has no per-file permissions and weak crash recovery.</p>
+<h3 id="indexed-allocation">Indexed allocation</h3>
+<p>Give each file an <strong>index block</strong>: an array of pointers to its data blocks. Block <code>k</code> of the file is simply <code>index[k]</code>, so random access costs one extra read (and none once the index is cached). Only the files that need a big index pay for it, and there is no external fragmentation. The problem is the index's size: a small file wastes a whole block on its index, and a large file needs more entries than one block holds. Solutions are to <strong>link</strong> index blocks, use a <strong>multilevel</strong> index, or combine schemes, which is exactly what the Unix inode does.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Sequential</th>
+<th>Random</th>
+<th>Grows easily</th>
+<th>Main weakness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Contiguous</td>
+<td>Best</td>
+<td>One computation</td>
+<td>No</td>
+<td>External fragmentation</td>
+</tr>
+<tr>
+<td>Linked</td>
+<td>Good</td>
+<td><code>k</code> disk reads</td>
+<td>Yes</td>
+<td>Slow random access, fragile chain</td>
+</tr>
+<tr>
+<td>FAT</td>
+<td>Good</td>
+<td><code>k</code> memory lookups</td>
+<td>Yes</td>
+<td>Whole table in RAM</td>
+</tr>
+<tr>
+<td>Indexed</td>
+<td>Good</td>
+<td>1 extra read (or 0 if cached)</td>
+<td>Yes</td>
+<td>Index overhead for tiny files</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition history">
+<p class="admonition-title">Extents</p>
+<p>Modern file systems such as ext4, XFS and NTFS often store not a list of blocks but a list of <strong>extents</strong>, each a pair (start block, length). A well-allocated 1 GiB file may need a handful of extents instead of 262,144 pointers. It is contiguous allocation and indexed allocation combined: the index stays tiny when the allocator finds long runs, and the file system still copes when it cannot.</p>
+</div>
+<h2 id="unix-inodes-and-the-multilevel-index">Unix inodes and the multilevel index</h2>
+<p>The classic Unix file system (and ext2, ext3 and their relatives) stores per-file information in a fixed-size <strong>inode</strong>. Besides the attributes, the inode holds 15 block pointers: 12 <strong>direct</strong> pointers to data blocks, one <strong>single indirect</strong> pointer, one <strong>double indirect</strong> and one <strong>triple indirect</strong>.</p>
+<ul>
+<li>A direct pointer names a data block.</li>
+<li>The single indirect pointer names a block that is itself a table of pointers, each naming a data block.</li>
+<li>The double indirect pointer names a table whose entries each point to a single-indirect-style table.</li>
+<li>The triple indirect adds one more level.</li>
+</ul>
+<pre><code class="language-c">struct inode {                 /* simplified ext2-style layout */
+    unsigned short mode;       /* type and permission bits       */
+    unsigned short nlink;      /* number of directory entries    */
+    unsigned int   uid, gid;   /* owner                          */
+    unsigned long  size;       /* bytes                          */
+    unsigned long  atime, mtime, ctime;
+    unsigned int   block[15];  /* 0-11 direct, 12 single,
+                                  13 double, 14 triple indirect  */
+};
+</code></pre>
+<p><em>Listing 2. The block pointers in a simplified inode.</em></p>
+<figure class="figure"><div class="scroll"><pre class="diagram">  inode
+ +----------+        data blocks
+ | direct 0 |------&gt; [ block 0 ]       logical blocks 0..11
+ |   ...    |        ...               (first 48 KiB, no extra reads)
+ | direct 11|------&gt; [ block 11]
+ | single   |---&gt; [ ptr x1024 ]-----&gt; data     12 .. 1035
+ | double   |---&gt; [ ptr x1024 ]---&gt; [ ptr x1024 ]---&gt; data   1036 ..
+ | triple   |---&gt; [ ptr x1024 ]---&gt; [ ptr x1024 ]---&gt; [ ptr x1024 ]---&gt; data
+ +----------+
+ Small files (most files!) never touch an indirect block; the cost of a big
+ index is paid only by big files.
+</pre></div><figcaption><b>Figure 12.3..</b> The inode's 15 pointers. Each indirect block holds 1024 four-byte pointers when blocks are 4 KiB.</figcaption></figure>
+<p>This design reflects a measured fact: most files are small, but most bytes belong to large files. Small files get a fast, compact structure; large files get a deep tree.</p>
+<h3 id="how-big-can-a-file-be">How big can a file be?</h3>
+<p>Let the block size be <code>B = 4096</code> bytes and a pointer be 4 bytes. One indirect block holds <code>4096 / 4 = 1024</code> pointers, so call <code>N = 1024</code>. The number of data blocks reachable is:</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>Blocks reached</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>12 direct</td>
+<td>12</td>
+<td>48 KiB</td>
+</tr>
+<tr>
+<td>Single indirect</td>
+<td>N = 1,024</td>
+<td>4 MiB</td>
+</tr>
+<tr>
+<td>Double indirect</td>
+<td>N² = 1,048,576</td>
+<td>4 GiB</td>
+</tr>
+<tr>
+<td>Triple indirect</td>
+<td>N³ = 1,073,741,824</td>
+<td>4 TiB</td>
+</tr>
+</tbody>
+</table>
+<p>The maximum file size is <code>(12 + N + N² + N³) × B = 1,074,791,436 × 4096 = 4,402,345,721,856</code> bytes, which is 4 TiB plus 4 GiB plus 4 MiB plus 48 KiB, about 4.004 TiB. In practice other limits (the width of the size field, file system design) can be smaller.</p>
+<p>Before the worked mapping below, try the calculator: change the block size and pointer size and see how each region's contribution and the total change. Which region dominates for 4 KiB blocks? What happens if you halve the block size?</p>
+<div class="demo" data-demo="inode-calc"><div class="demo-head"><span class="tag">Interactive</span><span class="demo-title">Map file offsets to blocks and compute maximum file size</span></div><div class="demo-body"></div></div>
+<h3 id="from-a-byte-offset-to-a-block">From a byte offset to a block</h3>
+<p>Given a byte offset <code>off</code>, the logical block number is <code>off / B</code> (integer division) and the position inside the block is <code>off % B</code>. Then subtract region sizes in order. Listing 3 does exactly this.</p>
+<div class="admonition example">
+<p class="admonition-title">Worked example: byte offset 5,000,000</p>
+<p><code>5,000,000 / 4096 = 1220</code> remainder <code>5,000,000 − 1220 × 4096 = 2,880</code>. So the byte is at position 2,880 of logical block 1220.</p>
+<ul>
+<li>Direct covers blocks 0 to 11. <code>1220 &gt; 11</code>, so subtract 12: 1208.</li>
+<li>Single indirect covers the next 1,024 blocks (logical 12 to 1035). <code>1208 ≥ 1024</code>, so subtract 1024: 184.</li>
+<li>Double indirect starts at logical block 1036, and <code>184 &lt; N² = 1,048,576</code>. The first-level index is <code>184 / 1024 = 0</code> and the second is <code>184 % 1024 = 184</code>.</li>
+</ul>
+<p>The path is: inode → double indirect block → entry <code>double[0]</code> → single-indirect block → entry <code>block[184]</code> → data block. A cold read needs 3 disk reads (the double block, the second-level block, the data block) once the inode is in memory.</p>
+</div>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define NDIRECT 12
+
+int main(int argc, char **argv) {
+    unsigned long long block = 4096, ptr = 4;
+    if (argc &lt; 2) {
+        fprintf(stderr, &quot;usage: %s offset [block_size] [ptr_size]\n&quot;, argv[0]);
+        return 1;
+    }
+    unsigned long long off = strtoull(argv[1], NULL, 10);
+    if (argc &gt; 2) block = strtoull(argv[2], NULL, 10);
+    if (argc &gt; 3) ptr = strtoull(argv[3], NULL, 10);
+
+    unsigned long long n = block / ptr;          /* pointers per block */
+    unsigned long long lb = off / block;         /* logical block number */
+    unsigned long long in = off % block;         /* byte within that block */
+    printf(&quot;block size %llu, %llu pointers per block\n&quot;, block, n);
+    printf(&quot;offset %llu = logical block %llu, byte %llu\n&quot;, off, lb, in);
+
+    if (lb &lt; NDIRECT) {
+        printf(&quot;direct[%llu]\n&quot;, lb);
+    } else if ((lb -= NDIRECT) &lt; n) {
+        printf(&quot;single indirect: block[%llu]\n&quot;, lb);
+    } else if ((lb -= n) &lt; n * n) {
+        printf(&quot;double indirect: double[%llu] -&gt; block[%llu]\n&quot;, lb / n, lb % n);
+    } else if ((lb -= n * n) &lt; n * n * n) {
+        printf(&quot;triple indirect: triple[%llu] -&gt; double[%llu] -&gt; block[%llu]\n&quot;,
+               lb / (n * n), (lb / n) % n, lb % n);
+    } else {
+        printf(&quot;beyond the maximum file size\n&quot;);
+        return 2;
+    }
+    unsigned long long maxblocks = NDIRECT + n + n * n + n * n * n;
+    printf(&quot;max blocks %llu, max file size %llu bytes (%.3f TiB)\n&quot;,
+           maxblocks, maxblocks * block, maxblocks * (double)block / (1ULL &lt;&lt; 40));
+    return 0;
+}
+</code></pre>
+<p><em>Listing 3. A block-map calculator. Compile with <code>gcc -Wall -o blockmap blockmap.c</code>.</em></p>
+<p>Running <code>./blockmap 5000000</code> prints:</p>
+<pre><code class="language-text">block size 4096, 1024 pointers per block
+offset 5000000 = logical block 1220, byte 2880
+double indirect: double[0] -&gt; block[184]
+max blocks 1074791436, max file size 4402345721856 bytes (4.004 TiB)
+</code></pre>
+<p>Boundary values are the best tests: offset 49151 is the last byte of direct block 11, offset 49152 is <code>single indirect: block[0]</code>, offset 4243455 is <code>block[1023]</code> of the single region, and offset 4243456 is the first byte reached through <code>double[0] -&gt; block[0]</code>.</p>
+<div class="admonition intuition">
+<p class="admonition-title">Why not a deeper tree everywhere?</p>
+<p>Each indirect level multiplies reach by 1024 but costs one more disk read per cold access. Direct pointers make the common case (small files) free, and the tree depth grows only as the file does. The rare 4 TiB file pays three extra reads per block, a cost that caching of the indirect blocks quickly hides: a sequential read of a large file touches each indirect block once and then uses its 1024 pointers.</p>
+</div>
+<div class="demo reveal" data-demo="inode-3d"><div class="demo-head"><span class="tag d3">3D model</span><span class="demo-title">Climb the inode tree from direct blocks to the double indirect block</span></div><div class="demo-body"></div></div>
+<h2 id="free-space-management">Free-space management</h2>
+<p>To allocate a block the file system must know which are free. Two classic structures do this.</p>
+<p>A <strong>bitmap</strong> (bit vector) has one bit per block: 1 if used, 0 if free (the opposite convention is also seen). Finding a free block, or a run of consecutive free blocks, means scanning for a zero bit, which CPUs do fast with word-at-a-time and bit-scan instructions. The bitmap is compact and good at finding contiguous space, which helps keep files together. For a disk with <code>2²⁸</code> blocks (1 TiB of 4 KiB blocks) it needs <code>2²⁸</code> bits = 32 MiB, or 8,192 bitmap blocks. ext2 and ext4 keep one bitmap per block group, so only the part near the file's inode need be consulted.</p>
+<p>A <strong>free list</strong> links free blocks together: the head pointer is in the superblock and each free block holds the number of the next. Allocation pops the head, which is cheap, but finding a contiguous run is hard and traversing the list costs a read per block. The usual refinement is <strong>grouping</strong>: the first free block holds the addresses of <code>n − 1</code> other free blocks and one pointer to the next such block, so one read yields many free blocks. Another is <strong>counting</strong>, which stores (start, run length) pairs, the same idea as extents.</p>
+<p>Listing 4 implements a bitmap with first-fit run allocation on a 64-block disk whose first 6 blocks hold metadata.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define NBLOCKS 64
+static unsigned char bm[NBLOCKS / 8];       /* bit = 1 means in use */
+
+static int  test(int i)  { return (bm[i / 8] &gt;&gt; (i % 8)) &amp; 1; }
+static void set(int i)   { bm[i / 8] |=  (1u &lt;&lt; (i % 8)); }
+static void clear(int i) { bm[i / 8] &amp;= ~(1u &lt;&lt; (i % 8)); }
+
+/* First-fit search for n consecutive free blocks; -1 if none. */
+static int alloc_run(int n) {
+    int run = 0;
+    for (int i = 0; i &lt; NBLOCKS; i++) {
+        run = test(i) ? 0 : run + 1;
+        if (run == n) {
+            int start = i - n + 1;
+            for (int j = start; j &lt;= i; j++) set(j);
+            return start;
+        }
+    }
+    return -1;
+}
+
+static void dump(const char *label) {
+    printf(&quot;%-14s &quot;, label);
+    for (int i = 0; i &lt; NBLOCKS; i++) {
+        putchar(test(i) ? '#' : '.');
+        if (i % 16 == 15) putchar(' ');
+    }
+    putchar('\n');
+}
+
+int main(void) {
+    memset(bm, 0, sizeof bm);
+    for (int i = 0; i &lt; 6; i++) set(i);     /* metadata blocks */
+    dump(&quot;initial&quot;);
+    int a = alloc_run(10), b = alloc_run(20), c = alloc_run(8);
+    printf(&quot;a=%d b=%d c=%d\n&quot;, a, b, c);
+    dump(&quot;after a,b,c&quot;);
+    for (int i = a; i &lt; a + 10; i++) clear(i);
+    dump(&quot;free a&quot;);
+    printf(&quot;alloc 12 -&gt; %d (needs a hole of 12)\n&quot;, alloc_run(12));
+    printf(&quot;alloc 9  -&gt; %d\n&quot;, alloc_run(9));
+    dump(&quot;final&quot;);
+    int used = 0;
+    for (int i = 0; i &lt; NBLOCKS; i++) used += test(i);
+    printf(&quot;used %d, free %d of %d\n&quot;, used, NBLOCKS - used, NBLOCKS);
+    return 0;
+}
+</code></pre>
+<p><em>Listing 4. A bitmap allocator with first-fit runs.</em></p>
+<pre><code class="language-text">initial        ######.......... ................ ................ ................ 
+a=6 b=16 c=36
+after a,b,c    ################ ################ ############.... ................ 
+free a         ######.......... ################ ############.... ................ 
+alloc 12 -&gt; 44 (needs a hole of 12)
+alloc 9  -&gt; 6
+final          ###############. ################ ################ ########........ 
+used 55, free 9 of 64
+</code></pre>
+<p>The 12-block request skips the 10-block hole that <code>a</code> left behind and lands at block 44, the same external fragmentation story as the memory allocators of <a href="week-08.html">Week 8</a>. The 9-block request then fits the hole and starts at 6.</p>
+<h2 id="links-hard-and-symbolic">Links: hard and symbolic</h2>
+<p>A <strong>hard link</strong> is a second directory entry for an existing inode. Both names are equal citizens; the inode's link count is 2. Neither is "the original". Deleting one name decrements the count, and the data survive until the last name goes. Because a hard link stores an inode number, it works only within one file system (inode numbers are meaningful only per file system), and directories cannot be hard-linked.</p>
+<p>A <strong>symbolic link</strong> (symlink) is a different kind of file whose content is a path string. When the kernel meets it during path resolution, it substitutes that string and continues. A symlink can cross file systems, can point at a directory, and can dangle if its target no longer exists.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Hard link</th>
+<th>Symbolic link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it is</td>
+<td>Another name for the same inode</td>
+<td>A small file containing a path</td>
+</tr>
+<tr>
+<td>Own inode</td>
+<td>No (shares)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Across file systems</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Link to directory</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>After target is removed</td>
+<td>Still works (data survive)</td>
+<td>Dangles (error on use)</td>
+</tr>
+<tr>
+<td>Link count of target</td>
+<td>Increased</td>
+<td>Unchanged</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash">echo hello &gt; f.txt
+ln f.txt hard.txt            # second name, same inode
+ln -s f.txt soft.txt         # new file containing the text &quot;f.txt&quot;
+ls -li                       # first column is the inode number
+rm f.txt
+cat hard.txt                 # still prints hello
+cat soft.txt                 # fails: No such file or directory
+</code></pre>
+<p><em>Listing 5. Hard versus symbolic links.</em></p>
+<p>After <code>rm f.txt</code>, <code>hard.txt</code> still prints <code>hello</code> and <code>soft.txt</code> fails with <code>No such file or directory</code>, because its stored path <code>f.txt</code> no longer resolves. If you later create a new file named <code>f.txt</code>, the symlink works again, since it is bound to a name, not to an inode.</p>
+<h2 id="mounting-and-the-vfs-layer">Mounting and the VFS layer</h2>
+<p>A machine usually has several file systems: the root partition, a USB stick, a network share, and virtual ones such as <code>/proc</code>. Unix does not give each a drive letter. <strong>Mounting</strong> attaches the root of one file system to a directory (the <strong>mount point</strong>) in the existing tree, and the directory's old contents are hidden while it is mounted. The kernel keeps a mount table; path resolution checks at each directory whether it is a mount point and, if so, crosses into the mounted file system. Inode numbers are unique only within one file system, so a file is identified by the pair (device, inode), which is what <code>stat</code> returns in <code>st_dev</code> and <code>st_ino</code>.</p>
+<figure class="figure"><div class="scroll"><pre class="diagram"> Before mount:  /            /mnt is empty          /dev/sdb1 (USB, ext4)
+               / \                                       /
+            usr   mnt                                 photos   notes.txt
+                                                         |
+ mount /dev/sdb1 /mnt                                  cat.jpg
+
+ After:      /
+            / \
+         usr   mnt  &lt;-- mount point: now shows the root of /dev/sdb1
+                / \
+          photos   notes.txt           /mnt/photos/cat.jpg is the full path
+</pre></div><figcaption><b>Figure 12.4..</b> Mounting grafts one file system's tree onto a directory of another, giving a single namespace.</figcaption></figure>
+<p>How can one <code>read</code> call work on ext4, FAT and NFS alike? Through the <strong>Virtual File System (VFS)</strong> layer, a kernel interface of generic objects (superblock, inode, directory entry, open file) with a table of function pointers per file system, covered further in <a href="week-13.html#the-vfs-layer-and-network-file-systems">Week 13</a>. The system call layer talks only to the VFS, and the VFS calls the right file system's <code>lookup</code>, <code>read</code> or <code>write</code>. Adding a new file system means filling in the table, not changing any application.</p>
+<div class="admonition tip">
+<p class="admonition-title">Inspecting mounts on Linux</p>
+<p>On Linux, <code>df</code> shows mounted file systems with their sizes and mount points, <code>mount</code> lists the table, and <code>stat -f .</code> reports the block size and file system type of the file system that holds the current directory.</p>
+</div>
+<h2 id="exercises">Exercises</h2>
+<section class="exercise" id="ex-1" data-level="warm-up"><header><span class="ex-n">Exercise 12.1</span><span class="lvl lvl-warmup">warm-up</span><h4>Smaller blocks</h4></header><div class="ex-q"><p>An inode has 12 direct pointers, one single, one double and one triple indirect pointer. Blocks are 1 KiB and pointers are 4 bytes. Compute the pointers per block and the maximum file size.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Pointers per block <code>N = 1024 / 4 = 256</code>. Reachable blocks: <code>12 + 256 + 256² + 256³ = 12 + 256 + 65,536 + 16,777,216 = 16,843,020</code>. Multiply by 1024 bytes: <code>17,247,252,480</code> bytes, about 16.06 GiB. Compare with 4 KiB blocks (about 4 TiB): quartering the block size shrank the limit by a factor of about 256, because the number of pointers per block falls with <code>B</code> and appears cubed.</p></div></details></section>
+<section class="exercise" id="ex-2" data-level="core"><header><span class="ex-n">Exercise 12.2</span><span class="lvl lvl-core">core</span><h4>Offsets to blocks</h4></header><div class="ex-q"><p>Blocks are 4 KiB and pointers 4 bytes, with 12 direct pointers. For each byte offset give the logical block, the byte within it, and the path: (a) 100,000; (b) 3,000,000,000.</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) <code>100,000 / 4096 = 24</code> (since <code>24 × 4096 = 98,304</code>), byte <code>100,000 − 98,304 = 1,696</code>. Block 24 is past the direct region; <code>24 − 12 = 12 &lt; 1024</code>, so it is <code>single indirect: block[12]</code>.</p>
+<p>(b) <code>3,000,000,000 / 4096 = 732,421</code> (since <code>732,421 × 4096 = 2,999,996,416</code>), byte <code>3,584</code>. Subtract 12 direct and 1,024 single: <code>732,421 − 1,036 = 731,385</code>, which is below 1,048,576, so the double region. First index <code>731,385 / 1024 = 714</code> (since <code>714 × 1024 = 731,136</code>), second index <code>731,385 − 731,136 = 249</code>. Path: <code>double[714] -&gt; block[249]</code>.</p></div></details></section>
+<section class="exercise" id="ex-3" data-level="core"><header><span class="ex-n">Exercise 12.3</span><span class="lvl lvl-core">core</span><h4>Index overhead of a 100 MiB file</h4></header><div class="ex-q"><p>How many data blocks and how many pointer (indirect) blocks does a 100 MiB file need with 4 KiB blocks and 4-byte pointers? What fraction is overhead?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>Data blocks: <code>100 × 2²⁰ / 4096 = 25,600</code>. Direct pointers cover 12 and the single indirect covers 1,024, leaving <code>25,600 − 1,036 = 24,564</code> for the double region. Those need <code>⌈24,564 / 1024⌉ = 24</code> second-level blocks (23 full ones cover 23,552, the 24th holds the remaining 1,012 pointers) plus the one double indirect block itself. Pointer blocks: <code>1 (single) + 1 (double) + 24 = 26</code>. Total <code>25,626</code> blocks; overhead <code>26 / 25,626 ≈ 0.10 percent</code>. Large files pay almost nothing for the index.</p></div></details></section>
+<section class="exercise" id="ex-4" data-level="core"><header><span class="ex-n">Exercise 12.4</span><span class="lvl lvl-core">core</span><h4>Linked allocation versus FAT</h4></header><div class="ex-q"><p>In linked allocation each 4096-byte block stores a 4-byte pointer, leaving 4092 data bytes. (a) To read the byte at offset 1,000,000 of a file, which logical block holds it, and how many disk reads are needed? (b) How many disk reads does a FAT with the table cached in memory need? (c) How large is a FAT for a 32 GiB volume with 4 KiB clusters and 4-byte entries?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) <code>1,000,000 / 4092 = 244</code> (since <code>244 × 4092 = 998,448</code>), byte <code>1,552</code> within it. Blocks 0 to 244 must be read in turn: 245 disk reads.</p>
+<p>(b) Following the chain of 244 links is 244 memory lookups with no disk access, then one disk read of the data block.</p>
+<p>(c) <code>32 GiB / 4 KiB = 2²³ = 8,388,608</code> entries times 4 bytes is 32 MiB.</p></div></details></section>
+<section class="exercise" id="ex-5" data-level="warm-up"><header><span class="ex-n">Exercise 12.5</span><span class="lvl lvl-warmup">warm-up</span><h4>Bitmap versus free list</h4></header><div class="ex-q"><p>A 1 TiB disk has 4 KiB blocks. (a) How big is a bitmap with one bit per block, in MiB and in blocks? (b) With a grouped free list, each free block holds 1023 free block numbers and one link (4 bytes each). If the whole disk were free, about how many blocks would be used as list nodes, and where do they live?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) <code>2⁴⁰ / 2¹² = 2²⁸</code> blocks, so <code>2²⁸</code> bits = <code>2²⁵</code> bytes = 32 MiB, which is <code>32 MiB / 4 KiB = 8,192</code> blocks.</p>
+<p>(b) <code>2²⁸ / 1023 ≈ 262,400.25</code>, so 262,401 list nodes. They are free blocks themselves, so the list costs no space beyond the blocks it describes. The trade-off: the bitmap is a fixed 32 MiB (0.003 percent of the disk), searchable for contiguous runs; the list has no fixed size but is slow to search for runs.</p></div></details></section>
+<section class="exercise" id="ex-6" data-level="core"><header><span class="ex-n">Exercise 12.6</span><span class="lvl lvl-core">core</span><h4>Links and deletion</h4></header><div class="ex-q"><p>Trace these commands in an empty directory and say what each <code>cat</code> prints and what the link count of the data is at the end.</p>
+<pre><code class="language-text">echo one &gt; a
+ln a b
+ln -s a c
+rm a
+cat b
+cat c
+echo two &gt; a
+cat c
+</code></pre></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>After <code>echo one &gt; a</code> the inode has link count 1. <code>ln a b</code> makes it 2. <code>ln -s a c</code> creates a new small file <code>c</code> containing the text <code>a</code>; the data inode stays at 2. <code>rm a</code> removes one name: count 1, data kept. <code>cat b</code> prints <code>one</code>. <code>cat c</code> fails with <code>No such file or directory</code>, since it names <code>a</code>, which no longer exists. <code>echo two &gt; a</code> creates a brand-new file <code>a</code> with a new inode, so <code>cat c</code> now prints <code>two</code>, not <code>one</code>. The original data inode (<code>one</code>) still has link count 1, reachable only through <code>b</code>.</p></div></details></section>
+<section class="exercise" id="ex-7" data-level="challenging"><header><span class="ex-n">Exercise 12.7</span><span class="lvl lvl-challenging">challenging</span><h4>Three tables</h4></header><div class="ex-q"><p>Process P runs: <code>fd1 = open("f", O_RDONLY); fd2 = open("f", O_RDONLY); fd3 = dup(fd1); fork();</code> where fd1, fd2 and fd3 are the descriptor numbers returned. (a) How many open file table entries and inode table entries exist for <code>f</code>? Give the reference count of each open file entry after the fork. (b) The child reads 10 bytes through its copy of fd1. What offsets do the parent's fd1, fd2 and fd3 show? (c) The parent calls <code>close(fd1)</code> and the child then calls <code>unlink("f")</code>. Can the parent still read through fd3?</p></div><details class="solution"><summary>Show solution</summary><div class="ex-s"><p>(a) <code>open</code> twice creates two open file entries, A (from fd1, also shared by fd3 through <code>dup</code>) and B (fd2). One inode table entry serves both. After <code>fork</code> the child has its own fd table copying the same pointers, so entry A has reference count 4 (parent fd1, parent fd3, child fd1, child fd3) and entry B has 2 (parent fd2, child fd2).</p>
+<p>(b) The read advances the offset in entry A to 10, so the parent's fd1 and fd3 both show 10, while fd2 (entry B) stays at 0.</p>
+<p>(c) Yes. <code>close(fd1)</code> just drops entry A's count to 3. <code>unlink</code> removes the directory entry and lowers the link count to 0, but the inode is still referenced by open file entries, so the kernel keeps the data and inode until the last descriptor is closed. The parent reads on through fd3 normally.</p></div></details></section>
+<h2 id="lab">Lab</h2>
+<p>You will inspect inodes with <code>stat</code>, list directories with <code>readdir</code>, and use the block-map calculator from Listing 3. Compile everything with <code>gcc -Wall -Wextra -pthread</code>. Use a real disk (your home directory), because some virtual file systems report zero or fake block counts.</p>
+<h3 id="part-1-stat">Part 1: stat</h3>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/sysmacros.h&gt;
+#include &lt;time.h&gt;
+
+static const char *kind(mode_t m) {
+    if (S_ISREG(m)) return &quot;regular file&quot;;
+    if (S_ISDIR(m)) return &quot;directory&quot;;
+    if (S_ISLNK(m)) return &quot;symbolic link&quot;;
+    if (S_ISCHR(m)) return &quot;character device&quot;;
+    if (S_ISBLK(m)) return &quot;block device&quot;;
+    return &quot;other&quot;;
+}
+
+int main(int argc, char **argv) {
+    for (int i = 1; i &lt; argc; i++) {
+        struct stat st;
+        if (lstat(argv[i], &amp;st) &lt; 0) { perror(argv[i]); continue; }
+        printf(&quot;%s\n&quot;, argv[i]);
+        printf(&quot;  type        : %s\n&quot;, kind(st.st_mode));
+        printf(&quot;  inode       : %lu on device %u:%u\n&quot;, (unsigned long)st.st_ino,
+               major(st.st_dev), minor(st.st_dev));
+        printf(&quot;  links       : %lu\n&quot;, (unsigned long)st.st_nlink);
+        printf(&quot;  size        : %ld bytes\n&quot;, (long)st.st_size);
+        printf(&quot;  blocks      : %ld x 512 bytes = %ld bytes allocated\n&quot;,
+               (long)st.st_blocks, (long)st.st_blocks * 512);
+        printf(&quot;  I/O block   : %ld bytes\n&quot;, (long)st.st_blksize);
+        printf(&quot;  mode        : %04o\n&quot;, st.st_mode &amp; 07777);
+    }
+    return 0;
+}
+</code></pre>
+<p><em>Listing 6. A small stat tool using lstat, which does not follow symbolic links.</em></p>
+<p>Make a scratch directory with <code>echo hello &gt; f.txt; ln f.txt hard.txt; ln -s f.txt soft.txt; head -c 10000 /dev/zero &gt; ten.bin; truncate -s 1M sparse.bin</code> and run <code>./mystat f.txt soft.txt ten.bin sparse.bin</code>. On one test machine the relevant lines (condensed) were:</p>
+<pre><code class="language-text">f.txt        links: 2   size: 6 bytes        blocks: 8 x 512 = 4096 bytes allocated
+soft.txt     type: symbolic link   size: 5 bytes   blocks: 0
+ten.bin      links: 1   size: 10000 bytes    blocks: 24 x 512 = 12288 bytes allocated
+sparse.bin   links: 1   size: 1048576 bytes  blocks: 0 x 512 = 0 bytes allocated
+</code></pre>
+<p>Observe four things. A 6-byte file occupies a whole 4096-byte block. A 10,000-byte file occupies <code>⌈10,000 / 4096⌉ = 3</code> blocks, 12,288 bytes. The symlink's size is 5, the length of the string <code>f.txt</code>, and it owns no data block (on ext4, targets under 60 bytes are stored inside the inode). And <code>sparse.bin</code> is a <strong>sparse file</strong>: its size is 1 MiB but no blocks are allocated, because blocks that were never written are not allocated and read as zeros. <code>st_blocks</code> counts 512-byte units regardless of the file system block size.</p>
+<h3 id="part-2-readdir">Part 2: readdir</h3>
+<pre><code class="language-c">#include &lt;dirent.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/stat.h&gt;
+
+int main(int argc, char **argv) {
+    const char *path = argc &gt; 1 ? argv[1] : &quot;.&quot;;
+    DIR *d = opendir(path);
+    if (!d) { perror(path); return 1; }
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        char full[4096];
+        snprintf(full, sizeof full, &quot;%s/%s&quot;, path, e-&gt;d_name);
+        struct stat st;
+        if (lstat(full, &amp;st) &lt; 0) { perror(full); continue; }
+        printf(&quot;%8lu  links=%lu  %c  %s\n&quot;, (unsigned long)e-&gt;d_ino,
+               (unsigned long)st.st_nlink,
+               S_ISDIR(st.st_mode) ? 'd' : S_ISLNK(st.st_mode) ? 'l' : '-',
+               e-&gt;d_name);
+    }
+    closedir(d);
+    return 0;
+}
+</code></pre>
+<p><em>Listing 7. Listing a directory: each entry is a (name, inode number) pair.</em></p>
+<p>Run <code>./lsdir .</code> in the scratch directory. Entries appear in directory order, not sorted, and the inode numbers differ from machine to machine, but <code>f.txt</code> and <code>hard.txt</code> print the same inode number and <code>links=2</code>, while <code>soft.txt</code> has its own. The <code>.</code> entry shows <code>links=</code> equal to 2 plus the number of subdirectories, because each subdirectory's <code>..</code> points back to it. Now run <code>rm f.txt</code>, list again, and confirm <code>hard.txt</code> shows <code>links=1</code>.</p>
+<h3 id="part-3-block-map">Part 3: block map</h3>
+<p>Compile Listing 3 and run <code>./blockmap 5000000</code>; it should match the worked example. Then try offsets 49151, 49152, 4243455 and 4243456 and check each against the boundaries from the chapter. Finally run <code>./blockmap 5000000 1024 4</code>: with 1 KiB blocks it reports logical block 4882, byte 832, <code>double[18] -&gt; block[6]</code>. Verify that by hand.</p>
+<p><strong>Extensions.</strong></p>
+<ol>
+<li>Extend <code>blockmap</code> to count how many disk reads a cold access needs (0 for direct, 1 for single, and so on) and print it.</li>
+<li>Write <code>mylink.c</code> that calls <code>link()</code> and <code>symlink()</code> and then uses <code>stat</code> and <code>readlink</code> to print the link counts and the stored path. Check that <code>link()</code> fails across file systems with <code>EXDEV</code>.</li>
+<li>Use <code>strace -e trace=openat,read ./fdshare</code> to see the descriptor numbers, then change Listing 1 to use <code>dup</code> instead of the second <code>open</code>, and predict <code>b</code>'s offset before running.</li>
+</ol>
+<h2 id="common-mistakes-and-debugging-tips">Common mistakes and debugging tips</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Maximum file size answer off by a factor of 4</td>
+<td>Used pointer size as 1 byte or forgot that <code>N = B / pointer size</code></td>
+<td>Compute <code>N</code> first, then <code>12 + N + N² + N³</code></td>
+</tr>
+<tr>
+<td>Block index off by 12 or 1,036</td>
+<td>Forgot to subtract the direct or single region before indexing</td>
+<td>Subtract region sizes in order, and test the boundary offsets</td>
+</tr>
+<tr>
+<td>Offset <code>4243456</code> placed in the single indirect region</td>
+<td>Used <code>lb &lt;= 1036</code> instead of <code>lb &lt; 1036</code></td>
+<td>Logical blocks are zero based: 0..11, 12..1035, 1036..</td>
+</tr>
+<tr>
+<td><code>ls</code> shows file size 1 MiB but <code>du</code> reports 0</td>
+<td>Sparse file: unwritten blocks are not allocated</td>
+<td>Compare <code>st_size</code> with <code>st_blocks * 512</code></td>
+</tr>
+<tr>
+<td>Disk is full after deleting a big log</td>
+<td>A process still has the file open, so the inode is alive</td>
+<td><code>lsof +L1</code> to list open deleted files; restart or truncate the process</td>
+</tr>
+<tr>
+<td><code>ln</code> fails with "Invalid cross-device link"</td>
+<td>Hard links cannot span file systems</td>
+<td>Use <code>ln -s</code>, or copy the file</td>
+</tr>
+<tr>
+<td>Symlink "does not work"</td>
+<td>Relative target resolved relative to the link's directory, not to the current directory</td>
+<td>Use an absolute target or recheck the relative path</td>
+</tr>
+<tr>
+<td>Two descriptors write over each other</td>
+<td>Two separate <code>open</code> calls have separate offsets</td>
+<td>Share one open file entry with <code>dup</code>, or open with <code>O_APPEND</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-takeaways">Key takeaways</h2>
+<div class="admonition tip">
+<p class="admonition-title">Key takeaways</p>
+<ul>
+<li>A file's name lives in a directory entry, while its size, permissions and block pointers live in the inode; the link count says how many names refer to it.</li>
+<li>Opening a file creates an entry in the system-wide open file table (offset and mode) pointed to by a per-process descriptor and reaching the shared inode; <code>fork</code> and <code>dup</code> share entries, separate <code>open</code> calls do not.</li>
+<li>Contiguous allocation is fast but fragments; linked is flexible but slow for random access; FAT keeps the chain in memory; indexed gives direct access and underlies the Unix inode.</li>
+<li>With 4 KiB blocks and 4-byte pointers an inode with 12 direct and 3 indirect pointers reaches <code>(12 + 1024 + 1024² + 1024³) × 4 KiB</code>, about 4 TiB, while small files never need an indirect block.</li>
+<li>To map an offset, divide by the block size, then subtract the direct, single and double region sizes in turn; offset 5,000,000 is logical block 1220, reached by <code>double[0]</code> then <code>block[184]</code>.</li>
+<li>Bitmaps are compact and find contiguous runs easily; free lists are cheap to pop but poor at finding runs.</li>
+<li>A hard link is another name for an inode (same file system only), a symlink is a file containing a path; mounting and the VFS layer merge many file systems into one tree.</li>
+</ul>
+</div>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><strong>Essential.</strong> Silberschatz, Galvin and Gagne, <em>Operating System Concepts</em>, Chapter 13 "File-System Interface" and Chapter 14 "File-System Implementation" (allocation methods, free-space management, directories).</li>
+<li><strong>Essential.</strong> Arpaci-Dusseau and Arpaci-Dusseau, <em>Operating Systems: Three Easy Pieces</em>, chapters "Files and Directories" and "File System Implementation" (the very simple file system with inodes and bitmaps).</li>
+<li><strong>Essential.</strong> Man pages: <code>stat(2)</code>, <code>readdir(3)</code>, <code>open(2)</code>, <code>link(2)</code>, <code>symlink(7)</code>, <code>mount(8)</code>.</li>
+<li>Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter "Locality and The Fast File System".</li>
+<li>Tanenbaum and Bos, <em>Modern Operating Systems</em>, Chapter 4 "File Systems".</li>
+<li>McKusick, Joy, Leffler and Fabry, "A Fast File System for UNIX", ACM Transactions on Computer Systems, 1984.</li>
+<li>Ritchie and Thompson, "The UNIX Time-Sharing System", Communications of the ACM, 1974.</li>
+</ul></div><div class="done-row"><button id="mark-done" class="btn" type="button" data-week="12">Mark Week 12 as complete</button></div><div class="pager"><a class="pn prev" href="week-11.html"><small>Previous</small>Week 11: Mass Storage: Disks, SSDs, Scheduling and RAID</a><a class="pn next" href="week-13.html"><small>Next</small>Week 13: File Systems II: Journaling, Caching and the I/O Subsystem</a></div></div><aside class="toc" aria-label="On this page"><h2>On this page</h2><ol><li><a href="#files-attributes-and-operations">Files, attributes and operations</a></li><li><a href="#directories-and-path-names">Directories and path names</a></li><li><a href="#the-open-file-tables">The open-file tables</a></li><li><a href="#allocation-methods">Allocation methods</a></li><li><a href="#unix-inodes-and-the-multilevel-index">Unix inodes and the multilevel index</a></li><li><a href="#free-space-management">Free-space management</a></li><li><a href="#links-hard-and-symbolic">Links: hard and symbolic</a></li><li><a href="#mounting-and-the-vfs-layer">Mounting and the VFS layer</a></li><li><a href="#exercises">Exercises</a></li><li><a href="#lab">Lab</a></li><li><a href="#common-mistakes-and-debugging-tips">Common mistakes and debugging tips</a></li><li><a href="#key-takeaways">Key takeaways</a></li><li><a href="#further-reading">Further reading</a></li></ol></aside></div></article><footer class="foot"><p>Text and figures: CC BY 4.0. Code: MIT. <a href="about.html">About and contributing</a> · <a href="syllabus.html">Syllabus</a> · <a href="glossary.html">Glossary</a></p></footer></div></main></div>
+<div class="scrim" id="scrim"></div>
+<button class="icon-btn totop" id="totop" type="button" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<script src="search-index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="demos.js"></script>
+<script src="models.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
